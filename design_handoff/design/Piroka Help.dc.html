@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka — Help, safety &amp; legal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #34d399; text-decoration: none; }
+    a:hover { color: #6ee7b7; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    @keyframes piSpin { to { transform: rotate(360deg); } }
+    @keyframes piIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes piDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="min-height: 100vh; display: flex; flex-direction: column; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; background: #070707;">
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px clamp(18px, 4vw, 40px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <a href="Piroka Homepage.dc.html" style="display: flex; align-items: center; gap: 10px; color: #f5f5f5;">
+      <span style="position: relative; width: 36px; height: 36px; border-radius: 11px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">π<span style="position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span></span>
+      <span style="font-size: 17px; font-weight: 600; letter-spacing: -0.02em;">πroka</span>
+    </a>
+    <a href="Piroka App v2.dc.html" style="height: 38px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); color: #f5f5f5; font-size: 13px; font-weight: 500; display: flex; align-items: center;">Back to the app</a>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 28px; width: 100%; max-width: 1080px; margin: 0 auto; padding: 28px clamp(18px, 4vw, 40px) 48px;">
+    <nav style="flex: 1 1 200px; max-width: 240px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 20px; align-self: flex-start;">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="9">
+        <sc-if value="{{ t.head }}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 700; letter-spacing: .12em; color: #666; padding: 14px 12px 6px;">{{ t.label }}</span></sc-if>
+        <sc-if value="{{ t.link }}" hint-placeholder-val="{{ true }}">
+          <a href="{{ t.href }}" style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; color: #ccc; font-size: 14px; font-weight: 500;" style-hover="background: rgba(255,255,255,0.04); color: #f5f5f5;">
+            <sc-if value="{{ t.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 12px; background: rgba(255,255,255,0.07);"></span><span style="position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: #34d399;"></span></sc-if>
+            <span style="position: relative;">{{ t.label }}</span>
+            <sc-if value="{{ t.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="position: relative; padding: 1px 7px; border-radius: 999px; background: #34d399; color: #070707; font-size: 10px; font-weight: 700;">{{ t.badge }}</span></sc-if>
+          </a>
+        </sc-if>
+      </sc-for>
+    </nav>
+
+    <main style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 18px; animation: piIn .35s ease-out both;">
+
+      <sc-if value="{{ isHelp }}" hint-placeholder-val="{{ true }}">
+        <span style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em;">How can we help?</span>
+        <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Search help — “ban”, “location”, “delete account”…" style="height: 50px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 0 16px; font: 400 15px 'Geist', sans-serif; outline: none;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="6">
+            <button onClick="{{ f.toggle }}" style="display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;">
+              <span style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px; font-weight: 600;">{{ f.q }}<span style="color: #34d399;">{{ f.sign }}</span></span>
+              <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}"><span style="font-size: 14px; line-height: 1.6; color: #ccc; text-wrap: pretty;">{{ f.a }}</span></sc-if>
+            </button>
+          </sc-for>
+          <sc-if value="{{ noFaq }}" hint-placeholder-val="{{ false }}"><span style="font-size: 14px; color: #999;">Nothing matches. <a href="#support">Ask a person</a>.</span></sc-if>
+        </div>
+        <a href="#support" style="align-self: flex-start; height: 46px; padding: 0 18px; border-radius: 14px; background: #34d399; color: #070707; font-size: 14px; font-weight: 600; display: flex; align-items: center;">Talk to a person</a>
+      </sc-if>
+
+      <sc-if value="{{ isSupport }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <span style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em;">Support</span><span style="font-size: 14px; color: #999;">{{ supTag }}</span></span>
+          <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(255,255,255,0.05);">
+            <sc-for list="{{ langs }}" as="l" hint-placeholder-count="2"><button onClick="{{ l.pick }}" style="position: relative; height: 32px; padding: 0 12px; border-radius: 9px; border: none; background: transparent; color: #f5f5f5; font: 600 12px 'Geist', sans-serif; cursor: pointer;"><sc-if value="{{ l.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 9px; background: rgba(255,255,255,0.12);"></span></sc-if><span style="position: relative;">{{ l.label }}</span></button></sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; border-radius: 22px; border: 1px solid rgba(255,255,255,0.08); background: #0b0b0b; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <span style="width: 38px; height: 38px; border-radius: 50%; background: #1b1b1b; border: 1px solid rgba(52,211,153,0.5); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #34d399;">A</span>
+            <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Ana · πroka Support</span><span style="font-size: 12px; color: #34d399;">{{ supStatus }}</span></span>
+          </div>
+          <div ref="{{ supRef }}" style="height: 340px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 10px; padding: 16px;">
+            <sc-for list="{{ supMsgs }}" as="m" hint-placeholder-count="1">
+              <sc-if value="{{ m.them }}" hint-placeholder-val="{{ true }}"><div style="align-self: flex-start; max-width: 80%; background: rgba(255,255,255,0.07); border-radius: 18px 18px 18px 6px; padding: 10px 14px; font-size: 14px; line-height: 1.5;">{{ m.text }}</div></sc-if>
+              <sc-if value="{{ m.me }}" hint-placeholder-val="{{ false }}"><div style="align-self: flex-end; max-width: 80%; background: #34d399; color: #070707; border-radius: 18px 18px 6px 18px; padding: 10px 14px; font-size: 14px; font-weight: 500; line-height: 1.5;">{{ m.text }}</div></sc-if>
+            </sc-for>
+            <sc-if value="{{ supTyping }}" hint-placeholder-val="{{ false }}"><div style="align-self: flex-start; display: flex; gap: 5px; background: rgba(255,255,255,0.07); border-radius: 18px 18px 18px 6px; padding: 14px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s infinite;"></span><span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .15s infinite;"></span><span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .3s infinite;"></span></div></sc-if>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 10px;">
+            <sc-for list="{{ topics }}" as="tp" hint-placeholder-count="4"><button onClick="{{ tp.go }}" style="padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;">{{ tp.label }}</button></sc-for>
+          </div>
+          <div style="display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <input value="{{ supDraft }}" onChange="{{ onSupDraft }}" onKeyDown="{{ onSupKey }}" placeholder="{{ supPh }}" style="flex: 1; min-width: 0; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #111; color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none;">
+            <button onClick="{{ supSend }}" style="height: 46px; padding: 0 18px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">{{ supSendL }}</button>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #666;">Real people, 7 days a week. Safety reports are answered first. Premium members get a reply within 4 hours.</span>
+      </sc-if>
+
+      <sc-if value="{{ isAppeals }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em;">Account standing</span>
+        <div style="display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 18px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.35);">
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #34d399;"></span>
+          <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 16px; font-weight: 600;">Good standing</span><span style="font-size: 13px; color: #ccc;">No restrictions on your account. One past warning is shown below.</span></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <span style="font-size: 13px; font-weight: 600; color: #999;">How moderation works</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+            <sc-for list="{{ ladder }}" as="l" hint-placeholder-count="4"><div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);"><span style="font-size: 11px; font-weight: 700; color: #34d399;">{{ l.n }}</span><span style="font-size: 14px; font-weight: 600;">{{ l.t }}</span><span style="font-size: 12px; color: #999; line-height: 1.45;">{{ l.d }}</span></div></sc-for>
+          </div>
+        </div>
+        <sc-for list="{{ cases }}" as="c" hint-placeholder-count="1">
+          <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+            <span style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;"><span style="font-size: 15px; font-weight: 600;">{{ c.title }}</span><span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid {{ c.col }}; color: {{ c.col }};">{{ c.status }}</span></span>
+            <span style="font-size: 13px; color: #999;">Case {{ c.id }} · {{ c.date }}</span>
+            <span style="font-size: 14px; line-height: 1.55; color: #ccc;"><span style="color: #f5f5f5; font-weight: 600;">Why:</span> {{ c.why }}</span>
+            <span style="font-size: 14px; line-height: 1.55; color: #ccc;"><span style="color: #f5f5f5; font-weight: 600;">Rule:</span> {{ c.rule }}</span>
+            <sc-if value="{{ c.canAppeal }}" hint-placeholder-val="{{ false }}">
+              <textarea value="{{ appealText }}" onChange="{{ onAppeal }}" rows="{{ 3 }}" placeholder="Tell us what we got wrong. A different moderator reviews every appeal." style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 12px 14px; font: 400 14px/1.5 'Geist', sans-serif; outline: none; resize: vertical;"></textarea>
+              <button onClick="{{ submitAppeal }}" style="align-self: flex-start; height: 44px; padding: 0 18px; border-radius: 14px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Submit appeal</button>
+            </sc-if>
+            <sc-if value="{{ c.appealed }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #34d399;">Appeal received. A second moderator will reply within 72 hours.</span></sc-if>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ isReport }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em;">Report or request removal</span>
+        <span style="font-size: 14px; color: #999; line-height: 1.55; margin-top: -8px;">For content on πroka that shows you without consent, involves a minor, or breaks the law. You don't need an account. Minors and non-consensual content are removed first, usually within hours.</span>
+        <sc-if value="{{ repOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+            <sc-for list="{{ repTypes }}" as="r" hint-placeholder-count="6"><button onClick="{{ r.pick }}" style="position: relative; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; text-align: left;"><sc-if value="{{ r.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 14px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.1);"></span></sc-if><span style="position: relative;">{{ r.label }}</span></button></sc-for>
+          </div>
+          <input value="{{ repLink }}" onChange="{{ onRepLink }}" placeholder="Profile name or link" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none;">
+          <textarea value="{{ repText }}" onChange="{{ onRepText }}" rows="{{ 4 }}" placeholder="What happened?" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 12px 14px; font: 400 14px/1.5 'Geist', sans-serif; outline: none; resize: vertical;"></textarea>
+          <input value="{{ repEmail }}" onChange="{{ onRepEmail }}" placeholder="Email for updates (optional)" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none;">
+          <button onClick="{{ submitRep }}" style="align-self: flex-start; height: 46px; padding: 0 20px; border-radius: 14px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Send report</button>
+          <sc-if value="{{ repErr }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #f87171;">Choose a reason and describe what happened.</span></sc-if>
+        </sc-if>
+        <sc-if value="{{ repDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 18px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.35);"><span style="font-size: 16px; font-weight: 600;">Report {{ repId }} received</span><span style="font-size: 14px; color: #ccc; line-height: 1.5;">A person on our Trust &amp; Safety team will review it. If you left an email, we'll tell you what we did.</span></div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em;">{{ doc.title }}</span><span style="font-size: 13px; color: #666;">{{ doc.meta }}</span></div>
+        <sc-if value="{{ doc.draft }}" hint-placeholder-val="{{ true }}"><span style="padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(255,255,255,0.2); font-size: 12px; color: #999;">Draft text for design review. Have it reviewed by counsel before launch.</span></sc-if>
+        <sc-for list="{{ doc.sections }}" as="sec" hint-placeholder-count="4">
+          <section style="display: flex; flex-direction: column; gap: 8px; padding-top: 8px;">
+            <span style="font-size: 17px; font-weight: 600;">{{ sec.h }}</span>
+            <sc-for list="{{ sec.p }}" as="p" hint-placeholder-count="1"><p style="margin: 0; font-size: 15px; line-height: 1.65; color: #ccc; text-wrap: pretty; max-width: 68ch;">{{ p }}</p></sc-for>
+          </section>
+        </sc-for>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const SUP_SYS = 'You are Ana from the πroka support team. πroka is an 18+ map-based social app for queer adults with privacy-first features: blurred location, private albums, Meet Mode with SafeMeet check-ins, PIN lock and quick exit, and plans Free, Plus ($5/mo) and Premium ($10/mo). Write like a warm, competent human in 1 to 3 short sentences. You cannot see or change accounts in this chat; explain the next step and what the team will do. Safety issues (harassment, threats, non-consensual images, anyone under 18): say it is now prioritized for Trust & Safety, suggest Block and Report from the profile or chat, and urge contacting local emergency services if in danger. Bans or warnings: point to Account standing to see the reason and appeal. Hacked account: reset the password from the log-in screen, then we sign out all sessions. Billing: cancel any time in ME; the plan runs to the end of the period. Never ask for passwords or full card numbers. No emoji, no markdown.';
+const FAQ = [
+  ['Who can see my exact location?', 'No one, by default. Others see a blurred area — a neighborhood (~0.3 mi) or wider area (~1 mi) — and distances are rounded. Your precise location is shared only inside Meet Mode, only after both people agree, and it switches off when Meet Mode ends.'],
+  ['Why is my location blurred more in some places?', 'In countries and regions where queer people face legal or social danger, πroka widens your blur to Area, hides photos by default and warns you about fast meetups. You can lower the protection, but we don’t recommend it.'],
+  ['How do albums work?', 'Your album is private. Unlock it for one person inside a chat, or approve when someone asks. You can lock it again at any time. Free and Anonymous accounts hold 2 photos; Plus and Premium hold 5.'],
+  ['Are my messages encrypted?', 'Yes. Chats are end-to-end encrypted, so only you and the person you’re talking to can read them. If you report a chat, you choose which recent messages to attach as evidence.'],
+  ['I was warned or banned. What now?', 'Every action comes with the reason and the rule it relates to. Serious safety violations can lead to an immediate suspension; everything else starts with a warning. You can appeal any decision from Account standing — a different moderator reviews it.'],
+  ['How do I hide πroka on my phone?', 'In ME → Privacy, switch the app icon to Calculator, Weather or Notes, and add a PIN. Quick exit (press Esc twice or tap the shield) instantly shows a decoy screen.'],
+  ['Is πroka free?', 'Yes. The map, chat, filters, communities and safety tools are free. Plus ($5/mo) adds advanced filters, travel and 5 album photos. Premium ($10/mo) adds priority support. There are no ads on any plan.'],
+  ['How do I download or delete my data?', 'ME → Privacy → Download my data gives you a file with everything we hold. Delete account removes your profile immediately and your data within 30 days, except what the law requires us to keep.']
+];
+const REPLY = {
+  en: { hi: 'Hi, I’m Ana from πroka Support. What’s going on?', ack: 'Thanks — I’m looking into it now. If anyone is in immediate danger, contact local emergency services first.', tag: 'Human support in English and Portuguese · replies in under 24h', ph: 'Write to Ana…', send: 'Send', status: 'Online · usually replies in 5 min', topics: ['My account was hacked', 'Someone is harassing me', 'I was banned', 'Billing question'] },
+  pt: { hi: 'Oi, eu sou a Ana do suporte πroka. Como posso ajudar?', ack: 'Obrigada — já estou verificando. Se alguém estiver em perigo imediato, ligue primeiro para os serviços de emergência.', tag: 'Suporte humano em português e inglês · resposta em menos de 24h', ph: 'Escreva para a Ana…', send: 'Enviar', status: 'Online · costuma responder em 5 min', topics: ['Minha conta foi invadida', 'Estou sendo assediado(a)', 'Fui banido(a)', 'Dúvida de pagamento'] }
+};
+const DOCS = {
+  guidelines: ['Community Guidelines', 'Updated September 2026', [
+    ['Consent first', ['Ask before sending explicit photos. Stop when someone says no or stops answering. Never share someone’s photos, album or location outside πroka.']],
+    ['Adults only', ['Everyone on πroka is 18 or older and has passed an age check. Anything involving a minor is removed immediately and reported to the authorities.']],
+    ['No hate', ['No racism, transmisogyny, fatphobia, femmephobia or ableism — including “no fats, no femmes” style filters in your bio. Preferences are fine; putting people down is not.']],
+    ['Be real', ['One person, one account. No impersonation, scams, catfishing, selling or spam. Discreet is welcome; fake is not.']],
+    ['No drugs for sale or arrangement', ['Don’t buy, sell, offer or arrange drugs on πroka — including coded words, emojis or “party” requests. Profiles and messages that do are removed. Harm-reduction questions are always welcome: see Safety Center → Chemsex & party safety.']],
+    ['Meet safely', ['Meet in public first if you’re unsure, use SafeMeet and tell a friend. Pressuring someone to meet, or to share their location, is harassment.']],
+    ['What happens if you break these rules', ['First a warning with the reason. Repeated or serious violations lead to temporary or permanent suspension. You can appeal every decision.']]
+  ]],
+  terms: ['Terms of Service', 'Effective September 2026', [
+    ['Eligibility', ['You must be at least 18 and legally able to agree to these terms where you live. You must pass our age check before using πroka.']],
+    ['Your account', ['You’re responsible for your account and what you post. Keep your login and PIN private. You can delete your account at any time.']],
+    ['Content', ['You keep ownership of your photos and messages. You give πroka a limited license to host and show them to the people you choose, only to run the service.']],
+    ['Paid plans', ['Plus and Premium renew monthly until you cancel. You can cancel any time; the plan runs to the end of the paid period. Core features never require payment.']],
+    ['Moderation', ['We may remove content or restrict accounts that break the Community Guidelines. We tell you why, and you can appeal.']],
+    ['Liability', ['πroka connects adults. We are not responsible for what happens when you meet someone, but we give you tools to stay safe and act quickly on reports.']]
+  ]],
+  privacy: ['Privacy Policy', 'Effective September 2026', [
+    ['What we collect', ['Your profile details, photos, approximate location while you use the app, messages (end-to-end encrypted — we can’t read them), and basic device and payment data.']],
+    ['What we never do', ['We don’t sell your data. We don’t share your HIV status, sexuality or location with advertisers — there are no ads. We don’t share data with data brokers.']],
+    ['Location', ['We store your location at reduced precision and delete location history after 24 hours. Others only see an approximate area unless you both turn on Meet Mode.']],
+    ['Age verification', ['Your face check runs on your device. We keep only the result (18+ yes/no), never the image.']],
+    ['Your rights', ['Download everything we hold, correct it, or delete it from ME → Privacy. We follow GDPR, LGPD and US state privacy laws.']],
+    ['Contact', ['privacy@piroka.app']]
+  ]],
+  safety: ['Safety Center', 'Tools and advice', [
+    ['Before you meet', ['Check trust signals — human, photo and phone verification. Video chat first if you’re unsure. Meet somewhere public the first time.']],
+    ['SafeMeet', ['Meet Mode starts a check-in timer and can share your plan and live location with a trusted contact for a set time. If you don’t check in, we remind you, then alert your contact.']],
+    ['If something goes wrong', ['Block and report in one tap from the chat or profile. Evidence is kept for moderators. For emergencies, call local emergency services first.']],
+    ['Chemsex & party safety', ['Never use alone: set a SafeMeet check-in or call the Never Use Alone hotline (1-800-484-3731). Don’t mix GHB/GBL with alcohol, space doses with a timer, and test for fentanyl. In an overdose call 911, use the recovery position and give naloxone if opioids could be involved. Someone who can’t say no can’t consent. PEP works best within 72 hours. Free, confidential help: SAMHSA 1-800-662-4357 or 988.']],
+    ['In higher-risk regions', ['Location widens automatically, photos are hidden by default and meetups arranged very quickly are flagged. Be wary of people who push to meet within minutes.']]
+  ]],
+  '2257': ['18 U.S.C. § 2257 Statement', 'Record-keeping compliance', [
+    ['Exemption', ['πroka does not produce sexually explicit content. All content is created by users, who are verified as 18 or older before they can post.']],
+    ['User-generated content', ['Users confirm they are the person shown, or have consent from everyone shown and that everyone shown was 18 or older at the time the image was created.']],
+    ['Custodian of records', ['πroka, Inc. · Compliance Officer · compliance@piroka.app']]
+  ]]
+};
+const TABS = [['h', 'Help'], ['help', 'Help center'], ['support', 'Talk to a person'], ['appeals', 'Account standing'], ['report', 'Report content'], ['h', 'Policies'], ['guidelines', 'Community Guidelines'], ['safety', 'Safety Center'], ['terms', 'Terms of Service'], ['privacy', 'Privacy Policy'], ['2257', '18 U.S.C. § 2257']];
+const REPS = ['Someone under 18', 'Shared without consent', 'Impersonation', 'Harassment or threats', 'Hate or discrimination', 'Scam or spam', 'Illegal content', 'Other'];
+
+class Component extends DCLogic {
+  state = { tab: 'help', q: '', open: 0, lang: 'pt', sup: [], supDraft: '', supTyping: false, appealText: '', appealed: false, repType: '', repLink: '', repText: '', repEmail: '', repErr: false, repId: null };
+  supRef = React.createRef();
+  route = () => { const h = decodeURIComponent((location.hash || '').slice(1)); if (TABS.some(t => t[0] === h)) this.setState({ tab: h }); };
+  componentDidMount() { this.route(); window.addEventListener('hashchange', this.route); this.setState({ sup: [{ me: false, text: REPLY[this.state.lang].hi }] }); }
+  componentWillUnmount() { window.removeEventListener('hashchange', this.route); clearTimeout(this.t); }
+  componentDidUpdate() { const el = this.supRef.current; if (el) el.scrollTop = el.scrollHeight; }
+  async supSay(text) {
+    const t = (text || '').trim(); if (!t || this.state.supTyping) return;
+    const hist = [...this.state.sup, { me: true, text: t }];
+    this.setState({ sup: hist, supDraft: '', supTyping: true });
+    let reply = null;
+    try {
+      if (window.claude && window.claude.complete) {
+        const msgs = hist.map(m => ({ role: m.me ? 'user' : 'assistant', content: m.text }));
+        while (msgs.length && msgs[0].role !== 'user') msgs.shift();
+        reply = await window.claude.complete({ max_tokens: 300, system: SUP_SYS + (this.state.lang === 'pt' ? ' Always reply in Brazilian Portuguese.' : ' Always reply in English.'), messages: msgs });
+      }
+    } catch (e) {}
+    if (!reply) { await new Promise(r => setTimeout(r, 1200)); reply = REPLY[this.state.lang].ack; }
+    this.setState(s => ({ supTyping: false, sup: [...s.sup, { me: false, text: String(reply).trim() }] }));
+  }
+  renderVals() {
+    const s = this.state, L = REPLY[s.lang], q = s.q.toLowerCase();
+    const faqs = FAQ.map(([fq, a], i) => ({ q: fq, a, i })).filter(f => !q || (f.q + ' ' + f.a).toLowerCase().includes(q));
+    const d = DOCS[s.tab];
+    return {
+      tabs: TABS.map(([k, label]) => k === 'h' ? { head: true, link: false, label } : { head: false, link: true, label, href: '#' + k, sel: s.tab === k, hasBadge: k === 'appeals', badge: '1' }),
+      isHelp: s.tab === 'help', isSupport: s.tab === 'support', isAppeals: s.tab === 'appeals', isReport: s.tab === 'report', isDoc: !!d,
+      q: s.q, onQ: e => this.setState({ q: e.target.value }), noFaq: !faqs.length,
+      faqs: faqs.map(f => ({ ...f, open: s.open === f.i || !!q, sign: s.open === f.i || q ? '−' : '+', toggle: () => this.setState({ open: s.open === f.i ? -1 : f.i }) })),
+      langs: [['pt', 'Português'], ['en', 'English']].map(([k, label]) => ({ label, sel: s.lang === k, pick: () => this.setState({ lang: k }) })),
+      supTag: L.tag, supPh: L.ph, supSendL: L.send, supStatus: L.status, supRef: this.supRef,
+      supMsgs: s.sup.map(m => ({ ...m, them: !m.me, me: !!m.me })), supTyping: s.supTyping,
+      topics: L.topics.map(label => ({ label, go: () => this.supSay(label) })),
+      supDraft: s.supDraft, onSupDraft: e => this.setState({ supDraft: e.target.value }), onSupKey: e => { if (e.key === 'Enter') this.supSay(s.supDraft); }, supSend: () => this.supSay(s.supDraft),
+      ladder: [['1', 'Warning', 'You get the reason and the rule. Nothing else changes.'], ['2', 'Limited', 'Messaging new people paused for 24h.'], ['3', 'Suspended', '7 days. Profile hidden, chats kept.'], ['4', 'Removed', 'For severe or repeated harm. Always appealable once.']].map(([n, t, dd]) => ({ n: 'STEP ' + n, t, d: dd })),
+      cases: [{ id: 'PR-20931', date: 'Aug 14, 2026', title: 'Warning · profile text', why: 'Your bio included “no fems”, which was reported twice.', rule: 'Community Guidelines → No hate', status: s.appealed ? 'Appeal pending' : 'Warning · no restrictions', col: s.appealed ? '#f5f5f5' : '#999', canAppeal: !s.appealed, appealed: s.appealed }],
+      appealText: s.appealText, onAppeal: e => this.setState({ appealText: e.target.value }), submitAppeal: () => { if (s.appealText.trim().length > 3) this.setState({ appealed: true }); },
+      repOpen: !s.repId, repDone: !!s.repId, repId: s.repId, repErr: s.repErr,
+      repTypes: REPS.map(label => ({ label, sel: s.repType === label, pick: () => this.setState({ repType: label, repErr: false }) })),
+      repLink: s.repLink, onRepLink: e => this.setState({ repLink: e.target.value }), repText: s.repText, onRepText: e => this.setState({ repText: e.target.value }), repEmail: s.repEmail, onRepEmail: e => this.setState({ repEmail: e.target.value }),
+      submitRep: () => { if (!s.repType || s.repText.trim().length < 4) return this.setState({ repErr: true }); this.setState({ repId: 'TS-' + (40000 + Math.random() * 9999 | 0) }); },
+      doc: d ? { title: d[0], meta: d[1], draft: s.tab !== 'guidelines' && s.tab !== 'safety', sections: d[2].map(([h, p]) => ({ h, p })) } : {}
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+design_handoff
+.next
+node_modules
+supabase/schema.sql

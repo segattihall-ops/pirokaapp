@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka — Set up your profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #34d399; text-decoration: none; }
+    a:hover { color: #6ee7b7; }
+    input::placeholder { color: #666; }
+    @media (max-width: 820px) { input, textarea, select { font-size: 16px !important; } }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    @keyframes piSpin { to { transform: rotate(360deg); } }
+    @keyframes piIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 28px 18px 40px; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; background: radial-gradient(70% 50% at 50% 0%, rgba(52,211,153,0.08), rgba(7,7,7,0) 70%), #070707;">
+  <div style="width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 22px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <a href="Piroka Homepage.dc.html" style="display: flex; align-items: center; gap: 10px; color: #f5f5f5;">
+        <span style="position: relative; width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 19px;">π<span style="position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span></span>
+        <span style="font-size: 18px; font-weight: 600; letter-spacing: -0.02em;">πroka</span>
+      </a>
+      <span style="font-size: 12px; color: #999;">Step {{ stepN }} of 5</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+      <sc-for list="{{ bars }}" as="b" hint-placeholder-count="5"><span style="height: 4px; border-radius: 2px; background: {{ b.col }};"></span></sc-for>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: 18px; padding: 26px 22px; border-radius: 28px; background: linear-gradient(155deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 50%), rgba(12,12,12,0.9); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 80px rgba(0,0,0,0.5); animation: piIn .4s ease-out both;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance;">{{ title }}</span>
+        <span style="font-size: 14px; color: #999; line-height: 1.5; text-wrap: pretty;">{{ sub }}</span>
+      </div>
+
+      <sc-if value="{{ s1 }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <sc-for list="{{ modeOpts }}" as="m" hint-placeholder-count="2">
+            <button onClick="{{ m.pick }}" style="position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;"><sc-if value="{{ m.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 16px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.1);"></span></sc-if><span style="position: relative; font-size: 14px; font-weight: 600;">{{ m.label }}</span><span style="position: relative; font-size: 12px; color: #999; line-height: 1.4;">{{ m.sub }}</span></button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ showName }}" hint-placeholder-val="{{ true }}">
+          <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; color: #999; font-weight: 500;">Display name</span><input value="{{ name }}" onChange="{{ onName }}" maxLength="{{ 24 }}" placeholder="Anything but your legal name" style="height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 0 14px; font: 400 15px 'Geist', sans-serif; outline: none;"></label>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 600;">Pronouns</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <sc-for list="{{ pronounOpts }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.toggle }}" style="position: relative; padding: 9px 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer;"><sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.14);"></span></sc-if><span style="position: relative;">{{ o.label }}</span></button></sc-for>
+          </div>
+          <input value="{{ customPronoun }}" onChange="{{ onCustomPronoun }}" placeholder="Or write your own" style="height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #f5f5f5; padding: 0 12px; font: 400 13px 'Geist', sans-serif; outline: none;">
+        </div>
+        <span style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(52,211,153,0.08); font-size: 12px; color: #34d399;">✓ Age verified 18+ — your birthday is never shown.</span>
+      </sc-if>
+
+      <sc-if value="{{ s2 }}" hint-placeholder-val="{{ false }}">
+        <input value="{{ idQ }}" onChange="{{ onIdQ }}" placeholder="Search {{ idTotal }} identities…" style="height: 44px; border-radius: 13px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none;">
+        <sc-for list="{{ idGroups }}" as="g" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;">{{ g.title }}<span style="font-weight: 400; color: #666;">{{ g.hint }}</span></span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.toggle }}" style="position: relative; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;"><sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.14);"></span></sc-if><span style="position: relative;">{{ o.label }}</span></button></sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <span style="font-size: 12px; color: #666;">Choose as many as fit. You can hide any of them from your public profile later.</span>
+      </sc-if>
+
+      <sc-if value="{{ s3 }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;">
+          <sc-for list="{{ showOpts }}" as="o" hint-placeholder-count="6">
+            <button onClick="{{ o.toggle }}" style="position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;"><sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 16px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.1);"></span></sc-if><span style="position: relative; font-size: 14px; font-weight: 600;">{{ o.label }}</span><span style="position: relative; font-size: 11px; color: #999;">{{ o.sub }}</span></button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 600;">Safety defaults</span>
+          <sc-for list="{{ safeOpts }}" as="o" hint-placeholder-count="3">
+            <button onClick="{{ o.toggle }}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;">
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">{{ o.label }}</span><span style="font-size: 12px; color: #999;">{{ o.sub }}</span></span>
+              <span style="flex-shrink: 0; width: 40px; height: 24px; border-radius: 999px; padding: 3px; background: {{ o.track }}; display: flex; justify-content: {{ o.side }};"><span style="width: 18px; height: 18px; border-radius: 50%; background: #f5f5f5;"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ s4 }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px;">
+          <sc-for list="{{ photoSlots }}" as="p" hint-placeholder-count="3">
+            <div style="position: relative; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; border: 1.5px dashed rgba(255,255,255,0.2); background: rgba(255,255,255,0.03);">
+              <sc-if value="{{ p.has }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; background-size: cover; background-position: center; background-image: {{ p.img }};"></span><button onClick="{{ p.remove }}" title="Remove" style="position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: none; background: rgba(7,7,7,0.8); color: #f5f5f5; font-size: 15px; line-height: 1; cursor: pointer;">×</button></sc-if>
+              <sc-if value="{{ p.empty }}" hint-placeholder-val="{{ true }}"><button onClick="{{ pick }}" style="position: absolute; inset: 0; border: none; background: none; color: #999; font: 500 12px 'Geist', sans-serif; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;"><span style="font-size: 24px; color: #34d399;">+</span>{{ p.label }}</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; color: #999; line-height: 1.5;">Your main photo stays blurred for others until it's mutual. The other two form your private album. Upgrade to Plus for five.</span>
+        <button onClick="{{ skipPhotos }}" style="align-self: flex-start; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #999; font: 500 12px 'Geist', sans-serif; cursor: pointer;">Stay faceless for now</button>
+        <input ref="{{ fileRef }}" type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onFiles }}" style="display: none;">
+      </sc-if>
+
+      <sc-if value="{{ s5 }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+          <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 14px; font-weight: 600;">Location</span><span style="font-size: 12px; color: #999;">{{ locText }}</span></span>
+          <sc-if value="{{ locNeed }}" hint-placeholder-val="{{ true }}"><button onClick="{{ askLoc }}" style="flex-shrink: 0; height: 38px; padding: 0 14px; border-radius: 12px; border: none; background: #ffffff; color: #070707; font: 600 13px 'Geist', sans-serif; cursor: pointer;">Allow</button></sc-if>
+          <sc-if value="{{ locOk }}" hint-placeholder-val="{{ false }}"><span style="flex-shrink: 0; font-size: 12px; font-weight: 600; color: #34d399;">On ✓</span></sc-if>
+        </div>
+        <span style="font-size: 13px; font-weight: 600;">Others see you as</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px;">
+          <sc-for list="{{ visOpts }}" as="o" hint-placeholder-count="3">
+            <button onClick="{{ o.pick }}" style="position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;"><sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 14px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.1);"></span></sc-if><span style="position: relative; font-size: 13px; font-weight: 600;">{{ o.label }}</span><span style="position: relative; font-size: 11px; color: #999;">{{ o.sub }}</span></button>
+          </sc-for>
+        </div>
+        <span style="font-size: 13px; font-weight: 600;">App icon on your phone</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px;">
+          <sc-for list="{{ iconOpts }}" as="o" hint-placeholder-count="4">
+            <button onClick="{{ o.pick }}" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font: 500 11px 'Geist', sans-serif; cursor: pointer;"><sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 14px; border: 1px solid rgba(52,211,153,0.75); background: rgba(52,211,153,0.1);"></span></sc-if><span style="position: relative; width: 40px; height: 40px; border-radius: 11px; background: {{ o.bg }}; color: {{ o.fg }}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{ o.glyph }}</span><span style="position: relative;">{{ o.label }}</span></button>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; color: #666; line-height: 1.5;">Disguised icons change the name and icon on your home screen. Add a PIN in ME → Privacy.</span>
+      </sc-if>
+
+      <div style="position: sticky; bottom: 0; z-index: 2; display: flex; gap: 8px; margin: 4px -22px -26px; padding: 14px 22px calc(18px + env(safe-area-inset-bottom)); border-radius: 0 0 28px 28px; background: linear-gradient(180deg, rgba(12,12,12,0), rgba(12,12,12,0.96) 30%);">
+        <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}"><button onClick="{{ back }}" style="height: 50px; padding: 0 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #f5f5f5; font: 600 15px 'Geist', sans-serif; cursor: pointer;">Back</button></sc-if>
+        <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}"><button onClick="{{ next }}" style="flex: 1; height: 50px; border-radius: 16px; border: none; background: #34d399; color: #070707; font: 600 15px 'Geist', sans-serif; cursor: pointer;">{{ nextLabel }}</button></sc-if>
+        <sc-if value="{{ notReady }}" hint-placeholder-val="{{ false }}"><button disabled="{{ true }}" style="flex: 1; height: 50px; border-radius: 16px; border: none; background: rgba(255,255,255,0.08); color: #666; font: 600 15px 'Geist', sans-serif; cursor: not-allowed;">{{ nextLabel }}</button></sc-if>
+      </div>
+    </section>
+    <span style="text-align: center; font-size: 12px; color: #555;">Everything here can be changed later in ME. <a href="Piroka Help.dc.html#privacy">How we use your data</a></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const __blobCache = new Map();
+const toSrc = u => { if (!u || typeof u !== 'string' || !u.startsWith('data:')) return u; const k = u.length + ':' + u.slice(-64); let v = __blobCache.get(k); if (v) return v; try { const i = u.indexOf(','), meta = u.slice(5, i), b64 = meta.includes(';base64'), mime = meta.split(';')[0] || 'image/jpeg', raw = b64 ? atob(u.slice(i + 1)) : decodeURIComponent(u.slice(i + 1)), arr = new Uint8Array(raw.length); for (let j = 0; j < raw.length; j++) arr[j] = raw.charCodeAt(j); v = URL.createObjectURL(new Blob([arr], { type: mime })); } catch (e) { v = ''; } __blobCache.set(k, v); return v; };
+
+const PRONOUNS = ['he/him', 'she/her', 'they/them', 'he/they', 'she/they', 'any pronouns', 'ask me'];
+const GENDER = ['Man', 'Woman', 'Trans man', 'Trans woman', 'Non-binary', 'Genderqueer', 'Genderfluid', 'Agender', 'Bigender', 'Demiboy', 'Demigirl', 'Two-Spirit', 'Intersex', 'Transmasculine', 'Transfeminine', 'Questioning', 'Butch', 'Femme', 'Masc', 'Androgynous'];
+const ORIENT = ['Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Queer', 'Asexual', 'Demisexual', 'Greysexual', 'Omnisexual', 'Polysexual', 'Heteroflexible', 'Homoflexible', 'Sapphic', 'Achillean', 'Questioning', 'Straight but curious'];
+const COMM = ['Bear', 'Cub', 'Otter', 'Wolf', 'Twink', 'Jock', 'Daddy', 'Leather', 'Drag', 'Stud', 'Soft butch', 'Lipstick', 'Chubby', 'Chaser', 'Geek', 'Rugged', 'Poz', 'Sober', 'Discreet', 'Clean-cut', 'Punk', 'Latinx', 'Black & queer', 'Asian & queer', 'Deaf', 'Disabled', 'Neurodivergent', 'Polyamorous', 'Kink-friendly', 'Newcomer'];
+const SHOW = [['Men', 'Cis & trans'], ['Women', 'Cis & trans'], ['Trans women', 'Only'], ['Trans men', 'Only'], ['Non-binary people', 'All NB identities'], ['Everyone', 'Show me all']];
+const VIS = [['Neighborhood', '~0.3 mi fuzz'], ['Area', '~1 mi fuzz'], ['Hidden', 'Not on map']];
+const ICONS = [['πroka', 'π', '#0e0e0e', '#f5f5f5'], ['Calculator', '±', '#f59e0b', '#070707'], ['Weather', '☀', '#3b82f6', '#ffffff'], ['Notes', '≡', '#fde68a', '#3f3f46']];
+const KEY = 'piroka_profile';
+
+class Component extends DCLogic {
+  state = { step: 1, mode: 'named', name: '', pronouns: [], customPronoun: '', gender: [], orientation: [], community: [], idQ: '', showMe: [], safe: { blurPhotos: true, verifiedOnly: false, strangerFilter: true }, photos: [], loc: 'idle', visibility: 'Neighborhood', icon: 'πroka' };
+  fileRef = React.createRef();
+  componentDidMount() { try { const p = JSON.parse(localStorage.getItem(KEY) || 'null'); if (p) this.setState({ ...p, step: 1 }); } catch (e) {} }
+  save() { const { step, idQ, loc, ...p } = this.state; try { localStorage.setItem(KEY, JSON.stringify(p)); localStorage.setItem('piroka_album', JSON.stringify(p.photos.slice(1))); } catch (e) {} }
+  tog(k, v) { this.setState(s => ({ [k]: s[k].includes(v) ? s[k].filter(x => x !== v) : [...s[k], v] })); }
+  addFiles(files) {
+    Array.from(files || []).slice(0, 3).forEach(f => { const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'), k = 360 / Math.max(img.width, img.height); c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); this.setState(s => ({ photos: [...s.photos, c.toDataURL('image/jpeg', 0.8)].slice(0, 3) })); }; img.src = r.result; }; r.readAsDataURL(f); });
+  }
+  renderVals() {
+    const s = this.state, n = s.step;
+    const chip = (k, list) => list.filter(v => !s.idQ || v.toLowerCase().includes(s.idQ.toLowerCase())).map(label => ({ label, sel: s[k].includes(label), toggle: () => this.tog(k, label) }));
+    const T = {
+      1: ['How do you want to show up?', 'Stay anonymous or pick a name. You can switch any time.'],
+      2: ['Who are you?', 'Gender, orientation and communities. Pick everything that fits — or nothing at all.'],
+      3: ['Who do you want to see?', 'This shapes your map and your Pulse. Safety defaults apply from day one.'],
+      4: ['Add photos', 'One main photo and up to two in your private album.'],
+      5: ['Location & privacy', 'We use your location to show who’s nearby. Others only ever see an approximate area.']
+    };
+    const ready = n === 1 ? (s.mode === 'anon' || s.name.trim().length >= 2) : n === 3 ? s.showMe.length > 0 : true;
+    return {
+      stepN: n, title: T[n][0], sub: T[n][1], s1: n === 1, s2: n === 2, s3: n === 3, s4: n === 4, s5: n === 5,
+      bars: [1, 2, 3, 4, 5].map(i => ({ col: i <= n ? '#34d399' : 'rgba(255,255,255,0.1)' })),
+      modeOpts: [['named', 'Display name', 'Pick a handle. Never your legal name.'], ['anon', 'Anonymous', 'No name. Shown as “Anonymous”.']].map(([k, label, sub]) => ({ label, sub, sel: s.mode === k, pick: () => this.setState({ mode: k }) })),
+      showName: s.mode === 'named', name: s.name, onName: e => this.setState({ name: e.target.value }),
+      pronounOpts: PRONOUNS.map(label => ({ label, sel: s.pronouns.includes(label), toggle: () => this.tog('pronouns', label) })),
+      customPronoun: s.customPronoun, onCustomPronoun: e => this.setState({ customPronoun: e.target.value }),
+      idQ: s.idQ, onIdQ: e => this.setState({ idQ: e.target.value }), idTotal: GENDER.length + ORIENT.length + COMM.length,
+      idGroups: [['Gender identity', 'gender', GENDER], ['Orientation', 'orientation', ORIENT], ['Communities', 'community', COMM]].map(([title, k, list]) => ({ title, hint: s[k].length ? s[k].length + ' selected' : '', opts: chip(k, list) })).filter(g => g.opts.length),
+      showOpts: SHOW.map(([label, sub]) => ({ label, sub, sel: s.showMe.includes(label), toggle: () => this.setState(st => ({ showMe: label === 'Everyone' ? (st.showMe.includes('Everyone') ? [] : ['Everyone']) : (st.showMe.includes(label) ? st.showMe.filter(x => x !== label) : [...st.showMe.filter(x => x !== 'Everyone'), label]) })) })),
+      safeOpts: [['blurPhotos', 'Blur photos until mutual', 'Yours and theirs'], ['verifiedOnly', 'Only verified humans can message me', 'Cuts spam and fake accounts'], ['strangerFilter', 'Filter explicit first messages', 'You can still open them']].map(([k, label, sub]) => ({ label, sub, track: s.safe[k] ? '#34d399' : 'rgba(255,255,255,0.14)', side: s.safe[k] ? 'flex-end' : 'flex-start', toggle: () => this.setState(st => ({ safe: { ...st.safe, [k]: !st.safe[k] } })) })),
+      fileRef: this.fileRef, pick: () => this.fileRef.current && this.fileRef.current.click(), onFiles: e => { this.addFiles(e.target.files); e.target.value = ''; },
+      photoSlots: [0, 1, 2].map(i => ({ has: !!s.photos[i], empty: !s.photos[i], img: s.photos[i] ? 'url("' + toSrc(s.photos[i]) + '")' : 'none', label: i ? 'Album' : 'Main photo', remove: () => this.setState(st => ({ photos: st.photos.filter((_, j) => j !== i) })) })),
+      skipPhotos: () => this.setState({ step: 5 }),
+      locNeed: s.loc !== 'ok', locOk: s.loc === 'ok', locText: { idle: 'Needed to show people and places near you.', asking: 'Waiting for permission…', ok: 'Using your approximate location.', denied: 'Blocked — we’ll use your city from your network instead.' }[s.loc],
+      askLoc: () => { if (!navigator.geolocation) return this.setState({ loc: 'denied' }); this.setState({ loc: 'asking' }); navigator.geolocation.getCurrentPosition(() => this.setState({ loc: 'ok' }), () => this.setState({ loc: 'denied' }), { timeout: 8000 }); },
+      visOpts: VIS.map(([label, sub]) => ({ label, sub, sel: s.visibility === label, pick: () => this.setState({ visibility: label }) })),
+      iconOpts: ICONS.map(([label, glyph, bg, fg]) => ({ label, glyph, bg, fg, sel: s.icon === label, pick: () => this.setState({ icon: label }) })),
+      canBack: n > 1, back: () => this.setState({ step: n - 1 }),
+      ready, notReady: !ready, nextLabel: n === 5 ? 'Enter πroka' : 'Continue',
+      next: () => { if (n < 5) return this.setState({ step: n + 1 }); this.save(); window.location.href = 'Piroka App v2.dc.html'; }
+    };
+  }
+}
+</script>
+</body>
+</html>

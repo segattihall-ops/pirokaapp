@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #34d399; text-decoration: none; }
+    a:hover { color: #6ee7b7; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    @keyframes piIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="display: flex; min-height: 100vh; background: #070707; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;">
+  <nav style="flex-shrink: 0; width: 232px; display: flex; flex-direction: column; gap: 2px; padding: 18px 12px; background: #0b0b0b; border-right: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; height: 100vh; overflow-y: auto;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px;">
+      <span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;">π<span style="position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span></span>
+      <span style="display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">πroka Admin</span><span style="font-size: 11px; color: #666;">Trust &amp; Safety console</span></span>
+    </div>
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="9">
+      <button onClick="{{ n.go }}" style="position: relative; display: flex; align-items: center; justify-content: space-between; height: 38px; padding: 0 12px; border-radius: 10px; border: none; background: transparent; color: #ccc; font: 500 13px 'Geist', sans-serif; cursor: pointer; text-align: left;" style-hover="background: rgba(255,255,255,0.04);">
+        <sc-if value="{{ n.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 10px; background: rgba(255,255,255,0.08);"></span><span style="position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: #34d399;"></span></sc-if>
+        <span style="position: relative; color: #f5f5f5;">{{ n.label }}</span>
+        <sc-if value="{{ n.hasN }}" hint-placeholder-val="{{ false }}"><span style="position: relative; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: {{ n.bg }}; color: {{ n.fg }}; font-size: 11px; font-weight: 700; text-align: center;">{{ n.count }}</span></sc-if>
+      </button>
+    </sc-for>
+    <span style="flex: 1;"></span>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+      <span style="font-size: 11px; color: #666;">Signed in as</span>
+      <span style="font-size: 13px; font-weight: 600;">{{ me.name }}</span>
+      <div style="display: flex; gap: 4px;"><sc-for list="{{ roles }}" as="r" hint-placeholder-count="2"><button onClick="{{ r.pick }}" style="flex: 1; height: 28px; border-radius: 8px; border: 1px solid {{ r.bd }}; background: {{ r.bg }}; color: #f5f5f5; font: 600 11px 'Geist', sans-serif; cursor: pointer;">{{ r.label }}</button></sc-for></div>
+    </div>
+    <a href="Piroka App v2.dc.html" style="padding: 10px 12px; font-size: 12px; color: #999;">← Back to the app</a>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; padding: 26px clamp(18px, 3vw, 36px) 48px; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em;">{{ title }}</span><span style="font-size: 13px; color: #999;">{{ sub }}</span></span>
+      <sc-if value="{{ hasSearch }}" hint-placeholder-val="{{ false }}"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Search…" aria-label="Search" style="width: 260px; max-width: 100%; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.12); background: #0e0e0e; color: #f5f5f5; padding: 0 12px; font: 400 13px 'Geist', sans-serif; outline: none;"></sc-if>
+    </div>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6"><div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);"><span style="font-size: 12px; color: #999;">{{ k.label }}</span><span style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">{{ k.value }}</span><span style="font-size: 12px; color: {{ k.col }};">{{ k.delta }}</span></div></sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);">
+          <span style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">Daily active users<span style="font-size: 12px; font-weight: 400; color: #999;">Last 14 days</span></span>
+          <div style="height: 160px; display: flex; align-items: flex-end; gap: 6px;"><sc-for list="{{ dau }}" as="d" hint-placeholder-count="14"><div title="{{ d.tip }}" style="flex: 1; height: {{ d.h }}%; border-radius: 5px 5px 2px 2px; background: {{ d.col }};"></div></sc-for></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);">
+          <span style="font-size: 14px; font-weight: 600;">Needs attention</span>
+          <sc-for list="{{ attention }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.go }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; text-align: left;"><span style="display: flex; align-items: center; gap: 10px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ t.col }};"></span>{{ t.label }}</span><span style="color: #999; font-size: 12px;">{{ t.meta }}</span></button></sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.pick }}" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid {{ f.bd }}; background: {{ f.bg }}; color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;">{{ f.label }} <span style="color: #999;">{{ f.n }}</span></button></sc-for></div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px; align-items: start;">
+        <div style="display: flex; flex-direction: column; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07); overflow: hidden;">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+            <button onClick="{{ r.open }}" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); background: {{ r.bg }}; color: #f5f5f5; font-family: 'Geist', sans-serif; text-align: left; cursor: pointer;">
+              <span style="flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: {{ r.dot }};"></span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 13px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ r.title }}</span><span style="font-size: 12px; color: #999; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ r.meta }}</span></span>
+              <span style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px;"><span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #666;">{{ r.id }}</span><span style="font-size: 11px; color: {{ r.tagCol }};">{{ r.tag }}</span></span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}"><div style="padding: 40px 16px; text-align: center; color: #666; font-size: 13px;">Queue is clear.</div></sc-if>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07); position: sticky; top: 20px;">
+          <sc-if value="{{ noSel }}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; color: #666; padding: 30px 0; text-align: center;">Select an item to review.</span></sc-if>
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;"><span style="font-size: 18px; font-weight: 600; letter-spacing: -0.02em;">{{ d.title }}</span><span style="font-family: 'Geist Mono', monospace; font-size: 12px; color: #999;">{{ d.id }}</span></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;">
+              <sc-for list="{{ d.facts }}" as="fc" hint-placeholder-count="4"><div style="display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.03);"><span style="font-size: 11px; color: #666;">{{ fc.k }}</span><span style="font-size: 13px;">{{ fc.v }}</span></div></sc-for>
+            </div>
+            <sc-if value="{{ d.hasBody }}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"><span style="font-size: 11px; color: #666;">{{ d.bodyLabel }}</span><sc-for list="{{ d.body }}" as="b" hint-placeholder-count="2"><span style="font-size: 13px; line-height: 1.5; color: #ddd;">{{ b }}</span></sc-for></div></sc-if>
+            <sc-if value="{{ d.hasHistory }}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 600; color: #999;">History</span><sc-for list="{{ d.history }}" as="hi" hint-placeholder-count="2"><span style="font-size: 12px; color: #ccc;">· {{ hi }}</span></sc-for></div></sc-if>
+            <sc-if value="{{ d.hasRule }}" hint-placeholder-val="{{ false }}">
+              <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; color: #999;">Rule</span><select value="{{ rule }}" onChange="{{ onRule }}" style="height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 10px; font: 400 13px 'Geist', sans-serif;"><sc-for list="{{ ruleOpts }}" as="ro" hint-placeholder-count="6"><option value="{{ ro }}">{{ ro }}</option></sc-for></select></label>
+            </sc-if>
+            <textarea value="{{ note }}" onChange="{{ onNote }}" rows="{{ 3 }}" placeholder="{{ d.notePh }}" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 10px 12px; font: 400 13px/1.5 'Geist', sans-serif; outline: none; resize: vertical;"></textarea>
+            <sc-if value="{{ d.hasDraft }}" hint-placeholder-val="{{ false }}"><button onClick="{{ draftAI }}" style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.5); background: transparent; color: #34d399; font: 500 12px 'Geist', sans-serif; cursor: pointer;">{{ draftLabel }}</button></sc-if>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{ d.actions }}" as="ac" hint-placeholder-count="4"><button onClick="{{ ac.run }}" disabled="{{ ac.off }}" title="{{ ac.tip }}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid {{ ac.bd }}; background: {{ ac.bg }}; color: {{ ac.fg }}; font: 600 12px 'Geist', sans-serif; cursor: pointer; opacity: {{ ac.op }};">{{ ac.label }}</button></sc-for></div>
+            <sc-if value="{{ d.hasWarn }}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #fbbf24;">{{ d.warn }}</span></sc-if>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRegions }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 13px; color: #999; margin-top: -6px;">In these regions location is widened to Area, photos stay blurred until mutual, and fast meetups are flagged.</span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px;">
+        <sc-for list="{{ regions }}" as="rg" hint-placeholder-count="12"><button onClick="{{ rg.toggle }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border-radius: 12px; border: 1px solid {{ rg.bd }}; background: {{ rg.bg }}; color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; text-align: left;">{{ rg.name }}<span style="font-size: 11px; font-weight: 700; color: {{ rg.col }};">{{ rg.st }}</span></button></sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07); overflow: hidden;">
+        <sc-for list="{{ audit }}" as="au" hint-placeholder-count="8"><div style="display: grid; grid-template-columns: 150px 120px 1fr; gap: 12px; padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px;"><span style="font-family: 'Geist Mono', monospace; color: #666;">{{ au.t }}</span><span style="color: #ccc;">{{ au.who }}</span><span>{{ au.what }}</span></div></sc-for>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div role="status" style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 12px 18px; border-radius: 12px; background: #f5f5f5; color: #070707; font-size: 13px; font-weight: 600; box-shadow: 0 16px 40px rgba(0,0,0,0.5);">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const H = ['NightOwl', 'Curious_32', 'DiscreetDad', 'GymRat', 'Otter.co', 'QuietStorm', 'BearHug', 'Vers4Now', 'Midtown_M', 'TallGuy', 'Sk8rBoi', 'SilverFox', 'Plaid', 'CoffeeFirst', 'Nomad', 'Rooftop'];
+const MODS = ['Rafa (T&S)', 'Jordan (T&S)', 'Ana (Support)', 'Kai (Admin)'];
+const RULES = ['Guidelines → Consent first', 'Guidelines → Adults only', 'Guidelines → No hate', 'Guidelines → Be real', 'Guidelines → Meet safely', 'Terms → Paid plans', 'Terms → Content'];
+const REASONS = ['Harassment', 'Fake or impersonation', 'Scam or spam', 'Hate or discrimination', 'Shared my photos', 'Underage', 'Threats or violence'];
+const SEV = { 'Underage': 3, 'Threats or violence': 3, 'Shared my photos': 3, 'Harassment': 2, 'Hate or discrimination': 2, 'Fake or impersonation': 1, 'Scam or spam': 1 };
+const COUNTRIES = ['Saudi Arabia', 'Iran', 'Afghanistan', 'Pakistan', 'Nigeria', 'Uganda', 'Qatar', 'United Arab Emirates', 'Egypt', 'Malaysia', 'Brunei', 'Yemen', 'Somalia', 'Russia', 'Ghana', 'Kenya', 'Mauritania', 'Sudan', 'Libya', 'Iraq', 'Kuwait', 'Oman', 'Tanzania', 'Indonesia', 'Turkey', 'Poland'];
+const pick = a => a[Math.random() * a.length | 0];
+const ago = m => m < 60 ? m + 'm ago' : Math.round(m / 60) + 'h ago';
+const stamp = m => new Date(Date.now() - m * 60000).toISOString().replace('T', ' ').slice(0, 16);
+const seed = () => ({
+  reports: Array.from({ length: 11 }, (_, i) => { const reason = REASONS[(i * 3) % REASONS.length]; return { id: 'TS-' + (41200 + i * 37), reason, target: H[(i * 5 + 1) % H.length], reporter: H[(i * 7 + 3) % H.length], age: 5 + i * 41, sev: SEV[reason], details: ['Kept messaging after I said no.', 'Photos are from an Instagram account that isn’t theirs.', 'Asked me to pay a “deposit” before meeting.', 'Profile says “no Asians”.', 'Posted my album photo in a group chat.', 'Profile says 18 but mentions high school.', 'Said he knows where I live.'][(i * 3) % 7], evidence: i % 3 !== 2, priors: i % 4 === 0 ? ['Warning · Aug 2 · Guidelines → Consent first'] : [], status: i > 8 ? 'actioned' : 'open' }; }),
+  appeals: [
+    { id: 'AP-2093', user: 'Plaid', action: 'PR-20931 · Warning', rule: 'Guidelines → No hate', by: 'Rafa (T&S)', age: 180, text: 'I removed the line from my bio. I didn’t realize it was hurtful — it won’t happen again.', status: 'open' },
+    { id: 'AP-2101', user: 'Nomad', action: 'PR-21077 · Suspended 7 days', rule: 'Guidelines → Be real', by: 'Jordan (T&S)', age: 95, text: 'These are my real photos. I can verify with a selfie.', status: 'open' },
+    { id: 'AP-2107', user: 'TallGuy', action: 'PR-21102 · Limited 24h', rule: 'Guidelines → Consent first', by: 'Kai (Admin)', age: 30, text: 'We were joking with each other, the other person reported by mistake.', status: 'open' }
+  ],
+  verifs: [
+    { id: 'VR-8801', user: 'Otter.co', kind: 'Photo', age: 12, detail: 'Pose “Thumbs up” · face match score 0.94', status: 'open' },
+    { id: 'VR-8802', user: 'Midtown_M', kind: 'Health document', age: 40, detail: 'AI could not confirm: image blurry. Extracted: none.', status: 'open' },
+    { id: 'VR-8803', user: 'BearHug', kind: 'Age (ID fallback)', age: 65, detail: 'Driver license · DOB passes 18+ · face match 0.88', status: 'open' },
+    { id: 'VR-8804', user: 'Rooftop', kind: 'Photo', age: 130, detail: 'Pose “Look to your left” · face match score 0.61', status: 'open' }
+  ],
+  tickets: [
+    { id: 'SP-5520', user: 'Curious_32', topic: 'My account was hacked', lang: 'PT', age: 22, msg: 'Alguém entrou na minha conta e mudou minha foto.', prem: false, status: 'open' },
+    { id: 'SP-5521', user: 'SilverFox', topic: 'Billing question', lang: 'EN', age: 190, msg: 'I was charged twice for Plus this month.', prem: true, status: 'open' },
+    { id: 'SP-5522', user: 'GymRat', topic: 'Someone is harassing me', lang: 'EN', age: 8, msg: 'Blocked him but he made a new account and found me again.', prem: false, status: 'open' },
+    { id: 'SP-5523', user: 'CoffeeFirst', topic: 'Location question', lang: 'ES', age: 300, msg: '¿Otros pueden ver mi ubicación exacta?', prem: false, status: 'open' }
+  ],
+  ambs: [['AM-71', 'BearHug', 'Dallas', '2–4h', 'Ran the Oak Lawn Pride welcome table for 3 years. EN/ES.', 'open', 0, 0], ['AM-72', 'CoffeeFirst', 'Dallas', '1–2h', 'Nurse, happy to answer health questions and point people to testing.', 'open', 0, 0], ['AM-60', 'SilverFox', 'Dallas', '5h+', 'Active since launch.', 'active', 142, 96], ['AM-61', 'Otter.co', 'Austin', '2–4h', 'Active since June.', 'active', 58, 91]].map(([id, user, city, hours, why, status, actions, agree]) => ({ id, user, city, hours, why, status, actions, agree })),
+  users: H.map((h, i) => ({ id: 'U-' + (10200 + i * 13), name: h, plan: ['Free', 'Plus', 'Free', 'Premium', 'Anonymous'][i % 5], status: i === 4 ? 'Suspended' : i === 9 ? 'Limited' : 'Active', trust: ['Human', i % 2 ? 'Photo' : null, i % 3 ? 'Phone' : null].filter(Boolean), reports: i % 4 === 0 ? 2 : i % 6 === 0 ? 1 : 0, city: pick(['Dallas', 'Dallas', 'Austin', 'Houston', 'São Paulo']), joined: 3 + i * 9 })),
+  sites: [['Kind Clinic — Oak Lawn', '75219', true], ['CAN Community Health', '75219', true], ['Prism Health North Texas — Oak Lawn', '75204', true], ['Oak Lawn UMC testing', '75219', false], ['UT Southwestern CPIU', '75247', true], ['Dallas County HHS', '75207', true], ['Prism Health — Oak Cliff', '75208', true], ['The Stewpot', '75201', false]].map(([name, zip, v], i) => ({ id: 'PL-' + (300 + i), name, zip, verified: v, status: v ? 'verified' : 'open' })),
+  regions: Object.fromEntries(COUNTRIES.map((c, i) => [c, i < 23])),
+  audit: [[4, 'Rafa (T&S)', 'Warned Plaid (PR-20931) · Guidelines → No hate'], [18, 'System', 'Auto-hid 3 scam profiles (score > 0.92)'], [42, 'Jordan (T&S)', 'Suspended Nomad 7 days (PR-21077)'], [75, 'Kai (Admin)', 'Added Poland to watch list'], [120, 'Ana (Support)', 'Resolved SP-5512 (billing)']].map(([m, who, what]) => ({ m, who, what }))
+});
+
+class Component extends DCLogic {
+  state = { tab: 'overview', role: 'Moderator', sel: null, q: '', filt: 'open', note: '', rule: RULES[0], toast: '', drafting: false, ...seed() };
+  toast(t) { this.setState({ toast: t }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  log(what) { this.setState(s => ({ audit: [{ m: 0, who: this.me(), what }, ...s.audit] })); }
+  me() { return this.state.role === 'Admin' ? 'Kai (Admin)' : 'Rafa (T&S)'; }
+  setItem(coll, id, patch) { this.setState(s => ({ [coll]: s[coll].map(x => x.id === id ? { ...x, ...patch } : x), sel: null, note: '' })); }
+  async draft(t) {
+    this.setState({ drafting: true });
+    let text = null;
+    try { if (window.claude && window.claude.complete) text = await window.claude.complete({ max_tokens: 220, system: 'You draft replies for πroka support agents. Warm, brief (2-3 sentences), practical, in the same language as the user (' + t.lang + '). No emoji. Never promise refunds or bans; say what the team will do next.', messages: [{ role: 'user', content: 'Topic: ' + t.topic + '\nUser wrote: ' + t.msg }] }); } catch (e) {}
+    this.setState({ drafting: false, note: String(text || 'Thanks for reaching out — I’m on it. I’ll update you here within 24 hours, and sooner if it’s a safety issue.').trim() });
+  }
+  renderVals() {
+    const s = this.state, q = s.q.toLowerCase(), admin = s.role === 'Admin';
+    const openR = s.reports.filter(r => r.status === 'open'), openA = s.appeals.filter(a => a.status === 'open'), openV = s.verifs.filter(v => v.status === 'open'), openT = s.tickets.filter(t => t.status === 'open'), openP = s.sites.filter(p => p.status === 'open'), openB = s.ambs.filter(b => b.status === 'open');
+    const TABS = [['overview', 'Overview'], ['reports', 'Reports', openR.length, openR.some(r => r.sev === 3)], ['appeals', 'Appeals', openA.length], ['verifs', 'Verifications', openV.length], ['tickets', 'Support', openT.length], ['ambs', 'Ambassadors', openB.length], ['users', 'Users'], ['sites', 'Places & testing', openP.length], ['regions', 'Risk regions'], ['audit', 'Audit log']];
+    const T = { overview: ['Overview', 'Live across all cities'], reports: ['Reports', 'Highest severity first · SLA: safety 4h, other 24h'], appeals: ['Appeals', 'Reviewed by a different moderator than the original action'], verifs: ['Verifications', 'Items AI couldn’t confirm, plus low-confidence matches'], tickets: ['Support', 'Human replies · PT, EN, ES · Premium SLA 4h'], ambs: ['Ambassadors', 'Applications and active ambassadors by city'], users: ['Users', s.users.length + ' accounts in sample'], sites: ['Places & testing', 'Venue and clinic listings'], regions: ['Risk regions', 'Automatic protections by country'], audit: ['Audit log', 'Every moderator action is recorded'] }[s.tab];
+    const sevCol = v => v === 3 ? '#f87171' : v === 2 ? '#fbbf24' : '#999';
+    let rows = [], d = {}, filters = [];
+    const mk = (coll, list, fn) => { const shown = list.filter(x => (s.filt === 'all' || x.status === s.filt) && (!q || JSON.stringify(x).toLowerCase().includes(q))); rows = shown.map(x => ({ ...fn(x), id: x.id, bg: s.sel === x.id ? 'rgba(255,255,255,0.06)' : 'transparent', open: () => this.setState({ sel: x.id, note: '' }) })); filters = [['open', 'Open'], ['all', 'All']].map(([k, label]) => ({ label, n: list.filter(x => k === 'all' || x.status === k).length, bd: s.filt === k ? 'rgba(52,211,153,0.7)' : 'rgba(255,255,255,0.12)', bg: s.filt === k ? 'rgba(52,211,153,0.12)' : 'transparent', pick: () => this.setState({ filt: k, sel: null }) })); return list.find(x => x.id === s.sel); };
+    const A = (label, run, kind, extra) => ({ label, run, off: false, op: 1, tip: '', bd: kind === 'danger' ? 'rgba(248,113,113,0.6)' : kind === 'pri' ? '#34d399' : 'rgba(255,255,255,0.14)', bg: kind === 'pri' ? '#34d399' : kind === 'danger' ? 'rgba(248,113,113,0.12)' : 'transparent', fg: kind === 'pri' ? '#070707' : kind === 'danger' ? '#f87171' : '#f5f5f5', ...(extra || {}) });
+    if (s.tab === 'reports') {
+      const x = mk('reports', s.reports.slice().sort((a, b) => b.sev - a.sev || a.age - b.age), r => ({ title: r.reason + ' · ' + r.target, meta: 'by ' + r.reporter + ' · ' + ago(r.age), dot: sevCol(r.sev), tag: r.status === 'open' ? (r.sev === 3 ? 'SAFETY' : 'open') : r.status, tagCol: r.status === 'open' ? sevCol(r.sev) : '#666' }));
+      if (x) { const act = (step, label) => () => { this.setItem('reports', x.id, { status: 'actioned' }); this.log(label + ' ' + x.target + ' (' + x.id + ') · ' + s.rule + (s.note ? ' · “' + s.note + '”' : '')); this.toast(label + ' ' + x.target + '. They’ll see the reason and can appeal.'); };
+        d = { title: x.reason, id: x.id, facts: [{ k: 'Reported user', v: x.target }, { k: 'Reporter', v: x.reporter }, { k: 'Received', v: ago(x.age) }, { k: 'Severity', v: ['', 'Low', 'Medium', 'Safety'][x.sev] }], hasBody: true, bodyLabel: 'Reporter says' + (x.evidence ? ' · 20 messages attached (decrypted by reporter)' : ''), body: [x.details].concat(x.evidence ? ['“you up?” · “why aren’t you answering” · “I’ll find you anyway”'] : []), hasHistory: x.priors.length > 0, history: x.priors, hasRule: true, notePh: 'Note to the user (shown with the decision)',
+          actions: [A('Dismiss', () => { this.setItem('reports', x.id, { status: 'dismissed' }); this.log('Dismissed ' + x.id); }), A('Warn', act('warning', 'Warned')), A('Limit 24h', act('limited', 'Limited')), A('Suspend 7d', act('suspended', 'Suspended'), 'danger'), A('Remove', act('removed', 'Removed'), 'danger', admin ? {} : { off: true, op: 0.4, tip: 'Admins only' })],
+          hasWarn: x.reason === 'Underage', warn: x.reason === 'Underage' ? 'Possible minor: hide the account now and escalate to an admin. Preserve evidence for NCMEC reporting.' : '' }; }
+    } else if (s.tab === 'appeals') {
+      const x = mk('appeals', s.appeals, a => ({ title: a.user + ' · ' + a.action, meta: a.rule + ' · ' + ago(a.age), dot: '#f5f5f5', tag: a.status, tagCol: a.status === 'open' ? '#34d399' : '#666' }));
+      if (x) { const same = x.by === this.me();
+        d = { title: 'Appeal from ' + x.user, id: x.id, facts: [{ k: 'Original action', v: x.action }, { k: 'Rule', v: x.rule }, { k: 'Decided by', v: x.by }, { k: 'Filed', v: ago(x.age) }], hasBody: true, bodyLabel: 'User says', body: [x.text], notePh: 'Reason for your decision (sent to the user)',
+          actions: [A('Uphold decision', () => { this.setItem('appeals', x.id, { status: 'upheld' }); this.log('Upheld ' + x.id); }, null, same ? { off: true, op: 0.4 } : {}), A('Overturn', () => { this.setItem('appeals', x.id, { status: 'overturned' }); this.log('Overturned ' + x.id + ' · restored ' + x.user); this.toast('Overturned. ' + x.user + ' is restored and notified.'); }, 'pri', same ? { off: true, op: 0.4 } : {})],
+          hasWarn: same, warn: same ? 'You made the original decision. Another moderator must review this appeal.' : '' }; }
+    } else if (s.tab === 'verifs') {
+      const x = mk('verifs', s.verifs, v => ({ title: v.kind + ' · ' + v.user, meta: v.detail, dot: '#34d399', tag: v.status, tagCol: v.status === 'open' ? '#34d399' : '#666' }));
+      if (x) d = { title: x.kind + ' verification', id: x.id, facts: [{ k: 'User', v: x.user }, { k: 'Submitted', v: ago(x.age) }], hasBody: true, bodyLabel: 'Automated check', body: [x.detail, 'The source image is deleted when you decide. Only the outcome is stored.'], notePh: 'Optional note to the user',
+        actions: [A('Approve', () => { this.setItem('verifs', x.id, { status: 'approved' }); this.log('Approved ' + x.kind + ' for ' + x.user); }, 'pri'), A('Reject', () => { this.setItem('verifs', x.id, { status: 'rejected' }); this.log('Rejected ' + x.kind + ' for ' + x.user); }, 'danger'), A('Ask for a new one', () => { this.setItem('verifs', x.id, { status: 'resubmit' }); this.toast('Asked ' + x.user + ' to resubmit.'); })] };
+    } else if (s.tab === 'tickets') {
+      const x = mk('tickets', s.tickets.slice().sort((a, b) => (b.topic.includes('harass') ? 1 : 0) - (a.topic.includes('harass') ? 1 : 0) || b.prem - a.prem), t => { const lim = t.topic.includes('harass') || t.prem ? 240 : 1440, left = lim - t.age; return { title: t.topic, meta: t.user + ' · ' + t.lang + ' · ' + ago(t.age), dot: left < 60 ? '#f87171' : '#34d399', tag: t.status === 'open' ? (left > 0 ? 'SLA ' + Math.round(left / 60) + 'h left' : 'SLA breached') : t.status, tagCol: left < 60 ? '#f87171' : '#999' }; });
+      if (x) d = { title: x.topic, id: x.id, facts: [{ k: 'User', v: x.user }, { k: 'Language', v: x.lang }, { k: 'Plan', v: x.prem ? 'Premium · 4h SLA' : 'Standard · 24h SLA' }, { k: 'Opened', v: ago(x.age) }], hasBody: true, bodyLabel: 'Message', body: [x.msg], hasDraft: true, notePh: 'Reply to the user',
+        actions: [A('Send reply', () => { if (!s.note.trim()) return this.toast('Write a reply first.'); this.setItem('tickets', x.id, { status: 'replied' }); this.log('Replied to ' + x.id); this.toast('Reply sent to ' + x.user + '.'); }, 'pri'), A('Escalate to T&S', () => { this.setItem('tickets', x.id, { status: 'escalated' }); this.log('Escalated ' + x.id + ' to Trust & Safety'); })] };
+    } else if (s.tab === 'ambs') {
+      const x = mk('ambs', s.ambs, b => ({ title: b.user + ' · ' + b.city, meta: b.status === 'active' ? b.actions + ' actions · ' + b.agree + '% agree with moderators' : b.hours + ' / week', dot: b.status === 'active' ? '#34d399' : '#f5f5f5', tag: b.status, tagCol: b.status === 'open' ? '#34d399' : '#666' }));
+      filters = [['open', 'Applications'], ['active', 'Active'], ['all', 'All']].map(([k, label]) => ({ label, n: s.ambs.filter(b => k === 'all' || b.status === k).length, bd: s.filt === k ? 'rgba(52,211,153,0.7)' : 'rgba(255,255,255,0.12)', bg: s.filt === k ? 'rgba(52,211,153,0.12)' : 'transparent', pick: () => this.setState({ filt: k, sel: null }) }));
+      if (x) d = { title: x.user, id: x.id, facts: [{ k: 'City', v: x.city }, { k: 'Time', v: x.hours + ' / week' }, { k: 'Status', v: x.status }, { k: 'Agreement with mods', v: x.status === 'active' ? x.agree + '%' : '—' }], hasBody: true, bodyLabel: x.status === 'active' ? 'Powers' : 'Application', body: x.status === 'active' ? ['Hide content pending review · Verify events and places · Welcome newcomers', 'Cannot ban, see reports about themselves, or see private data.'] : [x.why], notePh: 'Note',
+        actions: x.status === 'open' ? [A('Approve', () => { this.setItem('ambs', x.id, { status: 'active' }); this.log('Approved ambassador ' + x.user + ' (' + x.city + ')'); this.toast(x.user + ' is now an ambassador.'); }, 'pri'), A('Decline', () => { this.setItem('ambs', x.id, { status: 'declined' }); this.log('Declined ambassador ' + x.user); }, 'danger')] : [A('Remove ambassador', () => { this.setItem('ambs', x.id, { status: 'removed' }); this.log('Removed ambassador ' + x.user); }, 'danger', admin ? {} : { off: true, op: 0.4, tip: 'Admins only' })] };
+    } else if (s.tab === 'users') {
+      const x = mk('users', s.users.map(u => ({ ...u, status: u.status })), u => ({ title: u.name, meta: u.plan + ' · ' + u.city + ' · ' + u.trust.join(', '), dot: u.status === 'Active' ? '#34d399' : u.status === 'Suspended' ? '#f87171' : '#fbbf24', tag: u.status + (u.reports ? ' · ' + u.reports + ' reports' : ''), tagCol: u.reports ? '#fbbf24' : '#666' }));
+      filters = [];
+      if (x) d = { title: x.name, id: x.id, facts: [{ k: 'Plan', v: x.plan }, { k: 'Status', v: x.status }, { k: 'Trust', v: x.trust.join(', ') || 'None' }, { k: 'City', v: x.city }, { k: 'Joined', v: x.joined + ' days ago' }, { k: 'Open reports', v: String(x.reports) }], hasBody: true, bodyLabel: 'Privacy', body: ['Exact location, messages and health data are not visible to staff. Chats are end-to-end encrypted.'], notePh: 'Internal note',
+        actions: [A(x.status === 'Active' ? 'Limit 24h' : 'Restore', () => { this.setState(st => ({ users: st.users.map(u => u.id === x.id ? { ...u, status: x.status === 'Active' ? 'Limited' : 'Active' } : u) })); this.log((x.status === 'Active' ? 'Limited ' : 'Restored ') + x.name); }), A('Reset sessions', () => { this.log('Signed out all sessions for ' + x.name); this.toast('All sessions signed out.'); }), A('Export data (GDPR)', () => { this.log('Exported data for ' + x.name); this.toast('Export queued. The user receives a download link.'); }, null, admin ? {} : { off: true, op: 0.4, tip: 'Admins only' })] };
+      rows = rows; 
+    } else if (s.tab === 'sites') {
+      const x = mk('sites', s.sites, p => ({ title: p.name, meta: 'Dallas, TX ' + p.zip, dot: p.verified ? '#34d399' : '#fbbf24', tag: p.verified ? 'verified' : 'needs check', tagCol: p.verified ? '#34d399' : '#fbbf24' }));
+      if (x) d = { title: x.name, id: x.id, facts: [{ k: 'ZIP', v: x.zip }, { k: 'Listing', v: x.verified ? 'Verified' : 'Unverified' }], hasBody: true, bodyLabel: 'Checklist', body: ['Confirm hours and services by phone', 'Confirm free / sliding-scale pricing', 'Confirm walk-in vs appointment'], notePh: 'Notes for the listing',
+        actions: [A('Mark verified', () => { this.setItem('sites', x.id, { verified: true, status: 'verified' }); this.log('Verified listing ' + x.name); }, 'pri'), A('Hide listing', () => { this.setItem('sites', x.id, { status: 'hidden' }); this.log('Hid listing ' + x.name); }, 'danger')] };
+    }
+    const kpis = [['Active now', '3,412', '+8% vs last Mon', '#34d399'], ['New sign-ups today', '612', '94% passed age check', '#34d399'], ['Open reports', String(openR.length), openR.filter(r => r.sev === 3).length + ' safety', openR.some(r => r.sev === 3) ? '#f87171' : '#999'], ['Median review time', '2h 14m', 'Target < 4h safety', '#34d399'], ['Verified humans', '81%', 'Photo 43% · Phone 58%', '#999'], ['MRR', '$48.2k', 'Plus 7.1k · Premium 1.3k', '#34d399']].map(([label, value, delta, col]) => ({ label, value, delta, col }));
+    const series = [2.1, 2.3, 2.2, 2.6, 3.4, 4.1, 3.8, 2.4, 2.5, 2.6, 2.9, 3.6, 4.4, 4.0];
+    return {
+      nav: TABS.map(([k, label, count, hot]) => ({ label, sel: s.tab === k, hasN: !!count, count, bg: hot ? '#f87171' : 'rgba(255,255,255,0.1)', fg: hot ? '#070707' : '#f5f5f5', go: () => this.setState({ tab: k, sel: null, q: '', filt: 'open', note: '' }) })),
+      me: { name: this.me() }, roles: ['Moderator', 'Admin'].map(r => ({ label: r, bd: s.role === r ? '#34d399' : 'rgba(255,255,255,0.12)', bg: s.role === r ? 'rgba(52,211,153,0.14)' : 'transparent', pick: () => this.setState({ role: r }) })),
+      title: T[0], sub: T[1], hasSearch: ['reports', 'appeals', 'verifs', 'tickets', 'ambs', 'users', 'sites'].includes(s.tab), q: s.q, onQ: e => this.setState({ q: e.target.value }),
+      isOverview: s.tab === 'overview', kpis, dau: series.map((v, i) => ({ h: Math.round(v / 4.6 * 100), col: i === series.length - 1 ? '#34d399' : 'rgba(52,211,153,0.35)', tip: v + 'k' })),
+      attention: [[openR.filter(r => r.sev === 3).length + ' safety reports', 'reports', '#f87171', 'SLA 4h'], [openA.length + ' appeals waiting', 'appeals', '#f5f5f5', 'second review'], [openV.length + ' verifications', 'verifs', '#34d399', 'manual check'], [openT.length + ' support tickets', 'tickets', '#fbbf24', '1 Premium']].map(([label, k, col, meta]) => ({ label, col, meta, go: () => this.setState({ tab: k, sel: null }) })),
+      isList: ['reports', 'appeals', 'verifs', 'tickets', 'ambs', 'users', 'sites'].includes(s.tab), rows, noRows: !rows.length, filters, noSel: !d.title, hasSel: !!d.title, d: { hasBody: false, hasHistory: false, hasRule: false, hasDraft: false, hasWarn: false, facts: [], body: [], history: [], actions: [], ...d },
+      ruleOpts: RULES, rule: s.rule, onRule: e => this.setState({ rule: e.target.value }), note: s.note, onNote: e => this.setState({ note: e.target.value }),
+      draftAI: () => { const t = s.tickets.find(x => x.id === s.sel); if (t && !s.drafting) this.draft(t); }, draftLabel: s.drafting ? 'Drafting…' : 'Draft reply with AI',
+      isRegions: s.tab === 'regions', regions: COUNTRIES.map(c => { const on = s.regions[c]; return { name: c, st: on ? 'PROTECTED' : 'OFF', col: on ? '#fbbf24' : '#666', bd: on ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.1)', bg: on ? 'rgba(251,191,36,0.06)' : 'transparent', toggle: () => { if (!admin) return this.toast('Only admins can change risk regions.'); this.setState(st => ({ regions: { ...st.regions, [c]: !on } })); this.log((on ? 'Removed ' : 'Added ') + c + (on ? ' from' : ' to') + ' risk regions'); } }; }),
+      isAudit: s.tab === 'audit', audit: s.audit.map(a => ({ t: stamp(a.m), who: a.who, what: a.what })),
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

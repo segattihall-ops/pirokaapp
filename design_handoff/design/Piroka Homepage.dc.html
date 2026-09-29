@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka — Know who's ready.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #999; text-decoration: none; }
+    a:hover { color: #34d399; }
+    input::placeholder { color: #666; }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    @keyframes piSpin { to { transform: rotate(360deg); } }
+    @keyframes piIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes piDot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+    @keyframes piPulse { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,.55); } 70% { box-shadow: 0 0 0 7px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+    @keyframes piFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes piScan { 0% { top: 8%; } 50% { top: 88%; } 100% { top: 8%; } }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="position: relative; min-height: 100vh; overflow: hidden; background: radial-gradient(ellipse 80% 70% at 72% 50%, #111111 0%, #0a0a0a 45%, #070707 100%); color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;">
+
+  <div ref="{{ globeRef }}" style="position: fixed; inset: 0; z-index: 0; animation: piFade 1.6s ease-out both;"></div>
+  <div style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(90deg, rgba(7,7,7,0.92) 0%, rgba(7,7,7,0.55) 38%, rgba(7,7,7,0) 62%), linear-gradient(0deg, rgba(7,7,7,0.9) 0%, rgba(7,7,7,0) 22%);"></div>
+
+  <div style="position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column;">
+
+    <div style="position: fixed; left: -12vw; bottom: -25vh; width: 62vw; height: 75vh; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(52,211,153,0.11), rgba(52,211,153,0) 72%);"></div>
+
+    <header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 28px clamp(20px, 5vw, 64px); animation: piIn .7s ease-out both;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="position: relative; width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(160deg, #1a1a1a 0%, #070707 60%); border: 1px solid rgba(255,255,255,0.14); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 18px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #f5f5f5; line-height: 1;">
+          π
+          <span style="position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399;"></span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <span style="font-size: 21px; font-weight: 700; letter-spacing: -0.03em;">πroka</span>
+          <span style="width: 1px; height: 14px; background: rgba(255,255,255,0.16); align-self: center;"></span>
+          <span style="font-size: 13px; color: #999; letter-spacing: 0.01em;">Know who's ready.</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+      <button onClick="{{ onPrecise }}" title="Approximate area — your exact location is never shown" style="display: flex; align-items: center; gap: 7px; font: 500 12px 'Geist', sans-serif; color: #999; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: color .18s ease, border-color .18s ease;" style-hover="color: #f5f5f5; border-color: rgba(52,211,153,0.45);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+        <span>{{ locLabel }}</span>
+        <sc-if value="{{ showPrecise }}" hint-placeholder-val="{{ true }}"><span style="color: #34d399;">· Use precise</span></sc-if>
+      </button>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999; border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 6px 12px;">
+        <span style="font-weight: 600; color: #f5f5f5;">18+</span>
+        <span>Adults only</span>
+      </div>
+      </div>
+    </header>
+
+    <main style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px clamp(16px, 5vw, 64px) 32px;">
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+        <div style="height: 30vh; min-height: 200px;"></div>
+      </sc-if>
+
+      <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 12px; animation: piIn .9s .15s cubic-bezier(.2,.7,.2,1) both;">
+
+        <section style="position: relative; border-radius: 28px; background: linear-gradient(155deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.025) 45%, rgba(255,255,255,0.04) 100%); backdrop-filter: blur(28px) saturate(170%); -webkit-backdrop-filter: blur(28px) saturate(170%); border: 1px solid rgba(255,255,255,0.13); box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.04), 0 0 60px rgba(52,211,153,0.06); overflow: hidden;">
+          <div style="position: absolute; inset: 0; pointer-events: none; border-radius: 28px; background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 18%), radial-gradient(120% 60% at 0% 0%, rgba(52,211,153,0.07), rgba(52,211,153,0) 60%);"></div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 34px; height: 34px; border-radius: 50%; background: #0a0a0a; border: 1px solid rgba(52,211,153,0.45); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #34d399; box-shadow: 0 0 14px rgba(52,211,153,0.25);">π</div>
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">πroka</span>
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #34d399;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: piPulse 2s infinite;"></span>
+                  Online
+                </span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <sc-if value="{{ showRestart }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ onRestart }}" title="Start over" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #999; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: color .18s ease, border-color .18s ease;" style-hover="color: #f5f5f5; border-color: rgba(52,211,153,0.45);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+                </button>
+              </sc-if>
+              <sc-if value="{{ isChat }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ toClassic }}" style="height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer; transition: border-color .18s ease;" style-hover="border-color: rgba(52,211,153,0.5);">Log in</button>
+              </sc-if>
+              <sc-if value="{{ isClassic }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ toChat }}" style="height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #f5f5f5; font: 500 12px 'Geist', sans-serif; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: border-color .18s ease;" style-hover="border-color: rgba(52,211,153,0.5);">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+                  Back to chat
+                </button>
+              </sc-if>
+            </div>
+          </div>
+
+          <sc-if value="{{ isChat }}" hint-placeholder-val="{{ true }}">
+          <div ref="{{ scrollRef }}" style="display: flex; flex-direction: column; gap: 14px; padding: 20px; max-height: 380px; min-height: 300px; overflow-y: auto;">
+            <sc-for list="{{ messages }}" as="m" hint-placeholder-count="1">
+              <sc-if value="{{ m.isBot }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: 10px; align-items: flex-end; animation: piIn .45s ease-out both;">
+                  <div style="flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #0a0a0a; border: 1px solid rgba(52,211,153,0.35); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #34d399;">π</div>
+                  <div style="max-width: 85%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px 18px 18px 6px; padding: 12px 15px; font-size: 14px; line-height: 1.5; color: #f5f5f5; text-wrap: pretty;">{{ m.text }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px; animation: piIn .35s ease-out both;">
+                  <div style="max-width: 80%; background: #34d399; color: #070707; border-radius: 18px 18px 6px 18px; padding: 10px 15px; font-size: 14px; font-weight: 600; line-height: 1.4;">{{ m.text }}</div>
+                  <span style="font-size: 11px; color: #666;">{{ m.time }}</span>
+                </div>
+              </sc-if>
+            </sc-for>
+
+            <sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 38px; animation: piIn .5s .05s ease-out both;">
+                <button onClick="{{ pickGoogle }}" style="padding: 9px 15px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease;" style-hover="border-color: rgba(52,211,153,0.6); background: rgba(52,211,153,0.10); transform: translateY(-1px);">With Google</button>
+                <button onClick="{{ pickApple }}" style="padding: 9px 15px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease;" style-hover="border-color: rgba(52,211,153,0.6); background: rgba(52,211,153,0.10); transform: translateY(-1px);">With Apple</button>
+                <button onClick="{{ pickEmail }}" style="padding: 9px 15px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease;" style-hover="border-color: rgba(52,211,153,0.6); background: rgba(52,211,153,0.10); transform: translateY(-1px);">With my email</button>
+                <button onClick="{{ pickAnon }}" style="padding: 9px 15px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease;" style-hover="border-color: rgba(52,211,153,0.6); background: rgba(52,211,153,0.10); transform: translateY(-1px);">Stay anonymous</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showAction }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 8px; padding-left: 38px; animation: piIn .5s ease-out both;">
+                <sc-if value="{{ isGoogle }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onAct }}" style="height: 46px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease;" style-hover="transform: translateY(-1px); box-shadow: 0 10px 24px rgba(255,255,255,0.14);"><span style="font-weight: 700; font-size: 16px;">G</span>Continue with Google</button></sc-if>
+                <sc-if value="{{ isApple }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onAct }}" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.16); background: #000000; color: #ffffff; font: 600 14px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform .18s ease, border-color .18s ease;" style-hover="transform: translateY(-1px); border-color: rgba(255,255,255,0.32);"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.100 1.7 2.4 2.9 2.3 1.2 0 1.600-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z"></path></svg>Continue with Apple</button></sc-if>
+                <sc-if value="{{ isEmail }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onAct }}" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #f5f5f5; font: 600 14px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background .18s ease, border-color .18s ease;" style-hover="background: rgba(52,211,153,0.10); border-color: rgba(52,211,153,0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>Use Email Instead</button></sc-if>
+                <sc-if value="{{ isAnon }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onAct }}" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #f5f5f5; font: 600 14px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background .18s ease, border-color .18s ease;" style-hover="background: rgba(52,211,153,0.10); border-color: rgba(52,211,153,0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.2A10 10 0 0 1 12 4c5.5 0 9 6 9 8a13 13 0 0 1-2.2 3.2M6.6 6.6C4.3 8.1 3 10.6 3 12c0 2 3.5 8 9 8a9.7 9.7 0 0 0 5.4-1.6"></path><path d="m3 3 18 18"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>Continue Anonymously</button></sc-if>
+                <button onClick="{{ onBack }}" style="align-self: center; background: none; border: none; color: #999; font: 500 12px 'Geist', sans-serif; cursor: pointer; padding: 6px;" style-hover="color: #34d399;">Choose another way</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ typing }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #0a0a0a; border: 1px solid rgba(52,211,153,0.35); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #34d399;">π</div>
+                <div style="display: flex; gap: 5px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px 18px 18px 6px; padding: 15px 16px;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s infinite;"></span>
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .15s infinite;"></span>
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .3s infinite;"></span>
+                </div>
+              </div>
+            </sc-if>
+          <sc-if value="{{ showConsent }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-left: 38px; display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); animation: piIn .45s ease-out both;">
+                <button onClick="{{ toggleAge }}" style="display: flex; gap: 12px; align-items: flex-start; text-align: left; background: none; border: none; padding: 0; color: #f5f5f5; font: 400 13px/1.45 'Geist', sans-serif; cursor: pointer;">
+                  <sc-if value="{{ ageOk }}" hint-placeholder-val="{{ false }}"><span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: #34d399; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#070707" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span></sc-if>
+                  <sc-if value="{{ ageNo }}" hint-placeholder-val="{{ true }}"><span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.3);"></span></sc-if>
+                  <span><span style="font-weight: 600;">I'm 18 or older.</span> πroka is for adults only.</span>
+                </button>
+                <button onClick="{{ toggleTerms }}" style="display: flex; gap: 12px; align-items: flex-start; text-align: left; background: none; border: none; padding: 0; color: #f5f5f5; font: 400 13px/1.45 'Geist', sans-serif; cursor: pointer;">
+                  <sc-if value="{{ termsOk }}" hint-placeholder-val="{{ false }}"><span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: #34d399; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#070707" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span></sc-if>
+                  <sc-if value="{{ termsNo }}" hint-placeholder-val="{{ true }}"><span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.3);"></span></sc-if>
+                  <span>I accept the <span style="color: #34d399;">Terms of Service</span>, <span style="color: #34d399;">Privacy Policy</span> and <span style="color: #34d399;">Community Guidelines</span>.</span>
+                </button>
+                <sc-if value="{{ consentReady }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ onConsent }}" style="height: 44px; border-radius: 13px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Continue</button>
+                </sc-if>
+                <sc-if value="{{ consentNotReady }}" hint-placeholder-val="{{ true }}">
+                  <button disabled="{{ true }}" style="height: 44px; border-radius: 13px; border: none; background: rgba(255,255,255,0.08); color: #666; font: 600 14px 'Geist', sans-serif; cursor: not-allowed;">Continue</button>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showFace }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-left: 38px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 16px; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); text-align: center; animation: piIn .45s ease-out both;">
+                <div style="width: 176px; height: 176px; border-radius: 50%; padding: 4px; background: conic-gradient(#34d399 {{ faceDeg }}deg, rgba(255,255,255,0.1) 0deg); box-shadow: 0 0 40px rgba(52,211,153,0.15);">
+                  <div style="position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #0a0a0a; display: flex; align-items: center; justify-content: center;">
+                    <video ref="{{ videoRef }}" muted="{{ true }}" playsInline="{{ true }}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                    <sc-if value="{{ faceCanAct }}" hint-placeholder-val="{{ true }}">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="position: relative;"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0"></path></svg>
+                    </sc-if>
+                    <sc-if value="{{ faceScanning }}" hint-placeholder-val="{{ false }}">
+                      <span style="position: absolute; left: 10%; right: 10%; height: 2px; background: #34d399; box-shadow: 0 0 14px 3px rgba(52,211,153,0.6); animation: piScan 1.8s ease-in-out infinite;"></span>
+                    </sc-if>
+                    <sc-if value="{{ facePassed }}" hint-placeholder-val="{{ false }}">
+                      <span style="position: absolute; inset: 0; background: rgba(7,7,7,0.7); display: flex; align-items: center; justify-content: center; animation: piFade .4s ease-out both;"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span>
+                    </sc-if>
+                  </div>
+                </div>
+                <span style="font-size: 15px; font-weight: 600; margin-top: 4px;">{{ faceTitle }}</span>
+                <span style="font-size: 12px; line-height: 1.5; color: #999; max-width: 270px;">{{ faceSub }}</span>
+                <sc-if value="{{ faceCanAct }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 4px;">
+                    <button onClick="{{ onStartFace }}" style="height: 44px; border-radius: 13px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Start face check</button>
+                    <button onClick="{{ onIdCheck }}" style="height: 36px; border: none; background: none; color: #999; font: 500 12px 'Geist', sans-serif; cursor: pointer;" style-hover="color: #34d399;">Verify with a photo ID instead</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ showEnter }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 20px 16px 58px; animation: piIn .45s ease-out both;">
+              <a href="Piroka Onboarding.dc.html" style="height: 46px; border-radius: 14px; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 10px 30px rgba(52,211,153,0.3);">Enter πroka →</a>
+            </div>
+          </sc-if>
+          <div style="display: flex; gap: 8px; padding: 14px 16px 16px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <input ref="{{ inputRef }}" value="{{ input }}" onChange="{{ onInput }}" onKeyDown="{{ onKey }}" placeholder="{{ placeholder }}" style="flex: 1; min-width: 0; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.28); color: #f5f5f5; padding: 0 16px; font: 400 14px 'Geist', sans-serif; outline: none; transition: border-color .18s ease;" style-focus="border-color: rgba(52,211,153,0.5);">
+            <button onClick="{{ onSend }}" style="height: 46px; padding: 0 20px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer; transition: transform .18s ease;" style-hover="transform: translateY(-1px);">Send</button>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ isClassic }}" hint-placeholder-val="{{ false }}">
+            <div style="position: relative; display: flex; flex-direction: column; gap: 14px; padding: 24px 20px 22px; animation: piIn .45s ease-out both;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">Log in</span>
+                <span style="font-size: 13px; color: #999;">Welcome back. Your profile stays private.</span>
+              </div>
+              <label style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 12px; color: #999; font-weight: 500;">Email</span>
+                <input type="email" value="{{ cEmail }}" onChange="{{ onCEmail }}" placeholder="you@email.com" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.28); color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none; width: 100%; transition: border-color .18s ease;" style-focus="border-color: rgba(52,211,153,0.55);">
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 12px; color: #999; font-weight: 500;">Password</span><a href="Piroka Account.dc.html#forgot" style="font-size: 12px;">Forgot password?</a></span>
+                <input type="password" value="{{ cPass }}" onChange="{{ onCPass }}" onKeyDown="{{ onCKey }}" placeholder="••••••••" style="height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.28); color: #f5f5f5; padding: 0 14px; font: 400 14px 'Geist', sans-serif; outline: none; width: 100%; transition: border-color .18s ease;" style-focus="border-color: rgba(52,211,153,0.55);">
+              </label>
+              <sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 12px; color: #f87171;">{{ cErr }}</span>
+              </sc-if>
+              <button onClick="{{ onSignin }}" style="height: 48px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer; transition: transform .18s ease;" style-hover="transform: translateY(-1px);">{{ signinLabel }}</button>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: #666;">
+                <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>or<span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button onClick="{{ onCGoogle }}" style="height: 44px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 13px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;"><span style="font-weight: 700; font-size: 15px;">G</span>Google</button>
+                <button onClick="{{ onCApple }}" style="height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.16); background: #000000; color: #ffffff; font: 600 13px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z"></path></svg>Apple</button>
+              </div>
+              <div style="display: flex; justify-content: center; gap: 6px; font-size: 13px; color: #999;">
+                New to πroka?
+                <button onClick="{{ toChat }}" style="background: none; border: none; padding: 0; color: #34d399; font: 600 13px 'Geist', sans-serif; cursor: pointer;">Create account</button>
+              </div>
+            </div>
+          </sc-if>
+        </section>
+
+        <button onClick="{{ onStart }}" style="height: 54px; border-radius: 18px; border: none; background: #34d399; color: #070707; font: 600 15px 'Geist', sans-serif; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 14px 40px rgba(52,211,153,0.28), inset 0 1px 0 rgba(255,255,255,0.35); transition: transform .2s ease, box-shadow .2s ease;" style-hover="transform: translateY(-2px); box-shadow: 0 18px 50px rgba(52,211,153,0.42), inset 0 1px 0 rgba(255,255,255,0.35);">Start chatting</button>
+      </div>
+    </main>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; padding: 20px clamp(20px, 5vw, 64px) 26px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #666; animation: piIn .7s .3s ease-out both;">
+      <nav style="display: flex; flex-wrap: wrap; gap: 8px 22px;">
+        <a href="Piroka Help.dc.html#terms">Terms</a>
+        <a href="Piroka Help.dc.html#privacy">Privacy</a>
+        <a href="Piroka Help.dc.html#guidelines">Community Guidelines</a>
+        <a href="Piroka Help.dc.html#safety">Safety</a>
+        <a href="Piroka Help.dc.html#report">Report Content</a>
+        <a href="Piroka Help.dc.html#2257">18 U.S.C. § 2257</a>
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #555;">© OpenStreetMap contributors</a>
+        <span style="color: #555;">Esri, HERE, Garmin</span>
+      </nav>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; padding: 2px 6px; color: #f5f5f5; font-weight: 600;">18+</span>
+        <span>You must be 18 or older to enter. © 2026 πroka</span>
+      </div>
+    </footer>
+  </div>
+
+  <sc-if value="{{ introOn }}" hint-placeholder-val="{{ true }}">
+    <div ref="{{ introRef }}" style="position: fixed; inset: 0; z-index: 50; background: #070707;">
+      <button onClick="{{ skipIntro }}" style="position: absolute; right: 28px; bottom: 24px; z-index: 2; background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 7px 14px; color: #999; font: 500 12px 'Geist', sans-serif; cursor: pointer;" style-hover="color: #f5f5f5; border-color: rgba(52,211,153,0.45);">Skip</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    messages: [{ id: 0, isBot: true, text: "Welcome to πroka. How would you like to get in? Everything here stays private by default." }],
+    step: 'ask', provider: null, locLabel: 'Locating…', precise: false,
+    view: 'chat', cEmail: '', cPass: '', cErr: '', cBusy: '', ageOk: false, termsOk: false, face: 'idle', faceP: 0, faceMode: 'cam',
+    introOn: !(this.props && this.props.showIntro === false) && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches), typing: false, input: '', mode: 'auth', narrow: false
+  };
+  globeRef = React.createRef();
+  scrollRef = React.createRef();
+  inputRef = React.createRef();
+  introRef = React.createRef();
+  videoRef = React.createRef();
+  initial = [{ id: 0, isBot: true, text: "Welcome to πroka. How would you like to get in? Everything here stays private by default." }];
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ narrow: window.innerWidth < 900 });
+    this.onResize();
+    window.addEventListener('resize', this.onResize);
+    const boot = () => this.globeRef.current ? this.initGlobe() : (this.bootT = setTimeout(boot, 60));
+    boot();
+    this.locate();
+    if (this.state.introOn) {
+      const go = () => this.introRef.current ? this.runIntro() : (this.introT = setTimeout(go, 30));
+      go();
+      this.introSafety = setTimeout(() => this.endIntro(), 7000);
+    }
+  }
+  schedule(cb) {
+    let done = false;
+    const f = () => { if (done) return; done = true; cb(performance.now()); };
+    requestAnimationFrame(f); setTimeout(f, 34);
+  }
+  endIntro() {
+    this.introDead = true;
+    cancelAnimationFrame(this.introRaf); clearTimeout(this.introT); clearTimeout(this.introSafety);
+    if (this.state.introOn) this.setState({ introOn: false });
+  }
+  runIntro() {
+    const el = this.introRef.current;
+    const cv = document.createElement('canvas');
+    cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+    el.insertBefore(cv, el.firstChild);
+    const ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let w = 0, h = 0, tries = 0;
+    const G = '52,211,153', C = v => Math.max(0, Math.min(1, v)), E = t => 1 - Math.pow(1 - t, 3), EI = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const go = async () => {
+      try { await Promise.race([document.fonts.load("700 200px Geist"), new Promise(r => setTimeout(r, 700))]); } catch (e) {}
+      if (!this.state.introOn) return;
+      w = el.clientWidth || window.innerWidth; h = el.clientHeight || window.innerHeight;
+      if (!w || !h) { if (tries++ < 60) return void setTimeout(run, 50); return this.endIntro(); }
+      cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const S = Math.min(w * 0.24, h * 0.32), font = '700 ' + S + 'px Geist, sans-serif';
+      ctx.font = font;
+      const Wd = ctx.measureText('πroka').width, wp = ctx.measureText('π').width, x0 = w / 2 - Wd / 2, by = h / 2 + S * 0.28;
+      const off = document.createElement('canvas'); off.width = w; off.height = h;
+      const o = off.getContext('2d'); o.font = font; o.fillStyle = '#fff'; o.fillText('π', x0, by);
+      const data = o.getImageData(0, 0, w, h).data, step = Math.max(2, Math.round(S / 70)), T = [];
+      for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) if (data[(y * w + x) * 4 + 3] > 140) T.push([x, y]);
+      const cx = w / 2, cy = h / 2, maxR = Math.hypot(w, h) / 2;
+      const P = T.map(([tx, ty]) => {
+        const a = Math.random() * 6.283, r = 40 + Math.pow(Math.random(), 0.6) * maxR, sx = cx + Math.cos(a) * r, sy = cy + Math.sin(a) * r * 0.85;
+        return { sx, sy, tx, ty, d: Math.random() * 0.35, dist: Math.hypot(sx - cx, sy - cy), sw: (Math.random() - .5) * 180, ph: Math.random() * 50 };
+      });
+      const dotX = x0 + Wd + S * 0.07, dotY = by - S * 0.66, ps = Math.max(1.4, step * 0.75);
+      const t0 = performance.now();
+      const frame = () => {
+        if (this.introDead) return;
+        const t = Math.max(0, (performance.now() - t0) / 1000);
+        if (t > 4.3) return this.endIntro();
+        this.schedule(safe);
+        const iris = t > 3.3, ik = C((t - 3.3) / 0.9);
+        ctx.globalCompositeOperation = 'source-over';
+        if (!iris) { ctx.fillStyle = 'rgba(7,7,7,0.3)'; ctx.fillRect(0, 0, w, h); }
+        else {
+          el.style.background = 'transparent';
+          ctx.clearRect(0, 0, w, h);
+          const rr = EI(ik) * maxR * 1.12;
+          ctx.fillStyle = '#070707'; ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'destination-out';
+          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr + 1);
+          g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(C((rr - 60) / (rr + 1)), 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, rr - 24), 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(' + G + ',' + 0.7 * (1 - ik) + ')'; ctx.lineWidth = 1.5; ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        const wr = E(C((t - 0.3) / 1.1)) * maxR * 1.05;
+        if (t > 0.3 && t < 1.5) {
+          ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, wr), 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(' + G + ',' + 0.55 * (1 - wr / (maxR * 1.05)) + ')'; ctx.lineWidth = 1.4; ctx.stroke();
+        }
+        const ca = C(t / 0.4) * (1 - C((t - 1.6) / 0.5));
+        if (ca > 0) {
+          const hg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 34); hg.addColorStop(0, 'rgba(' + G + ',' + 0.35 * ca + ')'); hg.addColorStop(1, 'rgba(' + G + ',0)');
+          ctx.fillStyle = hg; ctx.fillRect(cx - 34, cy - 34, 68, 68);
+          ctx.beginPath(); ctx.arc(cx, cy, 3.2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(245,245,245,' + ca + ')'; ctx.fill();
+        }
+        const formed = t > 2.3, fade = iris ? 1 - ik : 1;
+        ctx.fillStyle = formed ? 'rgba(235,255,245,' + fade + ')' : 'rgb(' + G + ')';
+        for (let i = 0; i < P.length; i++) {
+          const p = P[i], lit = C((wr - p.dist) / 50);
+          if (lit <= 0) continue;
+          const m = E(C((t - 1.25 - p.d) / 0.95));
+          const dx = p.tx - p.sx, dy = p.ty - p.sy, L = Math.hypot(dx, dy) || 1, sw = Math.sin(m * Math.PI) * p.sw;
+          let x = p.sx + dx * m - dy / L * sw, y = p.sy + dy * m + dx / L * sw;
+          if (m >= 1) { x += Math.sin(t * 3 + p.ph) * 0.35; y += Math.cos(t * 2.6 + p.ph) * 0.35; }
+          if (iris) { const q = ik * ik * 1.6; x += (x - cx) * q; y += (y - cy) * q; }
+          if (!formed) ctx.globalAlpha = lit * (0.3 + 0.7 * m);
+          ctx.fillRect(x - ps / 2, y - ps / 2, ps, ps);
+        }
+        ctx.globalAlpha = 1;
+        if (t > 2.35) {
+          const k = E(C((t - 2.35) / 0.6));
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.save(); ctx.beginPath(); ctx.rect(x0 + wp - 2, 0, (Wd - wp) * k + 6, h); ctx.clip();
+          ctx.font = font; ctx.fillStyle = 'rgba(245,245,245,' + fade + ')'; ctx.fillText('roka', x0 + wp, by); ctx.restore();
+          const dk = C((t - 2.8) / 0.3) * fade;
+          if (dk > 0) {
+            const dg = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, S * 0.16); dg.addColorStop(0, 'rgba(' + G + ',' + 0.5 * dk + ')'); dg.addColorStop(1, 'rgba(' + G + ',0)');
+            ctx.fillStyle = dg; ctx.fillRect(dotX - S * 0.16, dotY - S * 0.16, S * 0.32, S * 0.32);
+            ctx.beginPath(); ctx.arc(dotX, dotY, S * 0.045 * (0.6 + 0.4 * dk), 0, Math.PI * 2); ctx.fillStyle = 'rgba(' + G + ',' + dk + ')'; ctx.fill();
+          }
+          const ta = C((t - 2.8) / 0.4) * fade;
+          if (ta > 0) {
+            ctx.font = '500 ' + Math.max(12, S * 0.075) + 'px Geist, sans-serif'; ctx.textAlign = 'center';
+            try { ctx.letterSpacing = '0.28em'; } catch (e) {}
+            ctx.fillStyle = 'rgba(153,153,153,' + ta + ')'; ctx.fillText('Know who\u2019s ready.', cx, by + S * 0.36);
+            try { ctx.letterSpacing = '0px'; } catch (e) {}
+            ctx.textAlign = 'start';
+          }
+        }
+      };
+      const safe = () => { try { frame(); } catch (e) { this.endIntro(); } };
+      clearTimeout(this.introSafety);
+      this.introSafety = setTimeout(() => this.endIntro(), 4600);
+      this.schedule(safe);
+    };
+    const run = () => go().catch(() => this.endIntro());
+    run();
+  }
+  async locate() {
+    try { if (navigator.permissions) { const p = await navigator.permissions.query({ name: 'geolocation' }); if (p.state === 'granted') return this.precise(); } } catch (e) {}
+    const tries = [['https://ipapi.co/json/', d => [d.latitude, d.longitude, d.city]], ['https://get.geojs.io/v1/ip/geo.json', d => [+d.latitude, +d.longitude, d.city]]];
+    for (const [u, f] of tries) {
+      try { const r = await fetch(u); if (!r.ok) continue; const [la, lo, c] = f(await r.json()); if (isFinite(la) && isFinite(lo) && la) return this.setGeo(la, lo, c ? 'Near ' + c : 'Near you', false); } catch (e) {}
+    }
+    this.setGeo(-23.5614, -46.6559, 'São Paulo', false);
+  }
+  precise() {
+    if (!navigator.geolocation) return;
+    const prev = this.state.locLabel;
+    this.setState({ locLabel: 'Locating…' });
+    navigator.geolocation.getCurrentPosition(
+      p => this.setGeo(p.coords.latitude, p.coords.longitude, 'Your area', true),
+      () => this.setState({ locLabel: prev === 'Locating…' ? 'Nearby' : prev }),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 });
+  }
+  setGeo(lat, lon, label, precise) {
+    const j = precise ? 0.004 : 0;
+    this.geo = { lat: lat + (Math.random() - .5) * j, lon: lon + (Math.random() - .5) * j };
+    this.setState({ locLabel: label, precise });
+    this.rebuildMap && this.rebuildMap();
+  }
+  componentDidUpdate() {
+    const s = this.scrollRef.current;
+    if (s) s.scrollTop = s.scrollHeight;
+  }
+  componentWillUnmount() {
+    clearTimeout(this.bootT); this.stopCam(); clearInterval(this.scanI); cancelAnimationFrame(this.introRaf); clearTimeout(this.introT); clearTimeout(this.introSafety); this.timers && this.timers.forEach(clearTimeout);
+    window.removeEventListener('resize', this.onResize);
+    this.cleanup && this.cleanup();
+  }
+
+  now() { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+
+  bot(reply, after, ms) {
+    this.setState({ typing: true, step: 'wait' });
+    this.later(() => this.setState(s => ({ typing: false, messages: [...s.messages, { id: Date.now(), isBot: true, text: reply }], ...(after || {}) })), ms || 1100);
+  }
+  say(userText, reply, after) {
+    this.setState(s => ({ messages: [...s.messages, { id: Date.now(), isUser: true, text: userText, time: this.now() }] }));
+    this.bot(reply, after);
+  }
+  send() {
+    const t = this.state.input.trim();
+    if (!t) return;
+    this.setState({ input: '' });
+    if (this.state.mode === 'email') this.say(t, "Link sent — it expires in 10 minutes. While you wait, two quick confirmations. πroka is adults-only.", { step: 'consent', mode: 'auth' });
+    else if (this.state.step === 'done') this.say(t, "Noted. Your profile setup is next — I'll guide you.", { step: 'done' });
+    else this.say(t, "Happy to chat once you're in. How would you like to continue?", { step: 'ask' });
+  }
+  consent() {
+    if (!this.state.ageOk || !this.state.termsOk) return;
+    this.say("I'm 18+ and I accept the terms", "Thanks. Last step: a quick face check to estimate your age. It runs on your device and the image is never stored.", { step: 'face', face: 'idle', faceP: 0 });
+  }
+  stopCam() { if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; } }
+  async startFace() {
+    this.setState({ face: 'starting', faceMode: 'cam' });
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera');
+      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 } }, audio: false });
+      const v = this.videoRef.current;
+      if (v) { v.muted = true; v.setAttribute('playsinline', ''); v.srcObject = this.stream; try { await v.play(); } catch (e) {} }
+      this.scan();
+    } catch (e) { this.stopCam(); this.setState({ face: 'error' }); }
+  }
+  idCheck() { this.stopCam(); this.setState({ faceMode: 'id' }); this.scan(); }
+  scan() {
+    clearInterval(this.scanI);
+    this.setState({ face: 'scanning', faceP: 0 });
+    this.scanI = setInterval(() => {
+      const p = Math.min(100, this.state.faceP + 2.2);
+      this.setState({ faceP: p });
+      if (p >= 100) {
+        clearInterval(this.scanI); this.stopCam();
+        this.setState({ face: 'passed' });
+        this.later(() => this.bot("Age check passed — you're verified 18+. Welcome to πroka.", { step: 'done', mode: 'done' }, 700), 600);
+      }
+    }, 70);
+  }
+  signin() {
+    const { cEmail, cPass } = this.state;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cEmail.trim())) return this.setState({ cErr: 'Enter a valid email address.' });
+    if (cPass.length < 6) return this.setState({ cErr: 'Password must be at least 6 characters.' });
+    this.setState({ cBusy: 'Signing in…', cErr: '' });
+    this.later(() => { window.location.href = 'Piroka App v2.dc.html'; }, 900);
+  }
+  pick(p) {
+    const L = { google: 'With Google', apple: 'With Apple', email: 'With my email', anon: 'Stay anonymous' };
+    const R = {
+      google: "Perfect. Tap below to sign in securely with Google — nothing is ever posted or shared.",
+      apple: "Great choice. Tap below to sign in with Apple — you can keep your email hidden.",
+      email: "Works for me. Tap below and I'll send a one-time link — no password needed.",
+      anon: "No problem. Tap below to enter anonymously — no name, no email."
+    };
+    this.say(L[p], R[p], { step: 'action', provider: p });
+  }
+  act() {
+    const p = this.state.provider;
+    if (p === 'google') this.bot("Signed in with Google. Before you enter — πroka is adults-only, so two quick confirmations.", { step: 'consent' }, 900);
+    if (p === 'apple') this.bot("Signed in with Apple. Before you enter — πroka is adults-only, so two quick confirmations.", { step: 'consent' }, 900);
+    if (p === 'email') { this.bot("What's your email?", { step: 'done', mode: 'email' }, 800); this.later(() => this.inputRef.current && this.inputRef.current.focus(), 850); }
+    if (p === 'anon') this.bot("You'll stay anonymous — no name, no email. πroka is adults-only, so two quick confirmations first.", { step: 'consent' }, 900);
+  }
+
+  initGlobe() {
+    const el = this.globeRef.current, cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    cv.style.cssText = 'display:block;width:100%;height:100%;opacity:0;transition:opacity 2.4s ease-out';
+    el.appendChild(cv);
+    requestAnimationFrame(() => requestAnimationFrame(() => { cv.style.opacity = '0.7'; }));
+    const G = '52,211,153', SP = 64, ANG = -0.2, cA = Math.cos(ANG), sA = Math.sin(ANG);
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    let w, h, dpr, cx, cy, sc, R, map, people = [], rings = [];
+    const labels = ['100 m', '500 m', '1 km', '2 km'];
+    let labelsCur = labels.slice(), tileGen = 0;
+    const fmt = m => m < 950 ? (Math.round(m / 50) * 50) + ' m' : (m / 1000).toFixed(m < 9500 ? 1 : 0).replace('.0', '') + ' km';
+    const mask = g => {
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-in';
+      const mg = g.createRadialGradient(cx * dpr, cy * dpr, 0, cx * dpr, cy * dpr, R * 0.62 * dpr);
+      mg.addColorStop(0, 'rgba(0,0,0,1)'); mg.addColorStop(0.5, 'rgba(0,0,0,0.6)'); mg.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = mg; g.fillRect(0, 0, w * dpr, h * dpr);
+    };
+    const loadTiles = () => {
+      const geo = this.geo; if (!geo || !w) return;
+      const gen = ++tileGen, z = w < 900 ? 14 : 15, n = Math.pow(2, z), lat = geo.lat * Math.PI / 180;
+      const xt = (geo.lon + 180) / 360 * n, yt = (1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2 * n;
+      const mpp = 156543.03 * Math.cos(lat) / n;
+      labelsCur = rings.map(r => fmt(r * mpp));
+      const x0 = Math.floor(xt - cx / 256) - 1, x1 = Math.floor(xt + (w - cx) / 256) + 1, y0 = Math.floor(yt - cy / 256) - 1, y1 = Math.floor(yt + (h - cy) / 256) + 1;
+      const imgs = [], r2 = dpr > 1 ? '@2x' : '';
+      let pending = false;
+      const paint = () => {
+        if (pending) return; pending = true;
+        requestAnimationFrame(() => {
+          pending = false; if (gen !== tileGen) return;
+          const mc = document.createElement('canvas'); mc.width = w * dpr; mc.height = h * dpr;
+          const g = mc.getContext('2d'); g.scale(dpr, dpr);
+          g.filter = 'grayscale(1) brightness(1.7) contrast(1.35)';
+          imgs.forEach(({ im, tx, ty }) => g.drawImage(im, cx + (tx - xt) * 256, cy + (ty - yt) * 256, 256, 256));
+          g.filter = 'none'; g.globalCompositeOperation = 'multiply'; g.fillStyle = 'rgb(190,255,228)'; g.fillRect(0, 0, w, h);
+          mask(g); map = mc;
+        });
+      };
+      for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
+        if (ty < 0 || ty >= n) continue;
+        const im = new Image(), wx = ((tx % n) + n) % n;
+        im.onload = () => { imgs.push({ im, tx, ty }); paint(); };
+        im.src = 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/' + z + '/' + ty + '/' + wx;
+      }
+    };
+
+    const build = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2); w = el.clientWidth; h = el.clientHeight;
+      if (!w || !h) return;
+      cv.width = w * dpr; cv.height = h * dpr;
+      const narrow = w < 900;
+      cx = narrow ? w * 0.5 : w * 0.68; cy = narrow ? h * 0.25 : h * 0.5; sc = narrow ? 0.72 : 1;
+      R = Math.max(w, h) * 0.75;
+      rings = [110, 220, 360, 520].map(r => r * sc);
+      const N = Math.ceil(R / SP) + 2, nodes = {}, edges = [], k = (a, b) => a + ',' + b;
+      for (let a = -N; a <= N; a++) for (let b = -N; b <= N; b++) {
+        const gx = a * SP + rnd(-7, 7), gy = b * SP + rnd(-7, 7);
+        nodes[k(a, b)] = { x: (gx * cA - gy * sA) * sc, y: (gx * sA + gy * cA) * sc, a, b, e: [] };
+      }
+      Object.values(nodes).forEach(n => {
+        [[1, 0], [0, 1]].forEach(([da, db]) => {
+          const m = nodes[k(n.a + da, n.b + db)];
+          if (m && Math.random() > 0.13) { n.e.push(m); m.e.push(n); edges.push({ n, m, major: da ? n.b % 5 === 0 : n.a % 5 === 0 }); }
+        });
+      });
+      map = document.createElement('canvas'); map.width = w * dpr; map.height = h * dpr;
+      const g = map.getContext('2d'); g.scale(dpr, dpr); g.translate(cx, cy);
+      for (let p = 0; p < 7; p++) {
+        const a = Math.round(rnd(-6, 6)), b = Math.round(rnd(-5, 5)), q = [nodes[k(a, b)], nodes[k(a + 1, b)], nodes[k(a + 1, b + 1)], nodes[k(a, b + 1)]];
+        if (q.every(Boolean)) { g.beginPath(); q.forEach((n, i) => i ? g.lineTo(n.x, n.y) : g.moveTo(n.x, n.y)); g.closePath(); g.fillStyle = 'rgba(' + G + ',0.04)'; g.fill(); }
+      }
+      g.lineCap = 'round';
+      [false, true].forEach(maj => {
+        g.beginPath();
+        edges.forEach(e => { if (e.major === maj) { g.moveTo(e.n.x, e.n.y); g.lineTo(e.m.x, e.m.y); } });
+        g.strokeStyle = maj ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.055)'; g.lineWidth = maj ? 1.4 : 1; g.stroke();
+      });
+      g.beginPath(); g.moveTo(-R, -R * 0.4); g.quadraticCurveTo(-R * 0.1, R * 0.05, R, R * 0.55);
+      g.moveTo(-R * 0.5, R); g.quadraticCurveTo(R * 0.05, R * 0.1, R * 0.35, -R);
+      g.strokeStyle = 'rgba(255,255,255,0.09)'; g.lineWidth = 2; g.stroke();
+      g.beginPath(); g.moveTo(-R, R * 0.42); g.bezierCurveTo(-R * 0.3, R * 0.08, R * 0.2, R * 0.72, R, R * 0.28);
+      g.strokeStyle = 'rgba(255,255,255,0.06)'; g.lineWidth = 30 * sc; g.stroke();
+      g.strokeStyle = '#070707'; g.lineWidth = 27 * sc; g.stroke();
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-in';
+      const mg = g.createRadialGradient(cx * dpr, cy * dpr, 0, cx * dpr, cy * dpr, R * 0.62 * dpr);
+      mg.addColorStop(0, 'rgba(0,0,0,1)'); mg.addColorStop(0.5, 'rgba(0,0,0,0.6)'); mg.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = mg; g.fillRect(0, 0, map.width, map.height);
+      const list = Object.values(nodes).filter(n => n.e.length);
+      people = [];
+      for (let p = 0; p < 46; p++) {
+        let n, lim = rnd(50, R * 0.5), t = 0;
+        do { n = list[Math.random() * list.length | 0]; } while (Math.hypot(n.x, n.y) > lim && t++ < 60);
+        people.push({ a: n, b: null, prev: null, t: 0, x: n.x, y: n.y, moving: Math.random() < 0.3, sp: rnd(0.08, 0.2), ph: rnd(0, 6.28), bs: rnd(0.25, 0.6), flare: 0, size: rnd(2, 3.2) * (sc < 1 ? 0.9 : 1), hot: Math.random() < 0.2 });
+      }
+      loadTiles();
+    };
+    const nextNode = p => { const o = p.a.e.filter(n => n !== p.prev); const arr = o.length ? o : p.a.e; return arr[Math.random() * arr.length | 0]; };
+    build();
+    this.rebuildMap = loadTiles;
+    const ro = new ResizeObserver(build); ro.observe(el);
+
+    let mx = 0, my = 0, px = 0, py = 0, waveT = 0, conn = null, connT = 2.5, last = performance.now(), T = 0, raf;
+    const onMove = e => { mx = e.clientX / window.innerWidth - .5; my = e.clientY / window.innerHeight - .5; };
+    window.addEventListener('pointermove', onMove);
+
+    let dead = false;
+    const tick = () => {
+      if (dead) return;
+      const now = performance.now();
+      this.schedule(tick);
+      if (!map || !rings.length) return;
+      const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)), m = reduce ? 0.15 : 1; last = now; T += dt * m;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+      px += (mx - px) * 0.04; py += (my - py) * 0.04;
+      const ox = -px * 16, oy = -py * 12;
+      ctx.drawImage(map, ox, oy, w, h);
+      ctx.save(); try { ctx.translate(cx + ox * 1.3, cy + oy * 1.3);
+
+      ctx.font = '500 10px Geist, sans-serif';
+      rings.forEach((r, i) => {
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.setLineDash(i ? [2, 7] : []); ctx.strokeStyle = 'rgba(' + G + ',' + (0.16 - i * 0.03) + ')'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.32 - i * 0.05) + ')'; ctx.fillText(labelsCur[i], Math.cos(-0.85) * r + 6, Math.sin(-0.85) * r);
+      });
+      ctx.setLineDash([]);
+
+      const maxW = rings[3] * 1.15, wr = ((T % 5.5) / 5.5) * maxW, wa = Math.pow(1 - wr / maxW, 1.5);
+      ctx.beginPath(); ctx.arc(0, 0, Math.max(0, wr), 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(' + G + ',' + wa * 0.1 + ')'; ctx.lineWidth = 16; ctx.stroke();
+      ctx.strokeStyle = 'rgba(' + G + ',' + wa * 0.4 + ')'; ctx.lineWidth = 1.2; ctx.stroke();
+
+      connT -= dt * m;
+      if (!conn && connT <= 0) {
+        const c = people.filter(p => { const d = Math.hypot(p.x, p.y); return d > 90 && d < 380 * sc; });
+        if (c.length) conn = { p: c[Math.random() * c.length | 0], k: 0, hit: false };
+        connT = rnd(4, 7);
+      }
+      if (conn) {
+        conn.k += dt * 0.55 * m;
+        const p = conn.p, L = Math.hypot(p.x, p.y), nx = -p.y / L, ny = p.x / L, qx = p.x / 2 + nx * L * 0.28, qy = p.y / 2 + ny * L * 0.28;
+        const head = Math.min(conn.k, 1), a = conn.k < 1 ? 0.6 : Math.max(0, 0.6 * (1 - (conn.k - 1) / 0.8));
+        ctx.beginPath();
+        for (let s = 0; s <= 40; s++) { const u = (s / 40) * head, x = (1 - u) * (1 - u) * 0 + 2 * (1 - u) * u * qx + u * u * p.x, y = 2 * (1 - u) * u * qy + u * u * p.y; s ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        const lg = ctx.createLinearGradient(0, 0, p.x, p.y); lg.addColorStop(0, 'rgba(' + G + ',0)'); lg.addColorStop(1, 'rgba(' + G + ',' + a + ')');
+        ctx.strokeStyle = lg; ctx.lineWidth = 1.2; ctx.stroke();
+        if (conn.k >= 1 && !conn.hit) { p.flare = 1.4; conn.hit = true; }
+        if (conn.k > 1.8) conn = null;
+      }
+
+      people.forEach(p => {
+        if (p.moving) {
+          if (!p.b) p.b = nextNode(p);
+          p.t += dt * m * p.sp;
+          if (p.t >= 1) { p.prev = p.a; p.a = p.b; p.b = nextNode(p); p.t = 0; }
+          p.x = p.a.x + (p.b.x - p.a.x) * p.t; p.y = p.a.y + (p.b.y - p.a.y) * p.t;
+        }
+        const d = Math.hypot(p.x, p.y);
+        if (Math.abs(d - wr) < 5) p.flare = Math.max(p.flare, 1);
+        p.flare = Math.max(0, p.flare - dt * 0.9);
+        const fade = Math.max(0, Math.min(1, 1.15 - d / (R * 0.55)));
+        const b = Math.min(1, (p.bs + 0.35 * Math.pow(Math.max(0, Math.sin(T * 0.7 + p.ph)), 6) + p.flare * 0.7) * fade);
+        if (p.hot || p.flare > 0.05) {
+          const hr = p.size * (4 + p.flare * 3), hg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(0.01, hr));
+          hg.addColorStop(0, 'rgba(' + G + ',' + b * 0.35 + ')'); hg.addColorStop(1, 'rgba(' + G + ',0)');
+          ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0, hr), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.flare > 0.3 ? 'rgba(220,255,240,' + b + ')' : 'rgba(' + G + ',' + b + ')'; ctx.fill();
+      });
+
+      const yg = ctx.createRadialGradient(0, 0, 0, 0, 0, 34); yg.addColorStop(0, 'rgba(' + G + ',0.28)'); yg.addColorStop(1, 'rgba(' + G + ',0)');
+      ctx.fillStyle = yg; ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.fill();
+      const f = (T % 2.6) / 2.6;
+      ctx.beginPath(); ctx.arc(0, 0, 6 + f * 20, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,' + 0.45 * (1 - f) + ')'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fillStyle = '#f5f5f5'; ctx.fill();
+      } finally { ctx.restore(); }
+    };
+    this.schedule(tick);
+    this.cleanup = () => { dead = true; ro.disconnect(); window.removeEventListener('pointermove', onMove); cv.remove(); };
+  }
+
+  renderVals() {
+    const s = this.state, idle = !s.typing;
+    return {
+      globeRef: this.globeRef, scrollRef: this.scrollRef, inputRef: this.inputRef,
+      messages: s.messages, typing: s.typing, narrow: s.narrow, input: s.input,
+      showChips: idle && s.step === 'ask', showAction: idle && s.step === 'action',
+      isGoogle: s.provider === 'google', isApple: s.provider === 'apple', isEmail: s.provider === 'email', isAnon: s.provider === 'anon',
+      showConsent: s.view === 'chat' && s.step === 'consent' && !s.typing,
+      ageOk: s.ageOk, ageNo: !s.ageOk, termsOk: s.termsOk, termsNo: !s.termsOk, consentReady: s.ageOk && s.termsOk, consentNotReady: !(s.ageOk && s.termsOk),
+      toggleAge: () => this.setState({ ageOk: !s.ageOk }), toggleTerms: () => this.setState({ termsOk: !s.termsOk }), onConsent: () => this.consent(),
+      showFace: s.view === 'chat' && (s.step === 'face' || (s.face === 'passed' && s.step !== 'ask')),
+      videoRef: this.videoRef,
+      faceIdle: s.face === 'idle', faceError: s.face === 'error', faceScanning: s.face === 'scanning' || s.face === 'starting', facePassed: s.face === 'passed',
+      faceCanAct: s.face === 'idle' || s.face === 'error',
+      faceDeg: Math.round((s.face === 'passed' ? 100 : s.faceP) * 3.6),
+      faceTitle: { idle: 'Quick face age check', starting: 'Opening camera…', scanning: s.faceMode === 'id' ? 'Checking your ID… ' + Math.round(s.faceP) + '%' : 'Scanning… ' + Math.round(s.faceP) + '%', passed: 'Verified 18+', error: 'Camera unavailable' }[s.face],
+      faceSub: { idle: 'We estimate your age from a live selfie. Processed on-device, never stored.', starting: 'Allow camera access to continue.', scanning: s.faceP < 45 ? 'Center your face in the circle and hold still.' : 'Estimating age…', passed: 'Thanks. Your image has been discarded.', error: 'Allow camera access, or verify with a photo ID instead.' }[s.face],
+      onStartFace: () => this.startFace(), onIdCheck: () => this.idCheck(),
+      showEnter: s.view === 'chat' && s.step === 'done' && s.mode !== 'email' && !s.typing,
+      introOn: s.introOn, introRef: this.introRef, skipIntro: () => this.endIntro(),
+      isChat: s.view === 'chat', isClassic: s.view === 'classic',
+      toClassic: () => this.setState({ view: 'classic', cErr: '', cBusy: '' }),
+      toChat: () => this.setState({ view: 'chat' }),
+      showRestart: s.view === 'chat' && s.messages.length > 1,
+      onRestart: () => { (this.timers || []).forEach(clearTimeout); this.timers = []; this.stopCam(); clearInterval(this.scanI); this.setState({ messages: this.initial, step: 'ask', provider: null, mode: 'auth', typing: false, input: '', ageOk: false, termsOk: false, face: 'idle', faceP: 0 }); },
+      cEmail: s.cEmail, cPass: s.cPass, cErr: s.cErr, hasErr: !!s.cErr,
+      signinLabel: s.cBusy || 'Log in',
+      onCEmail: e => this.setState({ cEmail: e.target.value, cErr: '' }),
+      onCPass: e => this.setState({ cPass: e.target.value, cErr: '' }),
+      onCKey: e => { if (e.key === 'Enter') this.signin(); },
+      onSignin: () => this.signin(),
+      onCGoogle: () => this.setState({ cBusy: 'Connecting to Google…', cErr: '' }),
+      onCApple: () => this.setState({ cBusy: 'Connecting to Apple…', cErr: '' }),
+      locLabel: s.locLabel, showPrecise: !s.precise, onPrecise: () => this.precise(),
+      placeholder: s.mode === 'email' ? 'you@email.com' : 'Type a message…',
+      pickGoogle: () => this.pick('google'), pickApple: () => this.pick('apple'), pickEmail: () => this.pick('email'), pickAnon: () => this.pick('anon'),
+      onAct: () => this.act(),
+      onBack: () => this.setState({ step: 'ask', provider: null }),
+      onStart: () => s.step === 'action' ? this.act() : (this.inputRef.current && this.inputRef.current.focus()),
+      onInput: e => this.setState({ input: e.target.value }),
+      onKey: e => { if (e.key === 'Enter') this.send(); },
+      onSend: () => this.send()
+    };
+  }
+}
+</script>
+</body>
+</html>

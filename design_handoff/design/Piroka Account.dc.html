@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka — Account access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #34d399; text-decoration: none; }
+    a:hover { color: #6ee7b7; }
+    input::placeholder { color: #666; }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    @keyframes piIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes piSpin { to { transform: rotate(360deg); } }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 32px 18px; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; background: radial-gradient(60% 45% at 50% 20%, rgba(52,211,153,0.08), rgba(7,7,7,0) 70%), #070707;">
+  <a href="Piroka Homepage.dc.html" aria-label="πroka home" style="display: flex; align-items: center; gap: 10px; color: #f5f5f5;">
+    <span style="position: relative; width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;">π<span style="position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span></span>
+    <span style="font-size: 19px; font-weight: 600; letter-spacing: -0.02em;">πroka</span>
+  </a>
+
+  <section style="width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 16px; padding: 28px 24px; border-radius: 28px; background: linear-gradient(155deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 50%), rgba(12,12,12,0.9); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 80px rgba(0,0,0,0.5); animation: piIn .4s ease-out both;">
+    <span style="width: 52px; height: 52px; border-radius: 16px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.45); display: flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ icon }}"></path></svg></span>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance;">{{ title }}</span>
+      <span style="font-size: 14px; color: #999; line-height: 1.55; text-wrap: pretty;">{{ sub }}</span>
+    </div>
+
+    <sc-if value="{{ showEmail }}" hint-placeholder-val="{{ true }}">
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; color: #999; font-weight: 500;">Email</span><input type="email" value="{{ email }}" onChange="{{ onEmail }}" onKeyDown="{{ onEnter }}" autoComplete="email" placeholder="you@example.com" aria-invalid="{{ emailBad }}" style="height: 48px; border-radius: 14px; border: 1px solid {{ emailBd }}; background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 0 14px; font: 400 15px 'Geist', sans-serif; outline: none;"></label>
+      <sc-if value="{{ emailErr }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: 12px; color: #f87171; margin-top: -8px;">Enter a valid email address.</span></sc-if>
+    </sc-if>
+
+    <sc-if value="{{ showSent }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+        <span style="font-size: 13px; color: #999;">Sent to</span><span style="font-size: 15px; font-weight: 600; word-break: break-all;">{{ email }}</span>
+        <span style="font-size: 12px; color: #666;">Expires in {{ expires }}. Check spam if you don't see it.</span>
+      </div>
+      <button onClick="{{ openLink }}" style="height: 48px; border-radius: 14px; border: 1px dashed rgba(52,211,153,0.6); background: rgba(52,211,153,0.06); color: #34d399; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Open the link (demo)</button>
+      <button onClick="{{ resend }}" disabled="{{ resendDisabled }}" style="height: 40px; border: none; background: none; color: {{ resendCol }}; font: 500 13px 'Geist', sans-serif; cursor: pointer;">{{ resendLabel }}</button>
+    </sc-if>
+
+    <sc-if value="{{ showReset }}" hint-placeholder-val="{{ false }}">
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; color: #999; font-weight: 500;">New password</span><input type="password" value="{{ pw }}" onChange="{{ onPw }}" autoComplete="new-password" placeholder="At least 10 characters" style="height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 0 14px; font: 400 15px 'Geist', sans-serif; outline: none;"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; color: #999; font-weight: 500;">Confirm password</span><input type="password" value="{{ pw2 }}" onChange="{{ onPw2 }}" onKeyDown="{{ onEnter }}" autoComplete="new-password" style="height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 0 14px; font: 400 15px 'Geist', sans-serif; outline: none;"></label>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: {{ r.col }};"><span style="width: 14px; text-align: center;">{{ r.mark }}</span>{{ r.label }}</span></sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showDone }}" hint-placeholder-val="{{ false }}">
+      <a href="{{ doneHref }}" style="height: 48px; border-radius: 14px; background: #34d399; color: #070707; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{ doneCta }}</a>
+    </sc-if>
+
+    <sc-if value="{{ showPrimary }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ primary }}" disabled="{{ primaryDisabled }}" style="height: 50px; border-radius: 15px; border: none; background: {{ primaryBg }}; color: {{ primaryFg }}; font: 600 15px 'Geist', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}"><span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(7,7,7,0.25); border-top-color: #070707; animation: piSpin .8s linear infinite;"></span></sc-if>{{ primaryLabel }}
+      </button>
+    </sc-if>
+
+    <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <sc-for list="{{ links }}" as="l" hint-placeholder-count="2"><a href="{{ l.href }}">{{ l.label }}</a></sc-for>
+    </div>
+  </section>
+  <a href="Piroka Help.dc.html#support" style="font-size: 12px; color: #666;">Locked out? Talk to a person</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const IC = { mail: 'M4 6h16v12H4zM4 7l8 6 8-6', key: 'M15 7a4 4 0 1 1-3.9 5H3v3h3v2h3v-2h2.1A4 4 0 0 1 15 7zM16 10h.01', check: 'm5 12 5 5L20 7', spark: 'M13 2 4 14h7l-1 8 9-12h-7z' };
+const ok = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e.trim());
+class Component extends DCLogic {
+  state = { view: 'forgot', email: '', tried: false, busy: false, cooldown: 0, pw: '', pw2: '', sentMode: 'reset' };
+  route = () => { const h = (location.hash || '').slice(1); if (['forgot', 'magic', 'reset'].includes(h)) this.setState({ view: h === 'magic' ? 'magic' : h, tried: false }); };
+  componentDidMount() { this.route(); window.addEventListener('hashchange', this.route); try { const e = sessionStorage.getItem('piroka_email'); if (e) this.setState({ email: e }); } catch (x) {} }
+  componentWillUnmount() { window.removeEventListener('hashchange', this.route); clearInterval(this.cd); clearTimeout(this.t); }
+  send(mode) {
+    if (!ok(this.state.email)) return this.setState({ tried: true });
+    this.setState({ busy: true });
+    this.t = setTimeout(() => { this.setState({ busy: false, view: 'sent', sentMode: mode, cooldown: 30 }); clearInterval(this.cd); this.cd = setInterval(() => this.setState(s => { if (s.cooldown <= 1) clearInterval(this.cd); return { cooldown: Math.max(0, s.cooldown - 1) }; }), 1000); }, 1100);
+  }
+  renderVals() {
+    const s = this.state, v = s.view, bad = s.tried && !ok(s.email);
+    const rules = [['At least 10 characters', s.pw.length >= 10], ['A number', /\d/.test(s.pw)], ['Upper and lower case', /[a-z]/.test(s.pw) && /[A-Z]/.test(s.pw)], ['Passwords match', !!s.pw && s.pw === s.pw2]];
+    const pwOk = rules.every(r => r[1]);
+    const C = {
+      forgot: ['Reset your password', 'Enter the email on your account. We’ll send a secure link to set a new password.', IC.key, 'Send reset link', () => this.send('reset')],
+      magic: ['Sign in with a link', 'No password needed. We’ll email you a one-time link that signs you in on this device.', IC.spark, 'Email me a link', () => this.send('magic')],
+      sent: ['Check your inbox', s.sentMode === 'magic' ? 'Tap the link in the email to sign in. It only works once.' : 'Tap the link in the email to choose a new password.', IC.mail, '', null],
+      reset: ['Choose a new password', 'You’ll be signed out everywhere else for safety.', IC.key, 'Save password', () => { if (!pwOk) return; this.setState({ busy: true }); this.t = setTimeout(() => this.setState({ busy: false, view: 'done', sentMode: 'reset' }), 900); }],
+      done: [s.sentMode === 'magic' ? 'You’re signed in' : 'Password updated', s.sentMode === 'magic' ? 'Welcome back. Your map is ready.' : 'Use your new password next time you log in.', IC.check, '', null]
+    }[v];
+    const canPrimary = v === 'reset' ? pwOk : true;
+    return {
+      title: C[0], sub: C[1], icon: C[2],
+      showEmail: v === 'forgot' || v === 'magic', email: s.email, onEmail: e => { this.setState({ email: e.target.value }); try { sessionStorage.setItem('piroka_email', e.target.value); } catch (x) {} },
+      emailErr: bad, emailBad: bad ? 'true' : 'false', emailBd: bad ? 'rgba(248,113,113,0.7)' : 'rgba(255,255,255,0.12)',
+      onEnter: e => { if (e.key === 'Enter' && C[4]) C[4](); },
+      showSent: v === 'sent', expires: s.sentMode === 'magic' ? '15 minutes' : '30 minutes',
+      openLink: () => this.setState(s.sentMode === 'magic' ? { view: 'done' } : { view: 'reset' }),
+      resend: () => { if (!s.cooldown) this.send(s.sentMode); }, resendDisabled: s.cooldown > 0, resendCol: s.cooldown ? '#666' : '#34d399', resendLabel: s.cooldown ? 'Resend in ' + s.cooldown + 's' : 'Resend email',
+      showReset: v === 'reset', pw: s.pw, pw2: s.pw2, onPw: e => this.setState({ pw: e.target.value }), onPw2: e => this.setState({ pw2: e.target.value }),
+      rules: rules.map(([label, pass]) => ({ label, mark: pass ? '✓' : '·', col: pass ? '#34d399' : '#999' })),
+      showDone: v === 'done', doneHref: s.sentMode === 'magic' ? 'Piroka App v2.dc.html' : 'Piroka Homepage.dc.html', doneCta: s.sentMode === 'magic' ? 'Open πroka' : 'Back to log in',
+      showPrimary: !!C[3], primaryLabel: s.busy ? 'Sending…' : C[3], primary: () => !s.busy && C[4] && C[4](), busy: s.busy,
+      primaryDisabled: !canPrimary || s.busy, primaryBg: canPrimary ? '#34d399' : 'rgba(255,255,255,0.08)', primaryFg: canPrimary ? '#070707' : '#666',
+      links: v === 'magic' ? [{ label: 'Use a password instead', href: 'Piroka Homepage.dc.html' }, { label: 'Forgot password?', href: '#forgot' }] : [{ label: '← Back to log in', href: 'Piroka Homepage.dc.html' }, { label: 'Email me a sign-in link', href: '#magic' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

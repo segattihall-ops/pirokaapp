@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka for Partners</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #34d399; text-decoration: none; }
+    a:hover { color: #6ee7b7; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    @media (max-width: 820px) { input, textarea, select { font-size: 16px !important; } }
+    :focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+  </style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#070707"></rect><text x="50" y="66" font-size="48" text-anchor="middle" fill="#f5f5f5" font-family="sans-serif" font-weight="700">π</text><circle cx="72" cy="30" r="5" fill="#34d399"></circle></svg></template>
+
+<div style="min-height: 100vh; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; background: #070707;">
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px clamp(16px, 4vw, 36px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <span style="display: flex; align-items: center; gap: 10px;"><span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;">π<span style="position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span></span><span style="display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">πroka for Partners</span><span style="font-size: 11px; color: #666;">Venues, clinics and organizers</span></span></span>
+    <select value="{{ selId }}" onChange="{{ onPick }}" aria-label="Your listing" style="height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.14); background: #111; color: #f5f5f5; padding: 0 12px; font: 500 13px 'Geist', sans-serif; color-scheme: dark;"><sc-for list="{{ listings }}" as="l" hint-placeholder-count="0"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select>
+  </header>
+
+  <main style="max-width: 1040px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 36px) 48px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em;">{{ cur.name }}</span><span style="font-size: 13px; color: #999;">{{ cur.type }} · {{ cur.addr }}</span></span>
+      <span style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid {{ cur.vBd }}; color: {{ cur.vCol }}; font-size: 12px; font-weight: 600;">{{ cur.vLabel }}</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+      <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4"><div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 16px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);"><span style="font-size: 12px; color: #999;">{{ st.label }}</span><span style="font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ st.v }}</span><span style="font-size: 12px; color: #34d399;">{{ st.d }}</span></div></sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; align-items: start;">
+      <section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-size: 15px; font-weight: 600;">Hours</span>
+        <sc-for list="{{ hours }}" as="h" hint-placeholder-count="7">
+          <div style="display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <span style="font-size: 13px; font-weight: 600;">{{ h.day }}</span>
+            <sc-if value="{{ h.open }}" hint-placeholder-val="{{ true }}"><span style="display: flex; align-items: center; gap: 6px;"><input type="time" value="{{ h.from }}" onChange="{{ h.onFrom }}" aria-label="{{ h.day }} opens" style="height: 34px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 8px; font: 400 13px 'Geist', sans-serif; color-scheme: dark;"><span style="color: #666;">–</span><input type="time" value="{{ h.to }}" onChange="{{ h.onTo }}" aria-label="{{ h.day }} closes" style="height: 34px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 8px; font: 400 13px 'Geist', sans-serif; color-scheme: dark;"></span></sc-if>
+            <sc-if value="{{ h.closed }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #666;">Closed</span></sc-if>
+            <button onClick="{{ h.toggle }}" style="height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #ccc; font: 500 12px 'Geist', sans-serif; cursor: pointer;">{{ h.tLabel }}</button>
+          </div>
+        </sc-for>
+        <span style="font-size: 13px; font-weight: 600; margin-top: 4px;">{{ tagTitle }}</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;"><sc-for list="{{ tags }}" as="t" hint-placeholder-count="6"><button onClick="{{ t.toggle }}" style="padding: 7px 12px; border-radius: 999px; border: 1px solid {{ t.bd }}; background: {{ t.bg }}; color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;">{{ t.label }}</button></sc-for></div>
+        <button onClick="{{ saveListing }}" style="align-self: flex-start; height: 44px; padding: 0 18px; border-radius: 12px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Publish changes</button>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: #0c0c0c; border: 1px solid rgba(255,255,255,0.07);">
+        <span style="font-size: 15px; font-weight: 600;">Post an event</span>
+        <input value="{{ evName }}" onChange="{{ onEvName }}" placeholder="Event name" aria-label="Event name" style="height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 12px; font: 400 14px 'Geist', sans-serif; outline: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;"><input type="date" value="{{ evDate }}" onChange="{{ onEvDate }}" aria-label="Date" style="height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 10px; font: 400 13px 'Geist', sans-serif; color-scheme: dark; min-width: 0;"><input type="time" value="{{ evTime }}" onChange="{{ onEvTime }}" aria-label="Start time" style="height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 10px; font: 400 13px 'Geist', sans-serif; color-scheme: dark; min-width: 0;"><input inputMode="numeric" value="{{ evCap }}" onChange="{{ onEvCap }}" placeholder="Capacity" aria-label="Capacity" style="height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 0 10px; font: 400 13px 'Geist', sans-serif; outline: none; min-width: 0;"></div>
+        <textarea value="{{ evAbout }}" onChange="{{ onEvAbout }}" rows="{{ 3 }}" placeholder="What should people know?" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #111; color: #f5f5f5; padding: 10px 12px; font: 400 14px/1.5 'Geist', sans-serif; outline: none; resize: vertical;"></textarea>
+        <span style="font-size: 11px; color: #666; line-height: 1.5;">Events are reviewed by a local ambassador before they appear on the map. No drug or sex-for-pay listings.</span>
+        <button onClick="{{ postEvent }}" style="align-self: flex-start; height: 44px; padding: 0 18px; border-radius: 12px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Submit event</button>
+        <span style="font-size: 13px; font-weight: 600; margin-top: 6px;">Your events</span>
+        <sc-for list="{{ myEvents }}" as="me" hint-placeholder-count="2"><div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.05);"><span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">{{ me.name }}</span><span style="font-size: 12px; color: #999;">{{ me.when }} · {{ me.rsvp }} RSVPs</span></span><span style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 11px; font-weight: 700; color: {{ me.col }};">{{ me.st }}</span><a href="{{ me.link }}" style="font-size: 12px;">Public page</a></span></div></sc-for>
+      </section>
+    </div>
+    <span style="font-size: 12px; color: #666;">Partners never see who checked in or RSVP'd — only totals. <a href="Piroka Help.dc.html#support">Partner support</a></span>
+  </main>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div role="status" style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 12px 18px; border-radius: 12px; background: #f5f5f5; color: #070707; font-size: 13px; font-weight: 600;">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const LIST = [
+  { id: 'v1', name: 'Club Rain', type: 'Club', addr: 'Cedar Springs Rd, Dallas, TX 75219', clinic: false, verified: true, tags: ['Drag nights', 'Dance floor', 'Trans safe space', 'Accessible'] },
+  { id: 'v2', name: 'The Eagle', type: 'Bar', addr: 'Maple Ave, Dallas, TX 75219', clinic: false, verified: true, tags: ['Leather', 'Patio'] },
+  { id: 'c1', name: 'Kind Clinic — Oak Lawn', type: 'Clinic', addr: '3802 Cedar Springs Rd, Dallas, TX 75219', clinic: true, verified: false, tags: ['HIV', 'Syphilis', 'PrEP', 'Walk-in'] }
+];
+const VENUE_TAGS = ['Drag nights', 'Dance floor', 'Leather', 'Patio', 'Sober-friendly', 'Trans safe space', 'Accessible', 'Women & sapphic nights', 'Kitchen'];
+const CLINIC_TAGS = ['HIV', 'Syphilis', 'Gonorrhea', 'Chlamydia', 'Hep C', 'PrEP', 'PEP', 'Doxy-PEP', 'Walk-in', 'Spanish-speaking', 'Trans care'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+class Component extends DCLogic {
+  state = { sel: 'v1', data: Object.fromEntries(LIST.map(l => [l.id, { tags: l.tags, hours: DAYS.map((d, i) => ({ open: l.clinic ? i < 5 : i > 1, from: l.clinic ? '10:00' : '18:00', to: l.clinic ? '18:00' : '02:00' })), events: l.clinic ? [] : [{ name: l.id === 'v1' ? 'Drag Bingo' : 'Leather Night', when: 'Tonight · 9 PM', rsvp: l.id === 'v1' ? 64 : 22, st: 'LIVE', link: 'Piroka Event.dc.html#e0' }] }])), evName: '', evDate: '', evTime: '21:00', evCap: '', evAbout: '', toast: '' };
+  toast(t) { this.setState({ toast: t }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  upd(fn) { this.setState(s => ({ data: { ...s.data, [s.sel]: fn(s.data[s.sel]) } })); }
+  renderVals() {
+    const s = this.state, l = LIST.find(x => x.id === s.sel), d = s.data[s.sel];
+    const pool = l.clinic ? CLINIC_TAGS : VENUE_TAGS;
+    return {
+      listings: LIST.map(x => ({ id: x.id, name: x.name })), selId: s.sel, onPick: e => this.setState({ sel: e.target.value }),
+      cur: { ...l, vLabel: l.verified ? '✓ Verified listing' : 'Verification pending', vCol: l.verified ? '#34d399' : '#fbbf24', vBd: l.verified ? 'rgba(52,211,153,0.5)' : 'rgba(251,191,36,0.5)' },
+      stats: (l.clinic ? [['Profile views', '1,204', '+18% this week'], ['Direction taps', '312', '+9%'], ['Calls', '47', '+4'], ['Logged tests after visit', '88', 'self-reported']] : [['Profile views', '3,982', '+12% this week'], ['Check-ins', '641', 'peak Sat 11 PM'], ['On the way now', '14', 'live'], ['Event RSVPs', '86', '2 events']]).map(([label, v, dd]) => ({ label, v, d: dd })),
+      hours: d.hours.map((h, i) => ({ day: DAYS[i], open: h.open, closed: !h.open, from: h.from, to: h.to, tLabel: h.open ? 'Close day' : 'Open day',
+        onFrom: e => { const v = e.target.value; this.upd(x => ({ ...x, hours: x.hours.map((y, j) => j === i ? { ...y, from: v } : y) })); },
+        onTo: e => { const v = e.target.value; this.upd(x => ({ ...x, hours: x.hours.map((y, j) => j === i ? { ...y, to: v } : y) })); },
+        toggle: () => this.upd(x => ({ ...x, hours: x.hours.map((y, j) => j === i ? { ...y, open: !y.open } : y) })) })),
+      tagTitle: l.clinic ? 'Services' : 'What you offer',
+      tags: pool.map(label => { const on = d.tags.includes(label); return { label, bd: on ? 'rgba(52,211,153,0.7)' : 'rgba(255,255,255,0.12)', bg: on ? 'rgba(52,211,153,0.12)' : 'transparent', toggle: () => this.upd(x => ({ ...x, tags: on ? x.tags.filter(t => t !== label) : [...x.tags, label] })) }; }),
+      saveListing: () => this.toast('Published. Changes show in πroka within a few minutes.'),
+      evName: s.evName, onEvName: e => this.setState({ evName: e.target.value }), evDate: s.evDate, onEvDate: e => this.setState({ evDate: e.target.value }), evTime: s.evTime, onEvTime: e => this.setState({ evTime: e.target.value }), evCap: s.evCap, onEvCap: e => this.setState({ evCap: e.target.value.replace(/\D/g, '').slice(0, 4) }), evAbout: s.evAbout, onEvAbout: e => this.setState({ evAbout: e.target.value }),
+      postEvent: () => { if (!s.evName.trim() || !s.evDate) return this.toast('Add a name and a date.'); const when = new Date(s.evDate + 'T' + (s.evTime || '21:00')).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); this.upd(x => ({ ...x, events: [{ name: s.evName.trim(), when, rsvp: 0, st: 'IN REVIEW', link: 'Piroka Event.dc.html#e1' }, ...x.events] })); this.setState({ evName: '', evDate: '', evCap: '', evAbout: '' }); this.toast('Submitted. A local ambassador reviews it, usually within a few hours.'); },
+      myEvents: d.events.map(ev => ({ ...ev, col: ev.st === 'LIVE' ? '#34d399' : '#fbbf24' })),
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

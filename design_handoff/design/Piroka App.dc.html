@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>πroka — Nearby</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #070707; -webkit-font-smoothing: antialiased; overflow: hidden; }
+    * { box-sizing: border-box; }
+    a { color: #999; text-decoration: none; }
+    a:hover { color: #34d399; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    input[type="range"] { accent-color: #34d399; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    @keyframes piIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes pinIn { from { opacity: 0; scale: .5; } to { opacity: 1; scale: 1; } }
+    @keyframes slideL { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+    @keyframes slideR { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+    @keyframes piPulse { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,.6); } 70% { box-shadow: 0 0 0 16px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+    @keyframes piDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  </style>
+</helmet>
+
+<div style="display: flex; height: 100vh; width: 100%; overflow: hidden; background: #070707; color: #f5f5f5; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;">
+
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <nav style="flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 0 18px; background: linear-gradient(180deg, #1a1a1a 0%, #111111 100%); border-right: 1px solid rgba(255,255,255,0.06); z-index: 40;">
+      <button onClick="{{ goMap }}" title="πroka" style="position: relative; width: 50px; height: 50px; border-radius: 15px; background: linear-gradient(160deg, #262626 0%, #070707 65%); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 20px rgba(0,0,0,0.5); color: #f5f5f5; font: 700 24px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+        π
+        <span style="position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399;"></span>
+      </button>
+      <span style="width: 30px; height: 1px; background: rgba(255,255,255,0.14); margin: 12px 0 8px;"></span>
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="6">
+        <button onClick="{{ n.go }}" title="{{ n.label }}" style="position: relative; width: 46px; height: 46px; border-radius: 13px; border: none; background: transparent; color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: background .18s ease;" style-hover="background: rgba(255,255,255,0.06);">
+          <sc-if value="{{ n.active }}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; inset: 0; border-radius: 13px; background: rgba(255,255,255,0.09); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);"></span>
+            <span style="position: absolute; left: -15px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: #34d399;"></span>
+          </sc-if>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="position: relative;"><path d="{{ n.d }}"></path></svg>
+          <sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; top: 5px; right: 4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #34d399; color: #070707; font: 700 10px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center;">{{ n.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+      <span style="flex: 1;"></span>
+      <button onClick="{{ openTravel }}" title="Travel mode" style="width: 46px; height: 46px; border-radius: 13px; border: none; background: transparent; color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;" style-hover="background: rgba(255,255,255,0.06);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>
+      </button>
+    </nav>
+  </sc-if>
+
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative;">
+    <div ref="{{ mainRef }}" style="flex: 1; min-height: 0; position: relative; overflow: hidden;">
+
+      <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+        <div onPointerDown="{{ onMapDown }}" onWheel="{{ onWheel }}" style="position: absolute; inset: 0; overflow: hidden; background: #0b0b0b; cursor: grab; touch-action: none; user-select: none;">
+          <sc-if value="{{ hasTiles }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; inset: 0; filter: grayscale(1) contrast(1.08) brightness(0.95);">
+              <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="0">
+                <div style="position: absolute; left: {{ t.left }}px; top: {{ t.top }}px; width: 256px; height: 256px; pointer-events: none; background-size: 256px 256px; background-image: {{ t.bg }};"></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(7,7,7,0) 40%, rgba(7,7,7,0.75) 100%), rgba(52,211,153,0.025);"></div>
+
+          <sc-if value="{{ hasYou }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; left: {{ youX }}px; top: {{ youY }}px; width: {{ ringD }}px; height: {{ ringD }}px; transform: translate(-50%,-50%); border-radius: 50%; border: 1px dashed rgba(52,211,153,0.35); pointer-events: none;">
+              <span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 1px 7px; border-radius: 999px; background: #070707; color: #999; font-size: 10px; font-weight: 500;">¼ mi</span>
+            </div>
+            <div style="position: absolute; left: {{ youX }}px; top: {{ youY }}px; width: {{ fuzzD }}px; height: {{ fuzzD }}px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(52,211,153,0.18), rgba(52,211,153,0)); pointer-events: none;"></div>
+            <sc-if value="{{ youVisible }}" hint-placeholder-val="{{ true }}">
+              <div style="position: absolute; left: {{ youX }}px; top: {{ youY }}px; width: 18px; height: 18px; transform: translate(-50%,-50%); border-radius: 50%; background: #34d399; border: 3px solid #f5f5f5; animation: piPulse 2.2s infinite; pointer-events: none;"></div>
+            </sc-if>
+            <sc-if value="{{ youHidden }}" hint-placeholder-val="{{ false }}">
+              <div title="Discreet mode — your pin is hidden" style="position: absolute; left: {{ youX }}px; top: {{ youY }}px; width: 18px; height: 18px; transform: translate(-50%,-50%); border-radius: 50%; border: 2px dashed #f5f5f5; pointer-events: none;"></div>
+            </sc-if>
+          </sc-if>
+
+          <sc-for list="{{ pins }}" as="p" hint-placeholder-count="0">
+            <button onPointerDown="{{ stopDown }}" onClick="{{ p.open }}" title="{{ p.name }}" style="position: absolute; left: {{ p.x }}px; top: {{ p.y }}px; transform: translate(-50%,-50%); width: 38px; height: 38px; border-radius: 50%; border: 2px solid #f5f5f5; background: linear-gradient(145deg, #2c2c2c, #121212); color: #f5f5f5; font: 600 12px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; opacity: {{ p.op }}; box-shadow: 0 6px 16px rgba(0,0,0,0.55); animation: pinIn .35s ease-out both; transition: box-shadow .18s ease;" style-hover="box-shadow: 0 0 0 5px rgba(52,211,153,0.35), 0 6px 16px rgba(0,0,0,0.55);">
+              <sc-if value="{{ p.anon }}" hint-placeholder-val="{{ false }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></sc-if>
+              <sc-if value="{{ p.named }}" hint-placeholder-val="{{ true }}"><span>{{ p.initials }}</span></sc-if>
+              <sc-if value="{{ p.online }}" hint-placeholder-val="{{ true }}"><span style="position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; background: #34d399; border: 2px solid #070707;"></span></sc-if>
+            </button>
+          </sc-for>
+          <sc-for list="{{ clusters }}" as="c" hint-placeholder-count="0">
+            <button onPointerDown="{{ stopDown }}" onClick="{{ c.open }}" style="position: absolute; left: {{ c.x }}px; top: {{ c.y }}px; transform: translate(-50%,-50%); width: {{ c.d }}px; height: {{ c.d }}px; border-radius: 50%; border: 2px solid #f5f5f5; background: rgba(52,211,153,0.92); color: #070707; font: 700 13px 'Geist', sans-serif; cursor: pointer; padding: 0; box-shadow: 0 0 0 6px rgba(52,211,153,0.18), 0 6px 16px rgba(0,0,0,0.5); animation: pinIn .3s ease-out both;">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="position: absolute; top: 16px; left: 16px; right: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; pointer-events: none; animation: piIn .5s ease-out both;">
+          <div style="display: flex; align-items: center; gap: 8px; pointer-events: auto; flex-wrap: wrap;">
+            <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ openSettings }}" title="Menu" style="width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+              </button>
+            </sc-if>
+            <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); font-size: 13px;">
+              <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.03em;">πroka</span>
+              <span style="width: 1px; height: 16px; background: rgba(255,255,255,0.14);"></span>
+              <span style="color: #999;">{{ locLabel }}</span>
+              <span style="display: flex; align-items: center; gap: 6px; color: #34d399; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #34d399;"></span>{{ onlineCount }} online</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; pointer-events: auto;">
+            <button onClick="{{ openFilters }}" title="Filters" style="position: relative; width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5"></path></svg>
+              <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #34d399; color: #070707; font: 700 10px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center;">{{ activeFilterCount }}</span></sc-if>
+            </button>
+            <button onClick="{{ openNotifs }}" title="Notifications" style="position: relative; width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg>
+              <sc-if value="{{ hasNotifs }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #34d399; border: 2px solid #0e0e0e;"></span></sc-if>
+            </button>
+          </div>
+        </div>
+
+        <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; flex-direction: column; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); overflow: hidden;">
+            <button onClick="{{ zoomIn }}" title="Zoom in" style="width: 44px; height: 44px; border: none; background: transparent; color: #f5f5f5; font: 400 22px 'Geist', sans-serif; cursor: pointer;" style-hover="background: rgba(255,255,255,0.06);">+</button>
+            <span style="height: 1px; background: rgba(255,255,255,0.08);"></span>
+            <button onClick="{{ zoomOut }}" title="Zoom out" style="width: 44px; height: 44px; border: none; background: transparent; color: #f5f5f5; font: 400 22px 'Geist', sans-serif; cursor: pointer;" style-hover="background: rgba(255,255,255,0.06);">−</button>
+          </div>
+          <button onClick="{{ recenter }}" title="Locate me" style="width: 46px; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(14,14,14,0.88); backdrop-filter: blur(16px); color: #34d399; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM12 2v3M12 19v3M2 12h3M19 12h3M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
+          </button>
+        </div>
+
+        <div style="position: absolute; left: 12px; bottom: 8px; font-size: 10px; color: #555; display: flex; gap: 8px;">
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #555;">© OpenStreetMap contributors</a>
+          <a href="https://carto.com/attributions" target="_blank" style="color: #555;">© CARTO</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPeople }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; overflow-y: auto; padding: clamp(20px, 4vw, 40px);">
+          <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; animation: piIn .4s ease-out both;">
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 26px; font-weight: 600; letter-spacing: -0.03em;">Nearby</span>
+                <span style="font-size: 13px; color: #999;">{{ peopleCount }} people · sorted by distance · {{ locLabel }}</span>
+              </div>
+              <div style="display: flex; gap: 8px; flex: 1; max-width: 420px; min-width: 240px;">
+                <label style="flex: 1; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #0e0e0e; color: #666;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4"></path></svg>
+                  <input ref="{{ searchRef }}" value="{{ search }}" onChange="{{ onSearch }}" placeholder="Search usernames" style="flex: 1; min-width: 0; background: none; border: none; outline: none; color: #f5f5f5; font: 400 14px 'Geist', sans-serif;">
+                </label>
+                <button onClick="{{ openFilters }}" style="height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #0e0e0e; color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer;">Filters</button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+              <sc-for list="{{ people }}" as="u" hint-placeholder-count="8">
+                <button onClick="{{ u.open }}" style="display: flex; flex-direction: column; gap: 10px; padding: 8px 8px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.07); background: #0e0e0e; color: #f5f5f5; text-align: left; cursor: pointer; font-family: 'Geist', sans-serif; transition: border-color .18s ease, transform .18s ease;" style-hover="border-color: rgba(52,211,153,0.4); transform: translateY(-2px);">
+                  <div style="position: relative; aspect-ratio: 1; border-radius: 14px; background: radial-gradient(120% 90% at 30% 20%, #2a2a2a, #111111); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 600; color: #f5f5f5;">
+                    <sc-if value="{{ u.anon }}" hint-placeholder-val="{{ false }}"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.6" stroke-linecap="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></sc-if>
+                    <sc-if value="{{ u.named }}" hint-placeholder-val="{{ true }}"><span>{{ u.initials }}</span></sc-if>
+                    <sc-if value="{{ u.online }}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: 10px; left: 10px; display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: rgba(7,7,7,0.7); font-size: 11px; font-weight: 500; color: #34d399;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span>Online</span></sc-if>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 3px; padding: 0 4px;">
+                    <span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ u.name }}<sc-if value="{{ u.verified }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="#34d399"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm-1.2 14-3.5-3.5 1.4-1.4 2.1 2.1 4.6-4.6 1.4 1.4-6 6z"></path></svg></sc-if></span>
+                    <span style="font-size: 12px; color: #999;">{{ u.age }} · {{ u.dist }}</span>
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ noPeople }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 60px 20px; text-align: center; color: #999; font-size: 14px;">No one matches these filters right now.</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isChats }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; display: flex;">
+          <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+            <div style="width: 100%; max-width: 380px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.06); background: #0a0a0a; animation: slideL .35s ease-out both;">
+              <div style="display: flex; flex-direction: column; gap: 14px; padding: 22px 18px 14px;">
+                <span style="font-size: 24px; font-weight: 600; letter-spacing: -0.03em;">Messages</span>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ chatFilters }}" as="f" hint-placeholder-count="4">
+                    <button onClick="{{ f.pick }}" style="padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: #ccc; font: 500 12px 'Geist', sans-serif; cursor: pointer; position: relative;">
+                      <sc-if value="{{ f.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.7); background: rgba(52,211,153,0.14);"></span></sc-if>
+                      <span style="position: relative;">{{ f.label }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="flex: 1; overflow-y: auto; padding: 0 8px 12px;">
+                <sc-for list="{{ chatList }}" as="c" hint-placeholder-count="5">
+                  <button onClick="{{ c.open }}" style="width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-radius: 16px; border: none; background: transparent; color: #f5f5f5; text-align: left; cursor: pointer; font-family: 'Geist', sans-serif; position: relative;" style-hover="background: rgba(255,255,255,0.04);">
+                    <sc-if value="{{ c.active }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 16px; background: rgba(255,255,255,0.06);"></span></sc-if>
+                    <div style="position: relative; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(120% 90% at 30% 20%, #2c2c2c, #121212); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600;">
+                      <sc-if value="{{ c.anon }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></sc-if>
+                      <sc-if value="{{ c.named }}" hint-placeholder-val="{{ true }}"><span>{{ c.initials }}</span></sc-if>
+                      <sc-if value="{{ c.online }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; border-radius: 50%; background: #34d399; border: 2px solid #0a0a0a;"></span></sc-if>
+                    </div>
+                    <div style="position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                      <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ c.name }}<sc-if value="{{ c.protected }}" hint-placeholder-val="{{ false }}"><span style="font-size: 10px; font-weight: 600; color: #34d399; border: 1px solid rgba(52,211,153,0.4); border-radius: 6px; padding: 1px 5px;">Protected</span></sc-if></span>
+                        <span style="font-size: 11px; color: #666; flex-shrink: 0;">{{ c.time }}</span>
+                      </span>
+                      <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <span style="font-size: 13px; color: #999; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ c.preview }}</span>
+                        <sc-if value="{{ c.hasUnread }}" hint-placeholder-val="{{ false }}"><span style="flex-shrink: 0; padding: 2px 7px; border-radius: 999px; background: #34d399; color: #070707; font-size: 10px; font-weight: 700;">NEW {{ c.unread }}</span></sc-if>
+                      </span>
+                    </div>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ noChats }}" hint-placeholder-val="{{ false }}"><div style="padding: 40px 16px; text-align: center; color: #666; font-size: 13px;">Nothing here yet.</div></sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showThread }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: radial-gradient(80% 60% at 70% 0%, rgba(52,211,153,0.05), rgba(7,7,7,0) 70%), #070707; animation: slideR .35s ease-out both;">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ closeThread }}" title="Back" style="width: 38px; height: 38px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+                </sc-if>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(120% 90% at 30% 20%, #2c2c2c, #121212); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">{{ thread.initials }}</div>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                  <span style="font-size: 15px; font-weight: 600;">{{ thread.name }}</span>
+                  <span style="font-size: 12px; color: #999;">{{ thread.status }}</span>
+                </div>
+                <button onClick="{{ thread.openProfile }}" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;">View profile</button>
+              </div>
+              <div ref="{{ threadRef }}" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 20px 18px;">
+                <sc-for list="{{ thread.msgs }}" as="m" hint-placeholder-count="3">
+                  <sc-if value="{{ m.them }}" hint-placeholder-val="{{ true }}">
+                    <div style="align-self: flex-start; max-width: 72%; display: flex; flex-direction: column; gap: 4px; animation: piIn .3s ease-out both;">
+                      <div style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px 18px 18px 6px; padding: 10px 14px; font-size: 14px; line-height: 1.45;">{{ m.text }}</div>
+                      <span style="font-size: 11px; color: #666;">{{ m.time }}</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ m.me }}" hint-placeholder-val="{{ false }}">
+                    <div style="align-self: flex-end; max-width: 72%; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; animation: piIn .3s ease-out both;">
+                      <div style="background: #34d399; color: #070707; border-radius: 18px 18px 6px 18px; padding: 10px 14px; font-size: 14px; font-weight: 500; line-height: 1.45;">{{ m.text }}</div>
+                      <span style="font-size: 11px; color: #666;">{{ m.time }}</span>
+                    </div>
+                  </sc-if>
+                </sc-for>
+                <sc-if value="{{ thread.typing }}" hint-placeholder-val="{{ false }}">
+                  <div style="align-self: flex-start; display: flex; gap: 5px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px 18px 18px 6px; padding: 14px 15px;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s infinite;"></span>
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .15s infinite;"></span>
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .3s infinite;"></span>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="Type a message…" style="flex: 1; min-width: 0; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #0e0e0e; color: #f5f5f5; padding: 0 16px; font: 400 14px 'Geist', sans-serif; outline: none;" style-focus="border-color: rgba(52,211,153,0.55);">
+                <button onClick="{{ sendMsg }}" style="height: 46px; padding: 0 20px; border-radius: 14px; border: none; background: #ffffff; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Send</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showThreadEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #666; font-size: 14px;">
+              <span style="font-size: 32px; font-weight: 700; color: #333;">π</span>
+              Pick a conversation, or find someone on the map.
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeDrawer }}" style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.35);"></div>
+        <aside style="position: absolute; left: 0; top: 0; bottom: 0; z-index: 21; width: min(390px, 100%); display: flex; flex-direction: column; background: rgba(13,13,13,0.96); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.08); box-shadow: 30px 0 80px rgba(0,0,0,0.5); animation: slideL .3s ease-out both;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px;">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">{{ drawerTitle }}<sc-if value="{{ isTravel }}" hint-placeholder-val="{{ false }}"><span style="font-size: 10px; font-weight: 700; color: #070707; background: #34d399; border-radius: 6px; padding: 2px 6px;">PLUS</span></sc-if></span>
+            <button onClick="{{ closeDrawer }}" title="Close" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #999; font-size: 18px; cursor: pointer; line-height: 1;">×</button>
+          </div>
+
+          <sc-if value="{{ isFilters }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; padding: 4px 20px 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Online now</span><span style="font-size: 12px; color: #999;">Only show people active right now</span></div>
+                <button onClick="{{ toggleOnlineFilter }}" style="width: 44px; height: 26px; border-radius: 999px; border: none; padding: 0; cursor: pointer; position: relative; background: rgba(255,255,255,0.14);">
+                  <sc-if value="{{ onlineFilter }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 999px; background: #34d399;"></span><span style="position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #070707;"></span></sc-if>
+                  <sc-if value="{{ onlineFilterOff }}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #f5f5f5;"></span></sc-if>
+                </button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;">Age<span style="color: #34d399;">{{ ageMin }} – {{ ageMax }}</span></span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #666;">Min<input type="range" min="18" max="99" value="{{ ageMin }}" onChange="{{ onAgeMin }}"></label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #666;">Max<input type="range" min="18" max="99" value="{{ ageMax }}" onChange="{{ onAgeMax }}"></label>
+                </div>
+              </div>
+              <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <span style="font-size: 13px; font-weight: 600;">{{ g.title }}</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4">
+                      <button onClick="{{ o.toggle }}" style="position: relative; padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: #ccc; font: 500 12px 'Geist', sans-serif; cursor: pointer;">
+                        <sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: -1px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.7); background: rgba(52,211,153,0.14);"></span></sc-if>
+                        <span style="position: relative;">{{ o.label }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <span style="font-size: 12px; color: #666; line-height: 1.5;">Every filter is optional. Anyone can stay 100% anonymous.</span>
+            </div>
+            <div style="display: flex; gap: 8px; padding: 14px 20px 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+              <button onClick="{{ resetFilters }}" style="height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #f5f5f5; font: 500 14px 'Geist', sans-serif; cursor: pointer;">Reset</button>
+              <button onClick="{{ closeDrawer }}" style="flex: 1; height: 48px; border-radius: 14px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Show {{ peopleCount }} people</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 4px 20px 20px;">
+              <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(120% 90% at 30% 20%, #2c2c2c, #121212); border: 2px solid #34d399; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></div>
+                  <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Your profile</span><span style="font-size: 12px; color: #999;">Anonymous · visible as a pin</span></div>
+                </div>
+                <textarea value="{{ bio }}" onChange="{{ onBio }}" rows="2" maxlength="500" style="resize: none; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #f5f5f5; padding: 10px 12px; font: 400 13px/1.45 'Geist', sans-serif; outline: none;"></textarea>
+              </div>
+              <div style="display: flex; flex-direction: column; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+                <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                      <span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500;">{{ t.label }}<sc-if value="{{ t.plus }}" hint-placeholder-val="{{ false }}"><span style="font-size: 9px; font-weight: 700; color: #070707; background: #34d399; border-radius: 5px; padding: 1px 5px;">PLUS</span></sc-if></span>
+                      <span style="font-size: 12px; color: #999;">{{ t.sub }}</span>
+                    </div>
+                    <button onClick="{{ t.toggle }}" style="flex-shrink: 0; width: 44px; height: 26px; border-radius: 999px; border: none; padding: 0; cursor: pointer; position: relative; background: rgba(255,255,255,0.14);">
+                      <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; border-radius: 999px; background: #34d399;"></span><span style="position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #070707;"></span></sc-if>
+                      <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #f5f5f5;"></span></sc-if>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px;">
+                  <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Location fuzzing</span><span style="font-size: 12px; color: #999;">How much your pin is randomized</span></span>
+                  <input type="range" min="0" max="100" value="{{ randomize }}" onChange="{{ onRandomize }}">
+                  <span style="display: flex; justify-content: space-between; font-size: 11px; color: #666;"><span>Less</span><span>More</span></span>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: linear-gradient(150deg, rgba(52,211,153,0.16), rgba(52,211,153,0.03) 60%); border: 1px solid rgba(52,211,153,0.3);">
+                <span style="font-size: 16px; font-weight: 600;">πroka Plus</span>
+                <span style="font-size: 13px; color: #ccc; line-height: 1.5;">Travel mode, discreet mode, pinned chats, see who deleted, host groups, and custom locations.</span>
+                <button style="height: 44px; border-radius: 12px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Upgrade to unlock</button>
+              </div>
+              <div style="display: flex; flex-direction: column; border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+                <button style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); background: none; color: #f5f5f5; font: 500 14px 'Geist', sans-serif; cursor: pointer; text-align: left;">Host a group<span style="color: #34d399; font-size: 20px; font-weight: 400;">+</span></button>
+                <button style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); background: none; color: #f5f5f5; font: 500 14px 'Geist', sans-serif; cursor: pointer; text-align: left;">Add a location<span style="color: #34d399; font-size: 20px; font-weight: 400;">+</span></button>
+                <button style="padding: 14px 16px; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); background: none; color: #f5f5f5; font: 500 14px 'Geist', sans-serif; cursor: pointer; text-align: left;">Check for updates</button>
+                <a href="Piroka Homepage.dc.html" style="padding: 14px 16px; color: #f87171; font-size: 14px; font-weight: 500;">Log out</a>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isNotifs }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 12px 20px;">
+              <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="3">
+                <button onClick="{{ n.go }}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: none; background: transparent; color: #f5f5f5; text-align: left; cursor: pointer; font-family: 'Geist', sans-serif;" style-hover="background: rgba(255,255,255,0.04);">
+                  <span style="flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #34d399;"></span>
+                  <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px;">{{ n.text }}</span><span style="font-size: 12px; color: #666;">{{ n.time }}</span></span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isTravel }}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 20px;">
+              <span style="font-size: 13px; color: #999; line-height: 1.5; margin-bottom: 6px;">Browse another city before you land. Your pin stays at home.</span>
+              <sc-for list="{{ cities }}" as="c" hint-placeholder-count="6">
+                <button onClick="{{ c.go }}" style="display: flex; align-items: center; justify-content: space-between; height: 50px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #f5f5f5; font: 500 14px 'Geist', sans-serif; cursor: pointer;" style-hover="border-color: rgba(52,211,153,0.45);">{{ c.name }}<span style="font-size: 12px; color: #666;">{{ c.area }}</span></button>
+              </sc-for>
+              <button onClick="{{ goHome }}" style="margin-top: 8px; height: 48px; border-radius: 14px; border: none; background: #34d399; color: #070707; font: 600 14px 'Geist', sans-serif; cursor: pointer;">Back to my location</button>
+            </div>
+          </sc-if>
+        </aside>
+      </sc-if>
+
+      <sc-if value="{{ hasProfile }}" hint-placeholder-val="{{ false }}">
+        <aside style="position: absolute; right: 0; top: 0; bottom: 0; z-index: 30; width: min(420px, 100%); display: flex; flex-direction: column; background: #0c0c0c; border-left: 1px solid rgba(255,255,255,0.08); box-shadow: -30px 0 80px rgba(0,0,0,0.55); animation: slideR .3s ease-out both;">
+          <div style="flex: 1; overflow-y: auto;">
+            <div style="position: relative; height: 340px; background: radial-gradient(90% 80% at 30% 20%, #2e2e2e, #0f0f0f 70%); display: flex; align-items: center; justify-content: center;">
+              <sc-if value="{{ prof.anon }}" hint-placeholder-val="{{ false }}"><svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.4" stroke-linecap="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></sc-if>
+              <sc-if value="{{ prof.named }}" hint-placeholder-val="{{ true }}"><span style="font-size: 88px; font-weight: 700; color: #3a3a3a; letter-spacing: -0.04em;">{{ prof.initials }}</span></sc-if>
+              <span style="position: absolute; left: 16px; bottom: 16px; padding: 5px 10px; border-radius: 999px; background: rgba(7,7,7,0.75); color: #999; font-size: 11px; font-weight: 500;">Photo not shared</span>
+              <button onClick="{{ closeProfile }}" title="Close" style="position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.14); background: rgba(7,7,7,0.7); color: #f5f5f5; font-size: 20px; cursor: pointer; line-height: 1;">×</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 18px; padding: 20px 22px 24px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 600; letter-spacing: -0.03em;">{{ prof.name }}<sc-if value="{{ prof.verified }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="#34d399"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm-1.2 14-3.5-3.5 1.4-1.4 2.1 2.1 4.6-4.6 1.4 1.4-6 6z"></path></svg></sc-if></span>
+                <span style="font-size: 14px; color: #ccc;">{{ prof.stats }}</span>
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #999;"><span style="color: #34d399; font-weight: 600;">{{ prof.dist }}</span>·<span>{{ prof.active }}</span></span>
+              </div>
+              <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #f5f5f5; text-wrap: pretty;">{{ prof.bio }}</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <sc-for list="{{ prof.tags }}" as="tg" hint-placeholder-count="3">
+                  <span style="padding: 6px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); font-size: 12px; color: #ccc;">{{ tg }}</span>
+                </sc-for>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px 16px; padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+                <sc-for list="{{ prof.facts }}" as="f" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 11px; color: #666;">{{ f.k }}</span><span style="font-size: 13px; font-weight: 500;">{{ f.v }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; padding: 14px 18px 18px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <button onClick="{{ prof.chat }}" style="flex: 1; height: 50px; border-radius: 16px; border: none; background: #34d399; color: #070707; font: 600 15px 'Geist', sans-serif; cursor: pointer; box-shadow: 0 10px 30px rgba(52,211,153,0.25);">Chat</button>
+            <button onClick="{{ prof.next }}" style="height: 50px; padding: 0 22px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #f5f5f5; font: 600 15px 'Geist', sans-serif; cursor: pointer;">Next →</button>
+          </div>
+        </aside>
+      </sc-if>
+
+      <sc-if value="{{ showAiBtn }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ toggleAi }}" style="position: absolute; right: 16px; bottom: 28px; z-index: 26; display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 18px 0 8px; border-radius: 999px; border: 1px solid rgba(52,211,153,0.4); background: rgba(14,14,14,0.9); backdrop-filter: blur(18px); color: #f5f5f5; font: 600 14px 'Geist', sans-serif; cursor: pointer; box-shadow: 0 12px 34px rgba(0,0,0,0.5), 0 0 30px rgba(52,211,153,0.15); animation: piIn .5s ease-out both;" style-hover="border-color: rgba(52,211,153,0.8);">
+          <span style="width: 34px; height: 34px; border-radius: 50%; background: #34d399; color: #070707; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700;">π</span>
+          Ask πroka AI
+        </button>
+      </sc-if>
+      <sc-if value="{{ aiOpen }}" hint-placeholder-val="{{ false }}">
+        <section style="position: absolute; right: 16px; bottom: 16px; z-index: 27; width: min(370px, calc(100% - 32px)); height: min(520px, calc(100% - 100px)); display: flex; flex-direction: column; border-radius: 26px; overflow: hidden; background: linear-gradient(155deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.04) 100%), rgba(10,10,10,0.78); backdrop-filter: blur(26px) saturate(160%); border: 1px solid rgba(255,255,255,0.13); box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.18), 0 0 50px rgba(52,211,153,0.08); animation: piIn .35s ease-out both;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.07);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #0a0a0a; border: 1px solid rgba(52,211,153,0.45); color: #34d399; display: flex; align-items: center; justify-content: center; font-weight: 700;">π</div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">πroka AI</span><span style="display: flex; align-items: center; gap: 5px; font-size: 11px; color: #34d399;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span>Search assistant</span></div>
+            </div>
+            <button onClick="{{ toggleAi }}" title="Close" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #999; font-size: 18px; line-height: 1; cursor: pointer;">×</button>
+          </div>
+          <div ref="{{ aiRef }}" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 16px;">
+            <sc-for list="{{ aiMsgs }}" as="m" hint-placeholder-count="1">
+              <sc-if value="{{ m.bot }}" hint-placeholder-val="{{ true }}">
+                <div style="align-self: flex-start; max-width: 90%; display: flex; flex-direction: column; gap: 6px; animation: piIn .3s ease-out both;">
+                  <div style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px 16px 16px 6px; padding: 10px 13px; font-size: 13px; line-height: 1.5; text-wrap: pretty;">{{ m.text }}</div>
+                  <sc-for list="{{ m.results }}" as="r" hint-placeholder-count="0">
+                    <button onClick="{{ r.open }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); color: #f5f5f5; font: 500 13px 'Geist', sans-serif; cursor: pointer; text-align: left;" style-hover="border-color: rgba(52,211,153,0.5);">
+                      <span style="display: flex; align-items: center; gap: 8px; min-width: 0;"><span style="flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: {{ r.dot }};"></span><span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{ r.name }}, {{ r.age }}</span></span>
+                      <span style="flex-shrink: 0; font-size: 12px; color: #34d399;">{{ r.dist }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.me }}" hint-placeholder-val="{{ false }}">
+                <div style="align-self: flex-end; max-width: 85%; background: #34d399; color: #070707; border-radius: 16px 16px 6px 16px; padding: 9px 13px; font-size: 13px; font-weight: 500; animation: piIn .3s ease-out both;">{{ m.text }}</div>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{ aiTyping }}" hint-placeholder-val="{{ false }}">
+              <div style="align-self: flex-start; display: flex; gap: 5px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px 16px 16px 6px; padding: 13px 14px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s infinite;"></span>
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .15s infinite;"></span>
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #f5f5f5; animation: piDot 1.2s .3s infinite;"></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ aiShowSugg }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <sc-for list="{{ aiSugg }}" as="sg" hint-placeholder-count="4">
+                  <button onClick="{{ sg.go }}" style="padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: #f5f5f5; font: 500 12px 'Geist', sans-serif; cursor: pointer;" style-hover="border-color: rgba(52,211,153,0.6); background: rgba(52,211,153,0.1);">{{ sg.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(255,255,255,0.07);">
+            <input value="{{ aiDraft }}" onChange="{{ onAiDraft }}" onKeyDown="{{ onAiKey }}" placeholder="Describe who you're looking for…" style="flex: 1; min-width: 0; height: 44px; border-radius: 13px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #f5f5f5; padding: 0 14px; font: 400 13px 'Geist', sans-serif; outline: none;" style-focus="border-color: rgba(52,211,153,0.55);">
+            <button onClick="{{ aiSend }}" style="height: 44px; padding: 0 16px; border-radius: 13px; border: none; background: #ffffff; color: #070707; font: 600 13px 'Geist', sans-serif; cursor: pointer;">Send</button>
+          </div>
+        </section>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+      <div style="flex-shrink: 0; display: grid; grid-template-columns: repeat(3, 1fr); height: 66px; border-top: 1px solid rgba(255,255,255,0.08); background: #0e0e0e;">
+        <sc-for list="{{ bottomNav }}" as="b" hint-placeholder-count="3">
+          <button onClick="{{ b.go }}" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: none; color: #999; font: 500 11px 'Geist', sans-serif; cursor: pointer;">
+            <sc-if value="{{ b.active }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 0; left: 30%; right: 30%; height: 2px; border-radius: 2px; background: #34d399;"></span></sc-if>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5f5f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ b.d }}"></path></svg>
+            {{ b.label }}
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const MAP_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcTY3ZjRuaTEiLCJqdGkiOiJhYzAxN2JkMDc5ZjViYzQxOTNlZGIyNmY4YzQ3NzhjYiJ9.1oOG_m_u_o4Oz0dY6QZ-YCEnGeS4uZe-xJOcmXwMgYM';
+const P = {
+  map: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  chat: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4',
+  layers: 'M12 3 2 8l10 5 10-5-10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5'
+};
+const OPT = {
+  position: ['Top', 'Bottom', 'Vers', 'Switch'],
+  body: ['Slim', 'Athletic', 'Average', 'Bear', 'Muscular'],
+  identity: ['Cis', 'Trans', 'Non-binary', 'Queer', 'Gender fluid', 'Two-Spirit'],
+  orientation: ['Gay', 'Bisexual', 'Pansexual', 'Queer', 'Asexual'],
+  interests: ['Discretion required', 'Open / Poly', 'Daddy / Boy', 'Bear scene', 'Kink', 'BDSM'],
+  health: ['PrEP user', 'HIV+ undetectable', 'Tests regularly', 'Prefer not to say'],
+  looking: ['NSA', 'Community', 'New in town', 'Pride friendly', 'Trans safe space']
+};
+const GROUPS = [['position', 'Position'], ['body', 'Body type'], ['identity', 'Gender identity'], ['orientation', 'Orientation'], ['interests', 'Interests & kinks'], ['health', 'Sexual health'], ['looking', 'Looking for']];
+const HANDLES = ['NightOwl', 'Curious_32', 'DiscreetDad', 'GymRat', 'Otter.co', 'QuietStorm', 'BearHug', 'Vers4Now', 'NewInTown', 'Midtown_M', 'TallGuy', 'Sk8rBoi', 'Leather.Lace', 'ChillSun', 'RunnerUp', 'ArtsyOne', 'SilverFox', 'Plaid', 'CoffeeFirst', 'Nomad', 'Rooftop', 'LateShift'];
+const BIOS = ['Here for good conversation and whatever follows.', 'Visiting for work. Discreet.', 'Gym, coffee, repeat.', 'New to the neighborhood — show me around?', 'Looking...', 'Low-key and respectful. Say hi first.', 'Hosting sometimes. Ask.', 'Just curious.', 'Night owl. Usually around after 10.', 'Tall, chill, into good music.'];
+const OPENERS = ['Hey, you around?', 'Nice profile.', 'Hosting tonight?', 'What are you into?', 'Coffee first?', "You're close. Walk over?"];
+const REPLIES = ['Sounds good.', "I'm five minutes away.", 'Where are you headed?', 'Ha. I like that.', "Let's do it.", 'Tell me more.'];
+const CITIES = [['New York', 'Chelsea', 40.7465, -74.0014], ['São Paulo', 'Paulista', -23.5614, -46.6559], ['Berlin', 'Schöneberg', 52.4935, 13.3531], ['London', 'Soho', 51.5136, -0.1319], ['Mexico City', 'Zona Rosa', 19.427, -99.163], ['Tokyo', 'Shinjuku Ni-chome', 35.6905, 139.706]];
+const pick = a => a[Math.random() * a.length | 0];
+const some = (a, n) => a.slice().sort(() => Math.random() - .5).slice(0, n);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const proj = (lat, lon, z) => { const s = 256 * Math.pow(2, z), sl = Math.sin(lat * Math.PI / 180); return [(lon + 180) / 360 * s, (0.5 - Math.log((1 + sl) / (1 - sl)) / (4 * Math.PI)) * s]; };
+const unproj = (x, y, z) => { const s = 256 * Math.pow(2, z), n = Math.PI - 2 * Math.PI * y / s; return [180 / Math.PI * Math.atan(Math.sinh(n)), x / s * 360 - 180]; };
+const meters = (a, b) => { const R = 6371000, r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+const fmtDist = m => { const ft = m * 3.281; return ft < 1000 ? Math.max(10, Math.round(ft / 10) * 10) + ' ft' : (m / 1609).toFixed(1) + ' mi'; };
+const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const ago = m => m < 1 ? 'Now' : m < 60 ? Math.round(m) + 'm' : Math.round(m / 60) + 'h';
+
+class Component extends DCLogic {
+  state = {
+    view: 'map', drawer: null, profileId: null, z: 15, center: null, you: null, locLabel: 'Locating…',
+    w: 0, h: 0, narrow: false, users: [], chats: [], activeChat: null, chatFilter: 'All', draft: '', typingChat: null, search: '',
+    f: { online: false, ageMin: 18, ageMax: 99, position: [], body: [], identity: [], orientation: [], interests: [], health: [], looking: [] },
+    set: { vanilla: false, group: false, sounds: true, discreet: false }, randomize: 30, bio: 'Curious. Discreet. Say hi first.',
+    aiOpen: false, aiDraft: '', aiTyping: false, aiMsgs: [{ id: 0, bot: true, text: "Hi — I'm πroka AI. Tell me who you're looking for and I'll set the filters and find the closest matches.", results: [] }]
+  };
+  mainRef = React.createRef(); aiRef = React.createRef(); threadRef = React.createRef(); searchRef = React.createRef();
+
+  measure = () => {
+    const el = this.mainRef.current; if (!el) return;
+    const r = el.getBoundingClientRect(), narrow = window.innerWidth < 820;
+    if (Math.round(r.width) !== Math.round(this.state.w) || Math.round(r.height) !== Math.round(this.state.h) || narrow !== this.state.narrow) this.setState({ w: r.width, h: r.height, narrow });
+  };
+  bindRO() {
+    const el = this.mainRef.current;
+    if (!el || el === this.observedEl) return;
+    this.ro && this.ro.disconnect();
+    this.ro = new ResizeObserver(this.measure); this.ro.observe(this.observedEl = el);
+    this.measure();
+  }
+  componentDidMount() {
+    this.bindRO();
+    window.addEventListener('resize', this.measure);
+    this.measureT = [setTimeout(this.measure, 50), setTimeout(this.measure, 400), setTimeout(this.measure, 1200)];
+    this.locate();
+    this.live = setInterval(() => this.tickLive(), 3200);
+  }
+  componentDidUpdate() { this.bindRO(); if (!this.state.w) this.measure(); const t = this.threadRef.current; if (t) t.scrollTop = t.scrollHeight; const q = this.aiRef.current; if (q) q.scrollTop = q.scrollHeight; }
+  componentWillUnmount() { this.ro && this.ro.disconnect(); window.removeEventListener('resize', this.measure); (this.measureT || []).forEach(clearTimeout); clearInterval(this.live); (this.timers || []).forEach(clearTimeout); this.onDragUp(); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+
+  async locate() {
+    const tries = [['https://ipapi.co/json/', d => [d.latitude, d.longitude, d.city]], ['https://get.geojs.io/v1/ip/geo.json', d => [+d.latitude, +d.longitude, d.city]]];
+    for (const [u, f] of tries) {
+      try { const r = await fetch(u); if (!r.ok) continue; const [la, lo, c] = f(await r.json()); if (isFinite(la) && isFinite(lo) && la) { this.home = [la, lo, c ? 'Near ' + c : 'Near you']; return this.world(...this.home); } } catch (e) {}
+    }
+    this.home = [-23.5614, -46.6559, 'São Paulo'];
+    this.world(...this.home);
+  }
+  world(lat, lon, label) {
+    const you = { lat, lon }, cosL = Math.cos(lat * Math.PI / 180);
+    const users = Array.from({ length: 42 }, (_, i) => {
+      const anon = Math.random() < 0.35, name = anon ? 'Anonymous' : HANDLES[i % HANDLES.length] + (i >= HANDLES.length ? i : '');
+      const r = Math.pow(Math.random(), 0.7) * 1800, a = Math.random() * Math.PI * 2;
+      const u = {
+        id: 'u' + i, anon, name, initials: anon ? '' : name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase(),
+        age: Math.round(rnd(19, 58)), height: (5 + (Math.random() < .6 ? 0 : 1)) + "'" + Math.round(rnd(4, 11)) + '"', weight: Math.round(rnd(140, 225)),
+        position: pick(OPT.position), body: pick(OPT.body), identity: Math.random() < .7 ? 'Cis' : pick(OPT.identity), orientation: Math.random() < .7 ? 'Gay' : pick(OPT.orientation),
+        interests: some(OPT.interests, 1 + (Math.random() * 2 | 0)), health: pick(OPT.health), looking: some(OPT.looking, 1 + (Math.random() * 2 | 0)),
+        bio: pick(BIOS), lat: lat + Math.sin(a) * r / 111320, lon: lon + Math.cos(a) * r / (111320 * cosL),
+        online: Math.random() < 0.72, present: true, verified: Math.random() < 0.35, lastMin: rnd(2, 180)
+      };
+      u.m = meters(you, u);
+      return u;
+    }).sort((a, b) => a.m - b.m);
+    const chats = some(users.slice(0, 18), 6).map((u, i) => ({ uid: u.id, msgs: [{ me: false, text: pick(OPENERS), time: clock() }], unread: i < 3 ? 1 + (Math.random() * 3 | 0) : 0, updated: Date.now() - i * rnd(2, 40) * 60000 }));
+    this.setState({ you, center: { lat, lon }, users, chats, locLabel: label, z: 15 });
+  }
+  tickLive() {
+    this.setState(s => {
+      if (!s.users.length) return null;
+      const users = s.users.slice(), i = Math.random() * users.length | 0, u = { ...users[i] };
+      if (u.present && Math.random() < .5) { u.present = false; u.online = false; } else { u.present = true; u.online = true; u.lastMin = 0; }
+      users[i] = u;
+      for (let k = 0; k < 3; k++) { const j = Math.random() * users.length | 0; if (users[j].online) users[j] = { ...users[j], lat: users[j].lat + rnd(-1, 1) * 0.0003, lon: users[j].lon + rnd(-1, 1) * 0.0003 }; }
+      return { users };
+    });
+  }
+  match(u, f0) {
+    const f = f0 || this.state.f;
+    if (f.online && !u.online) return false;
+    if (u.age < f.ageMin || u.age > f.ageMax) return false;
+    for (const [k] of GROUPS) {
+      const sel = f[k]; if (!sel.length) continue;
+      const v = u[k]; if (Array.isArray(v) ? !v.some(x => sel.includes(x)) : !sel.includes(v)) return false;
+    }
+    return true;
+  }
+  openChat(uid) {
+    this.setState(s => {
+      const chats = s.chats.some(c => c.uid === uid) ? s.chats.map(c => c.uid === uid ? { ...c, unread: 0 } : c) : [{ uid, msgs: [], unread: 0, updated: Date.now() }, ...s.chats];
+      return { chats, activeChat: uid, view: 'chats', profileId: null, drawer: null };
+    });
+  }
+  send() {
+    const t = this.state.draft.trim(), uid = this.state.activeChat;
+    if (!t || !uid) return;
+    const push = (me, text) => this.setState(s => ({ chats: s.chats.map(c => c.uid === uid ? { ...c, msgs: [...c.msgs, { me, text, time: clock() }], updated: Date.now() } : c) }));
+    push(true, t); this.setState({ draft: '', typingChat: uid });
+    this.later(() => { push(false, pick(REPLIES)); this.setState({ typingChat: null }); }, 1500);
+  }
+  aiAsk(text) {
+    const t = (text || '').trim(); if (!t) return;
+    this.setState(s => ({ aiDraft: '', aiTyping: true, aiMsgs: [...s.aiMsgs, { id: Date.now(), me: true, text: t }] }));
+    this.later(() => {
+      const q = t.toLowerCase(), blank = { online: false, ageMin: 18, ageMax: 99, position: [], body: [], identity: [], orientation: [], interests: [], health: [], looking: [] };
+      let reply, results = [], f = null;
+      if (/\b(reset|clear|everyone|anyone|show all)\b/.test(q)) { f = blank; reply = 'Cleared every filter. Showing everyone nearby.'; }
+      else {
+        const nf = JSON.parse(JSON.stringify(blank)), parts = [];
+        if (/online|right now|tonight|active/.test(q)) { nf.online = true; parts.push('Online now'); }
+        let m;
+        if ((m = q.match(/(\d{2})\s*(?:-|to|–)\s*(\d{2})/))) { nf.ageMin = +m[1]; nf.ageMax = +m[2]; }
+        else {
+          if ((m = q.match(/(?:under|below|younger than|<)\s*(\d{2})/))) nf.ageMax = +m[1];
+          if ((m = q.match(/(?:over|above|older than|>)\s*(\d{2})/))) nf.ageMin = +m[1];
+        }
+        nf.ageMin = Math.max(18, Math.min(99, nf.ageMin)); nf.ageMax = Math.max(nf.ageMin, Math.min(99, nf.ageMax));
+        if (nf.ageMin > 18 || nf.ageMax < 99) parts.push(nf.ageMin + '–' + nf.ageMax);
+        const DICT = [[/\btops?\b/, 'position', 'Top'], [/\bbottoms?\b/, 'position', 'Bottom'], [/\bvers/, 'position', 'Vers'], [/\bswitch/, 'position', 'Switch'],
+          [/\bslim|skinny/, 'body', 'Slim'], [/athletic|\bfit\b/, 'body', 'Athletic'], [/\bbears?\b/, 'body', 'Bear'], [/muscular|muscle|jacked/, 'body', 'Muscular'], [/\baverage\b/, 'body', 'Average'],
+          [/\btrans\b(?!\s*safe)/, 'identity', 'Trans'], [/non-?binary|\bnb\b/, 'identity', 'Non-binary'], [/fluid/, 'identity', 'Gender fluid'],
+          [/\bbi(sexual)?\b/, 'orientation', 'Bisexual'], [/\bpan(sexual)?\b/, 'orientation', 'Pansexual'],
+          [/new in town|visiting|traveling|new here/, 'looking', 'New in town'], [/community|friends/, 'looking', 'Community'], [/\bnsa\b|hook ?up/, 'looking', 'NSA'], [/pride/, 'looking', 'Pride friendly'], [/trans ?safe|safe space/, 'looking', 'Trans safe space'],
+          [/discre/, 'interests', 'Discretion required'], [/poly|open relationship/, 'interests', 'Open / Poly'], [/daddy|\bboys?\b/, 'interests', 'Daddy / Boy'], [/\bkink/, 'interests', 'Kink'], [/bdsm|leather/, 'interests', 'BDSM'],
+          [/prep/, 'health', 'PrEP user'], [/undetectable|u=u/, 'health', 'HIV+ undetectable'], [/tested|testing/, 'health', 'Tests regularly']];
+        DICT.forEach(([re, k, v]) => { if (re.test(q) && !nf[k].includes(v)) { nf[k].push(v); parts.push(v); } });
+        if (!parts.length) reply = 'I can search by position, age, body type, identity, orientation, what people are looking for, and who is online. Try “athletic tops over 30” or “new in town tonight”.';
+        else { f = nf; reply = 'Done — ' + parts.join(' · ') + '.'; }
+      }
+      if (f) {
+        const list = this.state.users.filter(u => u.present && this.match(u, f)).sort((x, y) => x.m - y.m);
+        results = list.slice(0, 3).map(u => u.id);
+        reply += ' ' + (list.length ? list.length + (list.length === 1 ? ' person matches' : ' people match') + ', closest first:' : 'No one matches right now — try loosening one filter.');
+      }
+      this.setState(s => ({ aiTyping: false, ...(f ? { f } : {}), aiMsgs: [...s.aiMsgs, { id: Date.now() + 1, bot: true, text: reply, results }] }));
+    }, 800);
+  }
+  zoom(d) { this.setState(s => ({ z: Math.max(11, Math.min(18, s.z + d)) })); }
+  onDragMove = e => {
+    const d = this.drag; if (!d) return;
+    const [lat, lon] = unproj(d.cx - (e.clientX - d.sx), d.cy - (e.clientY - d.sy), this.state.z);
+    this.setState({ center: { lat, lon } });
+  };
+  onDragUp = () => { this.drag = null; window.removeEventListener('pointermove', this.onDragMove); window.removeEventListener('pointerup', this.onDragUp); };
+
+  renderVals() {
+    const s = this.state, { w, h, z } = s, set = (k, v) => this.setState(st => ({ f: { ...st.f, [k]: v } }));
+    const byId = id => s.users.find(u => u.id === id);
+    const unreadTotal = s.chats.reduce((a, c) => a + c.unread, 0);
+    const go = (view, extra) => () => this.setState({ view, drawer: null, profileId: null, ...(extra || {}) });
+    const drawer = k => () => this.setState(st => ({ drawer: st.drawer === k ? null : k, profileId: null }));
+    const matched = s.users.filter(u => u.present && this.match(u));
+    const card = u => ({ ...u, named: !u.anon, dist: fmtDist(u.m), open: () => this.setState({ profileId: u.id }) });
+
+    let tiles = [], pins = [], clusters = [], youX = 0, youY = 0, ringD = 0;
+    if (s.center && w) {
+      const [cx, cy] = proj(s.center.lat, s.center.lon, z), ox = cx - w / 2, oy = cy - h / 2, n = Math.pow(2, z);
+      for (let tx = Math.floor(ox / 256); tx <= Math.floor((ox + w) / 256); tx++) for (let ty = Math.floor(oy / 256); ty <= Math.floor((oy + h) / 256); ty++) {
+        if (ty < 0 || ty >= n) continue;
+        const wx = ((tx % n) + n) % n;
+        tiles.push({ bg: 'url(https://basemaps.cartocdn.com/rastertiles/dark_all/' + z + '/' + wx + '/' + ty + '.png?key=' + MAP_KEY + ')', left: Math.round(tx * 256 - ox), top: Math.round(ty * 256 - oy) });
+      }
+      const [yx, yy] = proj(s.you.lat, s.you.lon, z); youX = yx - ox; youY = yy - oy;
+      ringD = 2 * 402 / (156543.03 * Math.cos(s.you.lat * Math.PI / 180) / n);
+      const vis = matched.map(u => { const [px, py] = proj(u.lat, u.lon, z); return { u, x: px - ox, y: py - oy }; }).filter(p => p.x > -40 && p.x < w + 40 && p.y > -40 && p.y < h + 40);
+      const mk = p => ({ ...card(p.u), x: Math.round(p.x), y: Math.round(p.y), op: p.u.online ? 1 : 0.5 });
+      if (s.set.group) {
+        const cells = {};
+        vis.forEach(p => { const k = Math.floor(p.x / 70) + ',' + Math.floor(p.y / 70); (cells[k] = cells[k] || []).push(p); });
+        Object.values(cells).forEach(g => {
+          if (g.length === 1) return pins.push(mk(g[0]));
+          const x = g.reduce((a, p) => a + p.x, 0) / g.length, y = g.reduce((a, p) => a + p.y, 0) / g.length;
+          clusters.push({ x: Math.round(x), y: Math.round(y), n: g.length, d: 34 + Math.min(20, g.length * 3), open: () => { const [lat, lon] = unproj(ox + x, oy + y, z); this.setState(st => ({ center: { lat, lon }, z: Math.min(18, st.z + 1) })); } });
+        });
+      } else pins = vis.map(mk);
+    }
+
+    const people = matched.filter(u => !s.search || u.name.toLowerCase().includes(s.search.toLowerCase())).map(card);
+    const chatRows = s.chats.slice().sort((a, b) => b.updated - a.updated).map(c => ({ c, u: byId(c.uid) })).filter(r => r.u)
+      .filter(({ c, u }) => s.chatFilter === 'All' || (s.chatFilter === 'Online now' && u.online) || (s.chatFilter === 'Unread' && c.unread) || (s.chatFilter === 'Protected' && u.verified));
+    const chatList = chatRows.map(({ c, u }) => { const last = c.msgs[c.msgs.length - 1]; return { ...u, named: !u.anon, protected: u.verified, active: s.activeChat === u.id, time: ago((Date.now() - c.updated) / 60000), preview: last ? (last.me ? 'You: ' : '') + last.text : 'Say hi', unread: c.unread, hasUnread: c.unread > 0, open: () => this.openChat(u.id) }; });
+    const ac = s.chats.find(c => c.uid === s.activeChat), au = ac && byId(ac.uid);
+    const thread = au ? { name: au.name, initials: au.anon ? '?' : au.initials, status: (au.online ? 'Online' : 'Active ' + ago(au.lastMin) + ' ago') + ' · ' + fmtDist(au.m), msgs: ac.msgs.map(m => ({ ...m, them: !m.me })), typing: s.typingChat === au.id, openProfile: () => this.setState({ profileId: au.id }) } : {};
+
+    const pu = s.profileId && byId(s.profileId);
+    const sorted = s.users.filter(u => u.present && this.match(u));
+    const prof = pu ? {
+      ...pu, named: !pu.anon, dist: fmtDist(pu.m) + ' away', active: pu.online ? 'Active now' : 'Active ' + ago(pu.lastMin) + ' ago',
+      stats: [pu.age, pu.height, pu.weight + ' lb', pu.position, pu.orientation].join(' · '),
+      tags: [...pu.interests, ...pu.looking],
+      facts: [{ k: 'Identity', v: pu.identity }, { k: 'Body type', v: pu.body }, { k: 'Position', v: pu.position }, { k: 'Sexual health', v: pu.health }],
+      chat: () => this.openChat(pu.id),
+      next: () => { const i = sorted.findIndex(u => u.id === pu.id), nx = sorted[(i + 1) % sorted.length]; if (nx) this.setState({ profileId: nx.id }); }
+    } : {};
+
+    const activeFilterCount = (s.f.online ? 1 : 0) + (s.f.ageMin > 18 || s.f.ageMax < 99 ? 1 : 0) + GROUPS.reduce((a, [k]) => a + s.f[k].length, 0);
+    const titles = { filters: 'Filters', settings: 'Settings', notifs: 'Notifications', travel: 'Travel mode' };
+    const toggleKeys = [['vanilla', 'Vanilla mode', 'Hide 18+ media', false], ['group', 'Group pins', 'Cluster nearby markers on the map', false], ['sounds', 'Sounds', 'Play a sound for new messages', false], ['discreet', 'Discreet mode', 'Hide your pin from others', true]];
+    const unreadChats = s.chats.filter(c => c.unread).map(c => ({ c, u: byId(c.uid) })).filter(r => r.u);
+    const onMap = s.view === 'map' && !s.drawer;
+
+    return {
+      mainRef: this.mainRef, threadRef: this.threadRef, searchRef: this.searchRef,
+      wide: !s.narrow, narrow: s.narrow, locLabel: s.locLabel,
+      isMap: s.view === 'map', isPeople: s.view === 'people', isChats: s.view === 'chats',
+      goMap: go('map'),
+      navItems: [
+        { label: 'Menu', d: P.menu, go: drawer('settings'), active: s.drawer === 'settings' },
+        { label: 'Map', d: P.map, go: go('map'), active: onMap },
+        { label: 'People', d: P.grid, go: go('people'), active: s.view === 'people' && !s.drawer },
+        { label: 'Search', d: P.search, go: () => { this.setState({ view: 'people', drawer: null, profileId: null }); this.later(() => this.searchRef.current && this.searchRef.current.focus(), 60); }, active: false },
+        { label: 'Messages', d: P.chat, go: go('chats'), active: s.view === 'chats' && !s.drawer, badge: unreadTotal, hasBadge: unreadTotal > 0 },
+        { label: 'Filters', d: P.layers, go: drawer('filters'), active: s.drawer === 'filters' }
+      ].map(n => ({ hasBadge: false, ...n })),
+      bottomNav: [{ label: 'Chat', d: P.chat, go: go('chats'), active: s.view === 'chats' }, { label: 'Home', d: P.map, go: go('map'), active: s.view === 'map' }, { label: 'People', d: P.grid, go: go('people'), active: s.view === 'people' }],
+      openTravel: drawer('travel'), openSettings: drawer('settings'), openFilters: drawer('filters'), openNotifs: drawer('notifs'),
+      tiles, hasTiles: tiles.length > 0, pins, clusters, hasYou: !!s.you && !!w, youX: Math.round(youX), youY: Math.round(youY), ringD: Math.round(ringD), fuzzD: 20 + s.randomize * 2.4,
+      youVisible: !s.set.discreet, youHidden: s.set.discreet,
+      onlineCount: s.users.filter(u => u.present && u.online).length,
+      onMapDown: e => { if (e.button) return; const [cx, cy] = proj(s.center ? s.center.lat : 0, s.center ? s.center.lon : 0, z); this.drag = { sx: e.clientX, sy: e.clientY, cx, cy }; window.addEventListener('pointermove', this.onDragMove); window.addEventListener('pointerup', this.onDragUp); },
+      onWheel: e => { const t = Date.now(); if (t - (this.lastWheel || 0) < 350 || Math.abs(e.deltaY) < 20) return; this.lastWheel = t; this.zoom(e.deltaY < 0 ? 1 : -1); },
+      stopDown: e => e.stopPropagation(),
+      zoomIn: () => this.zoom(1), zoomOut: () => this.zoom(-1),
+      recenter: () => s.you && this.setState({ center: { ...s.you }, z: 15 }),
+      hasActiveFilters: activeFilterCount > 0, activeFilterCount,
+      hasNotifs: unreadTotal > 0,
+      people, peopleCount: people.length, noPeople: !people.length, search: s.search, onSearch: e => this.setState({ search: e.target.value }),
+      chatFilters: ['All', 'Online now', 'Unread', 'Protected'].map(l => ({ label: l, sel: s.chatFilter === l, pick: () => this.setState({ chatFilter: l }) })),
+      chatList, noChats: !chatList.length,
+      showList: !s.narrow || !s.activeChat, showThread: !!au, showThreadEmpty: !au && !s.narrow,
+      closeThread: () => this.setState({ activeChat: null }),
+      thread, draft: s.draft, onDraft: e => this.setState({ draft: e.target.value }), onDraftKey: e => { if (e.key === 'Enter') this.send(); }, sendMsg: () => this.send(),
+      drawerOpen: !!s.drawer, drawerTitle: titles[s.drawer] || '', closeDrawer: () => this.setState({ drawer: null }),
+      isFilters: s.drawer === 'filters', isSettings: s.drawer === 'settings', isNotifs: s.drawer === 'notifs', isTravel: s.drawer === 'travel',
+      onlineFilter: s.f.online, onlineFilterOff: !s.f.online, toggleOnlineFilter: () => set('online', !s.f.online),
+      ageMin: s.f.ageMin, ageMax: s.f.ageMax,
+      onAgeMin: e => set('ageMin', Math.min(+e.target.value, s.f.ageMax)), onAgeMax: e => set('ageMax', Math.max(+e.target.value, s.f.ageMin)),
+      filterGroups: GROUPS.map(([k, title]) => ({ title, opts: OPT[k].map(label => ({ label, sel: s.f[k].includes(label), toggle: () => set(k, s.f[k].includes(label) ? s.f[k].filter(x => x !== label) : [...s.f[k], label]) })) })),
+      resetFilters: () => this.setState({ f: { online: false, ageMin: 18, ageMax: 99, position: [], body: [], identity: [], orientation: [], interests: [], health: [], looking: [] } }),
+      toggles: toggleKeys.map(([k, label, sub, plus]) => ({ label, sub, plus, on: s.set[k], off: !s.set[k], toggle: () => this.setState(st => ({ set: { ...st.set, [k]: !st.set[k] } })) })),
+      randomize: s.randomize, onRandomize: e => this.setState({ randomize: +e.target.value }),
+      bio: s.bio, onBio: e => this.setState({ bio: e.target.value }),
+      notifs: [
+        ...unreadChats.map(({ c, u }) => ({ text: u.name + ' sent you ' + c.unread + ' message' + (c.unread > 1 ? 's' : ''), time: ago((Date.now() - c.updated) / 60000), go: () => this.openChat(u.id) })),
+        ...s.users.slice(3, 5).map(u => ({ text: u.name + ' viewed your profile', time: ago(u.lastMin), go: () => this.setState({ drawer: null, profileId: u.id }) }))
+      ],
+      cities: CITIES.map(([name, area, lat, lon]) => ({ name, area, go: () => { this.world(lat, lon, 'Traveling · ' + name); this.setState({ drawer: null, view: 'map', profileId: null }); } })),
+      goHome: () => { if (this.home) this.world(...this.home); this.setState({ drawer: null, view: 'map' }); },
+      hasProfile: !!pu, prof, closeProfile: () => this.setState({ profileId: null }),
+      aiRef: this.aiRef, aiOpen: s.aiOpen, showAiBtn: !s.aiOpen && (s.view === 'map' || s.view === 'people') && !pu && !s.drawer,
+      toggleAi: () => this.setState(st => ({ aiOpen: !st.aiOpen })),
+      aiMsgs: s.aiMsgs.map(m => ({ ...m, bot: !!m.bot, me: !!m.me, results: (m.results || []).map(id => byId(id)).filter(Boolean).map(u => ({ name: u.name, age: u.age, dist: fmtDist(u.m), dot: u.online ? '#34d399' : '#666', open: () => this.setState({ profileId: u.id }) })) })),
+      aiTyping: s.aiTyping, aiShowSugg: s.aiMsgs.length === 1 && !s.aiTyping,
+      aiSugg: ['Online now nearby', 'Vers guys under 35', 'Bears over 30', 'New in town tonight'].map(label => ({ label, go: () => this.aiAsk(label) })),
+      aiDraft: s.aiDraft, onAiDraft: e => this.setState({ aiDraft: e.target.value }), onAiKey: e => { if (e.key === 'Enter') this.aiAsk(s.aiDraft); }, aiSend: () => this.aiAsk(s.aiDraft)
+    };
+  }
+}
+</script>
+</body>
+</html>

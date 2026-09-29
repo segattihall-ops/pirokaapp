@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* πroka global baseline — tokens live in tailwind.config.ts; see design_handoff/README.md */
+@layer base {
+  :root {
+    color-scheme: dark;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  html {
+    background: #070707;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-body text-fg antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  /* Global focus ring: green outline on keyboard focus only (README → Added since v1). */
+  :focus-visible {
+    outline: 2px solid #34d399;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Inputs stay at 16px under the rail breakpoint so iOS Safari never zooms (handoff v5 → Mobile). */
+  @media (max-width: 819px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  ::selection {
+    background: rgba(52, 211, 153, 0.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Glass card: gradient hairline sheen over a dark blurred base. */
+  .glass {
+    background:
+      linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 50%), rgba(12, 12, 12, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Tap targets never fall under 44px on touch devices. */
+  .tap {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-primary {
+    @apply tap inline-flex items-center justify-center rounded-btn bg-white px-4.5 text-[14px] font-semibold text-ink-950 transition-colors hover:bg-fg disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-secondary {
+    @apply tap inline-flex items-center justify-center rounded-btn border border-line-2 bg-ink-850 px-4.5 text-[14px] font-medium text-fg transition-colors hover:border-line-3;
+  }
+  .btn-ghost {
+    @apply tap inline-flex items-center justify-center rounded-btn px-4.5 text-[14px] font-medium text-fg-3 transition-colors hover:text-fg;
+  }
+  .chip {
+    @apply inline-flex h-9 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850 px-3.5 text-[13px] font-medium text-fg-2 transition-colors;
+  }
+  .chip-selected {
+    @apply border-sel-border bg-sel-fill text-fg;
+  }
+  .input {
+    @apply w-full rounded-input border border-line-2 bg-ink-850 px-3.5 py-3 text-[15px] text-fg placeholder:text-fg-4 focus:border-sel-border;
+  }
+  .eyebrow {
+    @apply text-eyebrow uppercase text-green;
+  }
+}
