@@ -42,12 +42,57 @@
 - ✅ Yoti integration (lib/auth/yoti.ts, lib/age.ts dispatcher)
 - ✅ Age verification provider system (local/yoti/persona routing)
 - ✅ Yoti configuration in .env.example with security warnings
+- ✅ Photo upload infrastructure (EXIF stripping + blur variants)
+- ✅ Storage helpers (R2 + Supabase)
+- ✅ Database schema (PostgreSQL + PostGIS)
+- ✅ Onboarding API routes (save profile, upload photos, save location)
+- ✅ Location fuzzing for privacy (server-side only)
 
-### Pending (Phase 2.2+)
-- ⏳ Place .pem file at lib/auth/yoti.pem and set YOTI_CLIENT_SDK_ID
-- ⏳ Apply starter/db/schema.sql to Supabase
-- ⏳ Photo upload with EXIF stripping + blur variants
-- ⏳ Persist onboarding data to database
+### Pending (Phase 2.2 activation)
+- ⏳ Add Supabase credentials to .env.local
+- ⏳ Run SUPABASE_SETUP.md to configure project
+- ⏳ Test end-to-end: onboarding → database
+
+## Phase 3 ✅ Built
+### Completed (Map Core)
+- ✅ MapLibre component with CARTO dark_all (Esri fallback)
+- ✅ User pins + intent rings infrastructure
+- ✅ Place pins + arrival pins layers
+- ✅ Realtime update hooks (Supabase channels)
+- ✅ Nearby query (max 200 people, 5km radius)
+
+### Pending
+- ⏳ Wire Supabase realtime for user position updates
+- ⏳ Render intent rings with dynamic colors
+- ⏳ Time scrubber (Now → +6h)
+- ⏳ Filter sheet UI
+
+## Phase 4 ✅ Built
+### Completed (Profiles + Chat)
+- ✅ Profile card with progressive blur (trust-based)
+- ✅ Album grid (expandable)
+- ✅ Report/Block UI
+- ✅ E2E chat panel stub (libsignal integration pending)
+
+### Pending
+- ⏳ Integrate libsignal for X3DH + Double Ratchet
+- ⏳ Smart Inbox buckets (by relationship type)
+- ⏳ Album request flow
+- ⏳ Ciphertext-only storage
+
+## Phase 5 ✅ Built
+### Completed (Meet Mode + SafeMeet)
+- ✅ Meet proposal UI (accept/decline)
+- ✅ Active meet panel with 2h countdown
+- ✅ Check-in timer (5/15/30/45 min)
+- ✅ Trusted contact display
+- ✅ Block & Report button
+
+### Pending
+- ⏳ Precise location sharing (exact distance + bridge line animation)
+- ⏳ Push notifications for check-in reminders
+- ⏳ Twilio SMS for missed check-ins
+- ⏳ Auto-revoke precise access after 2h
 
 ## Required Environment Variables
 
