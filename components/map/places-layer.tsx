@@ -24,7 +24,7 @@ interface PlacesLayerProps {
  * Shows verified venue pins with peak time hints
  */
 export function PlacesLayer({ map, places, onPlaceClick }: PlacesLayerProps) {
-  useEffect(() => {
+  useEffect((): void | (() => void) => {
     if (!map || places.length === 0) return;
 
     const source = map.getSource('places') as maplibregl.GeoJSONSource;
@@ -45,27 +45,27 @@ export function PlacesLayer({ map, places, onPlaceClick }: PlacesLayerProps) {
       });
     }
 
-    // Click handler
-    if (onPlaceClick) {
-      const handleClick = (e: any) => {
-        const features = map.queryRenderedFeatures({ layers: ['place-pins'] });
-        if (features.length > 0) {
-          const props = features[0].properties;
-          onPlaceClick({
-            id: props.id,
-            name: props.name,
-            kind: props.kind,
-            lat: features[0].geometry.coordinates[1],
-            lng: features[0].geometry.coordinates[0],
-            verified: props.verified,
-            peakHint: props.peakHint,
-          });
-        }
-      };
+    if (!onPlaceClick) return;
 
-      map.on('click', 'place-pins', handleClick);
-      return () => map.off('click', 'place-pins', handleClick);
-    }
+    const handleClick = (e: any) => {
+      const features = map.queryRenderedFeatures({ layers: ['place-pins'] });
+      if (features.length > 0) {
+        const props = features[0].properties;
+        const coords = (features[0].geometry as any).coordinates as [number, number];
+        onPlaceClick({
+          id: props.id,
+          name: props.name,
+          kind: props.kind,
+          lat: coords[1],
+          lng: coords[0],
+          verified: props.verified,
+          peakHint: props.peakHint,
+        });
+      }
+    };
+
+    map.on('click', 'place-pins', handleClick);
+    return () => map.off('click', 'place-pins', handleClick);
   }, [map, places, onPlaceClick]);
 
   return null;
