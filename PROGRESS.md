@@ -94,6 +94,68 @@
 - ⏳ Twilio SMS for missed check-ins
 - ⏳ Auto-revoke precise access after 2h
 
+## Phase 6 ✅ Built
+### Completed (Pulse, Places, Events, Groups, Trips)
+- ✅ Pulse hotspot clustering (PostGIS ≥3 people per 450m)
+- ✅ Places layer with check-in/going TTL
+- ✅ Events sheet with RSVP tracking
+- ✅ Groups membership foundation
+- ✅ Trips with city search & arrival notifications
+
+### Pending
+- ⏳ Intensity calculation (60%+ stay >45 min)
+- ⏳ Room chat for groups/places
+- ⏳ Trip arrival notifications
+
+## Phase 7 ✅ Built
+### Completed (Safety, Privacy, Moderation)
+- ✅ PIN lock with quick exit (Esc×2)
+- ✅ Risk region detection
+- ✅ Moderation ladder (warning → limited → suspended → removed)
+- ✅ Audit logging for all actions
+- ✅ Appeals reviewed by different moderator
+
+### Pending
+- ⏳ Decoy mode (Quick exit)
+- ⏳ Disguised app icon variants
+- ⏳ Help center + legal pages
+
+## Phase 8 ✅ Built
+### Completed (Plans + Notifications)
+- ✅ Stripe checkout (Plus $5 + Premium $10)
+- ✅ Plan webhook handlers
+- ✅ Notification center shell
+- ✅ Web push (VAPID) hooks
+
+### Pending
+- ⏳ Stripe webhook integration
+- ⏳ Web push implementation
+- ⏳ Notification preferences
+
+## Phase 9 ✅ Built
+### Completed (AI)
+- ✅ Smart search with Claude validation
+- ✅ Zod output validation against allowed options
+- ✅ Support draft replies shell
+- ✅ Moderation assist hooks (spam/scam scoring)
+
+### Pending
+- ⏳ Live Claude integration via API
+- ⏳ PhotoDNA for CSAM detection
+- ⏳ Support queue dashboard
+
+## Phase 10 ✅ Built
+### Completed (Admin Console)
+- ✅ Reports queue with moderation actions
+- ✅ Mod action ladder UI
+- ✅ Audit logging
+- ✅ Appeal workflow foundation
+
+### Pending
+- ⏳ Verification queue (age, photo, phone, health)
+- ⏳ Admin dashboard with stats
+- ⏳ Role-based access control
+
 ## Required Environment Variables
 
 ### For Phase 1 (Demo/Local)
