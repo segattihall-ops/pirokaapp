@@ -57,12 +57,26 @@ export async function verifyYotiToken(token: string) {
 
 /**
  * Decrypt Yoti token using RSA private key
- * NOTE: This is a placeholder. Use the official Yoti SDK for production.
+ * Production: Use @yoti/yoti-node-sdk for real RSA-OAEP decryption
+ *
+ * Install: npm install @yoti/yoti-node-sdk
+ * Then use: const yotiClient = new YotiClient(SDK_ID, privateKey)
+ *           const activityDetails = await yotiClient.getActivityDetails(token)
  */
 function decryptToken(token: string, privateKey: string): string {
   try {
-    // In production, use @yoti/yoti-node-sdk to decrypt
-    // For now, this is a stub that assumes token is base64-encoded JSON
+    // TODO: Implement real RSA-OAEP decryption when Yoti SDK is configured
+    // For now, this stub assumes base64-encoded JSON for testing
+
+    // Production code would be:
+    // const crypto = require('crypto');
+    // const decrypted = crypto.privateDecrypt(
+    //   { key: privateKey, padding: crypto.constants.RSA_PADDING_OAEP },
+    //   Buffer.from(token, 'base64')
+    // );
+    // return decrypted.toString('utf-8');
+
+    // Stub: just base64 decode for testing
     const buffer = Buffer.from(token, 'base64');
     return buffer.toString('utf-8');
   } catch (error) {

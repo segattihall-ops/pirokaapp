@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // Validate file
     const buffer = Buffer.from(await file.arrayBuffer());
-    const validation = validateImageFile(buffer, file.type);
+    const validation = await validateImageFile(buffer, file.type);
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
