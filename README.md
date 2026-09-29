@@ -20,17 +20,28 @@ npm run dev                  # http://localhost:3000
 
 | Route | Screen | Phase |
 |---|---|---|
-| `/` | Homepage: globe + chat sign-up, consent gate, face age check | 0 shell → 1 |
+| `/` | Homepage: live map, chat sign-up, 18+ consent, face age check, log in | 1 ✓ |
 | `/onboarding` | 5-step profile setup | 0 shell → 2 |
 | `/app/map` | Live map (default tab) | 0 shell → 3 |
 | `/app/pulse` | Stats, hotspots, arrivals | 6 |
 | `/app/chats` | Smart inbox, threads, local board | 4 |
 | `/app/places` | Places · Events · Groups · Testing | 6 |
 | `/app/me` | Profile, PIROKA Mode, SafeMeet, album, plan | 2, 5, 8 |
-| `/account/forgot` `/account/magic` `/account/reset` | Account flows | 1 |
+| `/account/forgot` `/account/magic` `/account/reset` | Account flows | 1 ✓ |
 | `/help/[slug]` | Help center, support, appeals, report, policies | 7 |
 
 App shell: 80px left rail at ≥820px (`rail:` breakpoint), 66px bottom tab bar below that, with `env(safe-area-inset-bottom)`.
+
+## Auth and the 18+ gate (Phase 1)
+
+Auth is Supabase Auth (Google, Apple, email magic link, anonymous, password). Without `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` the app runs in **demo auth** (a signed cookie, no real identity) so the whole flow can be walked locally; production builds refuse demo mode unless `NEXT_PUBLIC_AUTH_DEMO=1`.
+
+Every new account passes the gate before `/onboarding` and `/app/*` (enforced in `middleware.ts`):
+
+1. Two confirmations (18+, Terms/Privacy/Guidelines) → `POST /api/consent`.
+2. Age check → `POST /api/age/verify`. Providers in `lib/age`: `yoti`, `persona` (stubs to wire) or `local` (the on-device UI only, dev). Only `age_verified = true` is stored, in Supabase `app_metadata` via the service role.
+
+To go live on Supabase: set the keys plus `SUPABASE_SERVICE_ROLE_KEY`, enable Anonymous sign-ins, configure Google and Apple providers, add `<origin>/auth/callback` to the redirect allow list, and pick an age provider.
 
 ## Layout
 
