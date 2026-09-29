@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db/client';
+import { supabase } from '@/lib/db/client-side';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type MessagePayload = {
@@ -49,7 +49,7 @@ export function subscribeToMessages(
 
   // Return unsubscribe function
   return () => {
-    supabase.removeChannel(channel);
+    if (supabase) supabase.removeChannel(channel);
   };
 }
 
@@ -70,7 +70,7 @@ export function subscribeToTypingIndicators(
 
   channel
     .on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState();
+      const state = channel.presenceState() as any;
       const typingUsers = Object.keys(state).filter(
         (uid) => state[uid]?.[0]?.typing && uid !== userId
       );
@@ -90,7 +90,7 @@ export function subscribeToTypingIndicators(
     });
 
   return () => {
-    supabase.removeChannel(channel);
+    if (supabase) supabase.removeChannel(channel);
   };
 }
 
@@ -134,6 +134,6 @@ export function subscribeToConversationChanges(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (supabase) supabase.removeChannel(channel);
   };
 }

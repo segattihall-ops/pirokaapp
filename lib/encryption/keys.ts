@@ -6,7 +6,7 @@
  * This stub provides the key derivation structure
  */
 
-import { supabase } from '@/lib/db/client';
+import { supabase } from '@/lib/db/client-side';
 
 export type EncryptionKeyMaterial = {
   conversationId: string;
@@ -75,11 +75,18 @@ export async function storeKeyMaterial(
 
   try {
     const db = await openKeyStore();
-    await db.put('encryption-keys', {
-      conversationId: material.conversationId,
-      keyMaterial: material.keyMaterial,
-      saltBytes: material.saltBytes,
-      derivedAt: material.derivedAt.toISOString()
+    const tx = db.transaction(['encryption-keys'], 'readwrite');
+    const store = tx.objectStore('encryption-keys');
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put({
+        conversationId: material.conversationId,
+        keyMaterial: material.keyMaterial,
+        saltBytes: material.saltBytes,
+        derivedAt: material.derivedAt.toISOString()
+      });
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
     });
   } catch (error) {
     console.error('Failed to store key material:', error);
@@ -96,7 +103,14 @@ export async function retrieveKeyMaterial(
 
   try {
     const db = await openKeyStore();
-    const stored = await db.get('encryption-keys', conversationId);
+    const tx = db.transaction(['encryption-keys'], 'readonly');
+    const store = tx.objectStore('encryption-keys');
+
+    const stored = await new Promise<any>((resolve, reject) => {
+      const request = store.get(conversationId);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
 
     if (!stored) return null;
 
@@ -139,7 +153,14 @@ export async function clearKeyMaterial(): Promise<void> {
 
   try {
     const db = await openKeyStore();
-    await db.clear('encryption-keys');
+    const tx = db.transaction(['encryption-keys'], 'readwrite');
+    const store = tx.objectStore('encryption-keys');
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.clear();
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
   } catch (error) {
     console.error('Failed to clear key material:', error);
   }

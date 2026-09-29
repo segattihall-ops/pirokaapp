@@ -36,7 +36,7 @@ export async function encryptMessage(
     // Import key for Web Crypto
     const key = await crypto.subtle.importKey(
       'raw',
-      keyMaterial.keyMaterial,
+      keyMaterial.keyMaterial as any,
       ALGORITHM,
       false,
       ['encrypt']
@@ -86,7 +86,7 @@ export async function decryptMessage(
     // Import key
     const key = await crypto.subtle.importKey(
       'raw',
-      keyMaterial.keyMaterial,
+      keyMaterial.keyMaterial as any,
       ALGORITHM,
       false,
       ['decrypt']
