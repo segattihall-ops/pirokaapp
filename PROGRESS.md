@@ -38,6 +38,16 @@
 - 🎭 Email magic link: Console log, no real SMTP
 
 ## Phase 2 🚀 In Progress
+### Completed (Phase 2.2)
+- ✅ Yoti integration (lib/auth/yoti.ts, lib/age.ts dispatcher)
+- ✅ Age verification provider system (local/yoti/persona routing)
+- ✅ Yoti configuration in .env.example with security warnings
+
+### Pending (Phase 2.2+)
+- ⏳ Place .pem file at lib/auth/yoti.pem and set YOTI_CLIENT_SDK_ID
+- ⏳ Apply starter/db/schema.sql to Supabase
+- ⏳ Photo upload with EXIF stripping + blur variants
+- ⏳ Persist onboarding data to database
 
 ## Required Environment Variables
 
