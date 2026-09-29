@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import Map from 'maplibre-gl';
+import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const CARTO_DARK = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels/style.json';
@@ -20,7 +20,7 @@ interface MapCoreProps {
  */
 export function MapCore({ center = [-96.8, 32.8], zoom = 12, onLocationChange }: MapCoreProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +37,8 @@ export function MapCore({ center = [-96.8, 32.8], zoom = 12, onLocationChange }:
           styleUrl = ESRI_DARK_FALLBACK;
         }
 
-        const map = new Map({
-          container: containerRef.current,
+        const map = new maplibregl.Map({
+          container: containerRef.current as HTMLElement,
           style: styleUrl,
           center,
           zoom,

@@ -75,7 +75,7 @@ export function MeetMode({
           <p className="mb-2">
             <span className="font-semibold">Meet Type:</span> {proposal.meetType === 'public' ? 'Public area' : 'Specific place'}
           </p>
-          <p>During the meet, you'll share your precise location for 2 hours.</p>
+          <p>During the meet, you&apos;ll share your precise location for 2 hours.</p>
           <p className="text-xs text-gray-500 mt-2">You can end it anytime with Block & Report</p>
         </div>
 
@@ -148,7 +148,7 @@ export function MeetMode({
             <p className="text-gray-300">
               {trustedContact.name}: <code className="text-orange-300">{trustedContact.phone}</code>
             </p>
-            <p className="text-xs text-gray-400 mt-1">If you miss a check-in, we'll notify them after 2 missed alerts.</p>
+            <p className="text-xs text-gray-400 mt-1">If you miss a check-in, we&apos;ll notify them after 2 missed alerts.</p>
           </div>
         )}
 

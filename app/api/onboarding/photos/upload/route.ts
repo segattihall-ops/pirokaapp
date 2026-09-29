@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth/server';
 import { stripExif, createBlurVariant, validateImageFile } from '@/lib/upload/exif';
 import { generateStorageKey } from '@/lib/upload/storage';
 import { supabaseAdmin } from '@/lib/db/client';
@@ -10,8 +10,8 @@ import { supabaseAdmin } from '@/lib/db/client';
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const session = await getSession();
+    if (!session?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,11 +40,11 @@ export async function POST(req: NextRequest) {
     const blurBuffer = await createBlurVariant(cleanBuffer, file.type);
 
     // Generate storage keys
-    const storageKey = generateStorageKey({ userId: session.user.id, slot, variant: 'original' });
-    const blurKey = generateStorageKey({ userId: session.user.id, slot, variant: 'blur' });
+    const storageKey = generateStorageKey({ userId: session.userId, slot, variant: 'original' });
+    const blurKey = generateStorageKey({ userId: session.userId, slot, variant: 'blur' });
 
     // Upload to Supabase Storage (if configured)
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && supabaseAdmin) {
       const [origResult, blurResult] = await Promise.all([
         supabaseAdmin.storage
           .from('photos')
@@ -63,11 +63,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to photos table
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('photos')
       .upsert(
         {
-          user_id: session.user.id,
+          user_id: session.userId,
           slot,
           storage_key: storageKey,
           blur_key: blurKey,

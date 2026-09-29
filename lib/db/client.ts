@@ -4,21 +4,23 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  throw new Error('Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-}
-
 /**
  * Server-side Supabase client (uses service role key, bypasses RLS for admin operations)
+ * Returns null if credentials are not configured (dev without Supabase)
  */
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { persistSession: false },
-});
+export const supabaseAdmin =
+  SUPABASE_URL && SUPABASE_SERVICE_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+        auth: { persistSession: false },
+      })
+    : null;
 
 /**
  * Get a user by auth provider
  */
 export async function getUserByProvider(provider: string, providerId: string) {
+  if (!supabaseAdmin) return { data: null, error: new Error('Supabase not configured') };
+
   const { data, error } = await supabaseAdmin
     .from('users')
     .select('*')
@@ -33,6 +35,8 @@ export async function getUserByProvider(provider: string, providerId: string) {
  * Create or update a user from onboarding data
  */
 export async function upsertUser(userId: string, profile: any) {
+  if (!supabaseAdmin) return { data: null, error: new Error('Supabase not configured') };
+
   const { data, error } = await supabaseAdmin
     .from('users')
     .upsert(
@@ -70,6 +74,8 @@ export async function saveLocation(
   publicLng: number,
   countryCode?: string
 ) {
+  if (!supabaseAdmin) return { data: null, error: new Error('Supabase not configured') };
+
   const { data, error } = await supabaseAdmin
     .from('locations')
     .upsert(
@@ -92,6 +98,8 @@ export async function saveLocation(
  * Check if onboarding is complete for a user
  */
 export async function isOnboardingComplete(userId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
   const { data, error } = await supabaseAdmin
     .from('users')
     .select('handle, gender, orientation, communities, show_me')

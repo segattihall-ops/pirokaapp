@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 
 /**
@@ -8,8 +8,8 @@ import { supabaseAdmin } from '@/lib/db/client';
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const session = await getSession();
+    if (!session?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check Supabase is configured
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+    }
+
     // Update user profile
     const { data, error } = await supabaseAdmin
       .from('users')
@@ -51,7 +56,7 @@ export async function POST(req: NextRequest) {
         },
         updated_at: new Date().toISOString(),
       })
-      .eq('id', session.user.id)
+      .eq('id', session.userId)
       .select();
 
     if (error) {

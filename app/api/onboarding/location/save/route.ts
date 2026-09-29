@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth/server';
 import { saveLocation } from '@/lib/db/client';
 import { fuzzLocation } from '@/lib/geo/fuzz';
 import crypto from 'crypto';
@@ -11,8 +11,8 @@ import crypto from 'crypto';
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const session = await getSession();
+    if (!session?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Save to database (server-only operation)
     const { data, error } = await saveLocation(
-      session.user.id,
+      session.userId,
       lat,
       lng,
       fuzzSeed,
