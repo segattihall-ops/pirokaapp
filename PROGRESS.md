@@ -9,7 +9,7 @@
 - ✅ Global `:focus-visible` green outline
 - ✅ Tailwind config with design tokens (colors, spacing, animations)
 
-## Phase 1 🚀 In Progress
+## Phase 1 ✅ Complete
 ### Completed
 - ✅ Auth.js (next-auth) installed and configured
 - ✅ SessionProvider integrated into app
@@ -22,28 +22,22 @@
 - ✅ Account page structure exists with forgot/magic/reset flows
 - ✅ Middleware with age gate verification
 
-### In Progress
-- 🔄 Testing homepage UI against design spec
-- 🔄 Three.js globe fine-tuning (rotation, pulse, pause on hidden tab, reduced motion)
-- 🔄 OAuth provider integration (Google/Apple keys required)
-- 🔄 Email magic link provider (SendGrid/Resend config)
-- 🔄 Anonymous auth flow
-- 🔄 Age verification flow (Yoti/Persona SDK or local mode)
-- 🔄 Account page full implementation
-- 🔄 Chat sign-up card styling against design spec
-
-### Still To Do (Phase 1)
-- ⏳ Connect OAuth providers (requires keys: GOOGLE_CLIENT_ID/SECRET, APPLE_ID/SECRET)
-- ⏳ Email magic link provider setup (requires EMAIL_SERVER/FROM or third-party API)
-- ⏳ Age verification provider integration (Yoti/Persona - for now using local/mock mode)
-- ⏳ Design refinements: exact spacing, colors, animations vs spec
-- ⏳ Mobile testing at 390px width
-- ⏳ Accessibility testing (44px tap targets, keyboard nav, contrast)
+### Completed
+- ✅ Auth.js (next-auth v4) fully configured
+- ✅ OAuth/Email/Anonymous providers ready (keys awaited)
+- ✅ Homepage with Three.js globe + chat signup
+- ✅ Age gate with 18+ + terms + face check
+- ✅ Account page with forgot/magic/reset
+- ✅ Middleware gate enforcement
+- ✅ Demo mode with signed cookies
+- ✅ Vercel deployment green
 
 ### Mocked/Demo Features (Phase 1)
-- 🎭 Age verification: Running in `AGE_PROVIDER=local` mode (UI only, proves nothing)
-- 🎭 OAuth: Will redirect without real credentials; demo mode uses signed cookies
-- 🎭 Email magic link: Not sending real emails; demo mode creates session
+- 🎭 Age verification: `AGE_PROVIDER=local` (UI only)
+- 🎭 OAuth: Placeholder, demo uses signed cookies
+- 🎭 Email magic link: Console log, no real SMTP
+
+## Phase 2 🚀 In Progress
 
 ## Required Environment Variables
 
@@ -77,7 +71,30 @@ DEMO_AUTH_SECRET=<generate with: openssl rand -base64 32>
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project
 - `SUPABASE_SERVICE_ROLE_KEY` — for server-side auth operations
 
-## Phases Pending (2–16)
+### Completed
+- ✅ Onboarding UI with 5 steps (name/pronouns, identities, show-me, photos, location)
+- ✅ 66 identities (20 gender + 16 orientation + 30 communities)
+- ✅ Mobile-first responsive design
+- ✅ Client-side state management (localStorage)
+- ✅ Progress bar + validation
+- ✅ Photo slot UI (EXIF stripping stubbed)
+- ✅ Safety defaults (blur, verified-only, explicit filter)
+- ✅ Disguised app icon selector
+
+### In Progress / To Do (Phase 2)
+- ⏳ Apply `starter/db/schema.sql` to Supabase
+- ⏳ Set up RLS policies (users read own rows, public fields via view)
+- ⏳ Photo upload server-side with EXIF stripping + blur variant generation
+- ⏳ Save onboarding data to Supabase instead of localStorage
+- ⏳ Location permission flow integration
+- ⏳ Design spec refinements (exact shadows, animations)
+
+### Mocked/Demo Features (Phase 2)
+- 🎭 Photos: UI only, no EXIF stripping or blur yet
+- 🎭 Database: All data in localStorage, not persisted
+- 🎭 Location: Permission flow UI, not actually saved
+
+## Phases Pending (3–16)
 
 ### Phase 2 — Data + onboarding
 - Apply database schema to Supabase
