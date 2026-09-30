@@ -14,7 +14,7 @@ export type AgeMethod = 'face' | 'id';
 export function ageProvider(): AgeProvider {
   const p = process.env.AGE_PROVIDER as AgeProvider | undefined;
   if (p === 'yoti' || p === 'persona' || p === 'local') return p;
-  if (process.env.YOTI_CLIENT_SDK_ID && process.env.YOTI_PEM) return 'yoti';
+  if (process.env.YOTI_CLIENT_SDK_ID && process.env.YOTI_PEM_PATH) return 'yoti';
   if (process.env.PERSONA_API_KEY) return 'persona';
   return 'local';
 }

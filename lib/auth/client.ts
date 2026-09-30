@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { getCaptchaToken } from './captcha';
 import type { Session } from './types';
 
 /**
@@ -53,9 +54,10 @@ export async function signInWithMagicLink(email: string, next = '/'): Promise<vo
     return;
   }
   const sb = createClient()!;
+  const captchaToken = await getCaptchaToken('magiclink');
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: callback(next), shouldCreateUser: true },
+    options: { emailRedirectTo: callback(next), shouldCreateUser: true, captchaToken },
   });
   if (error) throw error;
 }
@@ -66,8 +68,15 @@ export async function signInAnonymously(): Promise<void> {
     return;
   }
   const sb = createClient()!;
-  const { error } = await sb.auth.signInAnonymously();
-  if (error) throw error;
+  const captchaToken = await getCaptchaToken('anonymous');
+  const { error } = await sb.auth.signInAnonymously({ options: { captchaToken } });
+  if (error) {
+    // Supabase → Authentication → Sign In / Providers → "Allow anonymous sign-ins" is off.
+    if (/anonymous sign-ins are disabled/i.test(error.message)) {
+      throw new Error('Anonymous sign-in isn’t available yet — use Google, Apple or your email instead.');
+    }
+    throw error;
+  }
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<void> {
@@ -76,14 +85,16 @@ export async function signInWithPassword(email: string, password: string): Promi
     return;
   }
   const sb = createClient()!;
-  const { error } = await sb.auth.signInWithPassword({ email, password });
+  const captchaToken = await getCaptchaToken('password');
+  const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
   if (error) throw error;
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
   if (isDemoClient()) return;
   const sb = createClient()!;
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: callback('/account/reset') });
+  const captchaToken = await getCaptchaToken('reset');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: callback('/account/reset'), captchaToken });
   if (error) throw error;
 }
 
