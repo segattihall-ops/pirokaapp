@@ -24,8 +24,16 @@ Then run, in order, in **SQL Editor**:
 4. `lib/db/migrations/010_signal_push_admin.sql` ← creates the `auth.users → public.users` trigger, Signal pre-key tables, push subscriptions, and turns on realtime for `messages`
 5. `lib/db/rls-policies-v2.sql`
 
-Auth providers (Supabase → Authentication → Providers): enable **Email** (magic link), **Anonymous**, and optionally
-**Google** / **Apple** with the IDs below. Add `https://<your-domain>/auth/callback` to the redirect allow-list.
+Auth providers (Supabase → Authentication → Sign In / Providers):
+
+1. **Email** — on by default (magic link). Under *Email* keep "Confirm email" on.
+2. **Anonymous** — the homepage's "Stay anonymous" button needs the toggle **"Allow anonymous sign-ins"** switched on
+   (same page, under *User Signups*). Until it is, the button says the option isn't available yet and the
+   Supabase log shows `Anonymous sign-ins are disabled`. Supabase recommends enabling **CAPTCHA**
+   (Authentication → Attack Protection → Bot and abuse protection) once anonymous sign-ins are on.
+3. **Google** / **Apple** — optional, with the IDs below.
+
+Then add `https://<your-domain>/auth/callback` (and your Vercel preview URL) to Authentication → URL Configuration → Redirect URLs.
 
 | Variable | Where to get it |
 |---|---|

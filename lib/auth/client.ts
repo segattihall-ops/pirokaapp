@@ -67,7 +67,13 @@ export async function signInAnonymously(): Promise<void> {
   }
   const sb = createClient()!;
   const { error } = await sb.auth.signInAnonymously();
-  if (error) throw error;
+  if (error) {
+    // Supabase → Authentication → Sign In / Providers → "Allow anonymous sign-ins" is off.
+    if (/anonymous sign-ins are disabled/i.test(error.message)) {
+      throw new Error('Anonymous sign-in isn’t available yet — use Google, Apple or your email instead.');
+    }
+    throw error;
+  }
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<void> {
