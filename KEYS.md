@@ -21,8 +21,11 @@ Then run, in order, in **SQL Editor**:
 1. `lib/db/migrations/001_schema.sql`
 2. `lib/db/migrations/008_postgis_functions.sql`
 3. `lib/db/migrations/009_paypal_billing.sql`
-4. `lib/db/migrations/010_signal_push_admin.sql` ← creates the `auth.users → public.users` trigger, Signal pre-key tables, push subscriptions, and turns on realtime for `messages`
-5. `lib/db/rls-policies-v2.sql`
+4. `lib/db/migrations/010_signal_push_admin.sql` ← creates the `auth.users → public.users` trigger, Signal pre-key tables, push subscriptions, and turns on realtime for `dm_messages`
+5. `lib/db/migrations/011_discovery.sql`, `012_places.sql`, `013_social.sql` ← map, places, notifications/favourites/album/trips
+6. `lib/db/rls-policies-v2.sql`
+
+(The PIROKA project already has all of these applied.)
 
 Auth providers (Supabase → Authentication → Sign In / Providers):
 
@@ -162,7 +165,19 @@ Yoti contract. Do not "fix" it by trusting a token decoded from the client — t
 
 ---
 
-## 8. Optional
+## 8. Video calls — *Optional* (works without a key on most networks)
+
+Calls are peer-to-peer WebRTC; signalling rides on Supabase Realtime and nothing is stored. Without a key the app
+uses Google's public STUN servers, which connects most phones. Behind strict corporate/carrier NATs a **TURN**
+relay is needed: create one on https://www.metered.ca/stun-turn (free tier), Twilio, or run coturn, then set:
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_ICE_SERVERS` | JSON array, e.g. `[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:a.relay.metered.ca:443","username":"…","credential":"…"}]` |
+
+---
+
+## 9. Optional
 
 | Variable | Feature |
 |---|---|
@@ -180,3 +195,5 @@ Yoti contract. Do not "fix" it by trusting a token decoded from the client — t
 3. Open **Chats** on two accounts, start a chat by @handle, send both ways, tap the 🔒 line to compare safety numbers.
 4. Toggle push on one device, message it from the other.
 5. Add your email to `ADMIN_EMAILS`, open `/admin`, file a test report and run the moderation ladder.
+6. Star a profile (☆), have that account go live → the bell (top right) and a push arrive.
+7. In a chat tap the camera icon on two phones on different networks; if it stays on "Connecting…", add a TURN server (section 8).

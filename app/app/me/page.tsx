@@ -6,6 +6,9 @@ import { PayPalCheckout } from '@/components/billing/paypal-checkout';
 import { PushToggle } from '@/components/push/push-toggle';
 import { NotifPrefs } from '@/components/me/notif-prefs';
 import { SignOutButton } from '@/components/account/sign-out-button';
+import { AlbumInbox } from '@/components/me/album-inbox';
+import { FavoritesList } from '@/components/me/favorites-list';
+import { TripsList } from '@/components/me/trips-list';
 
 export const metadata: Metadata = { title: 'Me' };
 export const dynamic = 'force-dynamic';
@@ -36,6 +39,12 @@ export default async function MePage() {
         </div>
         <SignOutButton />
       </div>
+
+      <AlbumInbox />
+
+      <FavoritesList />
+
+      <TripsList />
 
       <PayPalCheckout userId={session.userId} />
 

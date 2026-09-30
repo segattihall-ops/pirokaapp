@@ -398,6 +398,20 @@ vercel env add NEXTAUTH_SECRET <generate: openssl rand -base64 32>
 vercel deploy --prod
 ```
 
+## Social layer (shipped on the phase-1 branch)
+
+| Feature | Where | Notes |
+|---|---|---|
+| Notification center | `components/notifications/bell.tsx`, `/api/notifications` | bell top-right on every tab, unread badge polls every 30 s, opening marks read; rows written by `lib/notify/server.ts` (respects "Notify me about" switches, also pushes) |
+| Favourites + go-live alerts | `/api/favorites`, `components/me/favorites-list.tsx`, ☆ on the profile sheet | one-directional and silent; favouriters with alerts on are notified when you go live from nothing or switch to "Now" (`/api/me/status`) |
+| Private album | `/api/album/{request,requests,respond}`, `components/me/album-inbox.tsx` | request from the profile sheet; owner accepts/declines/revokes on Me; a decline blocks re-asking for 7 days; main photo clears once you chat, slots 1–5 need a grant |
+| Travel mode + trips | `components/map/travel-sheet.tsx`, `/api/geocode`, `/api/trips` | browse another city without moving your pin; announce a trip → favourites within 50 km get an arrival alert; visitors show under "✈️ n visiting" |
+| Video calls | `components/chat/video-call.tsx`, `lib/realtime/call.ts`, `/api/chat/[id]/ring` | WebRTC 1:1, signalling over a Supabase broadcast channel, ring every 3 s until answered, push "is calling"; STUN by default, TURN via `NEXT_PUBLIC_ICE_SERVERS` |
+
+Migration `013_social.sql` (applied to PIROKA) adds the notification kinds/columns, `favoriters_of`, `favoriters_near`, `trips_near`, and makes chat/meet rows cascade on account deletion (reports and mod actions keep the row, user reference set null).
+
+Not verifiable from the build sandbox: the WebRTC media path (the proxy blocks WebSockets, so signalling never connects here). Everything else has browser e2e coverage.
+
 ## Next Steps
 
 1. ✅ Commit Phase 1 foundation

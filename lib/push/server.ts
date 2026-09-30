@@ -22,12 +22,12 @@ function configure() {
 }
 
 /** Sends to every device the user registered; drops subscriptions the push service reports as gone. */
-export async function sendPushToUser(userId: string, payload: PushPayload): Promise<number> {
+export async function sendPushToUser(userId: string, payload: PushPayload, prefKey = 'messages'): Promise<number> {
   if (!configure() || !supabaseAdmin) return 0;
 
   const { data: user } = await supabaseAdmin.from('users').select('notif_prefs').eq('id', userId).maybeSingle();
   const prefs = (user?.notif_prefs ?? {}) as Record<string, boolean>;
-  if (prefs.messages === false) return 0;
+  if (prefs[prefKey] === false) return 0;
 
   const { data: subs } = await supabaseAdmin
     .from('push_subscriptions')

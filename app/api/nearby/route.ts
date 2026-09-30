@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'lat and lon required' }, { status: 400 });
   }
 
-  const [{ data: rows, error }, { data: spots }] = await Promise.all([
+  const [{ data: rows, error }, { data: spots }, { data: tripRows }] = await Promise.all([
     supabaseAdmin.rpc('nearby_users', {
       user_lat: lat,
       user_lon: lon,
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       limit_count: 200,
     }),
     supabaseAdmin.rpc('nearby_hotspots', { center_lat: lat, center_lon: lon, radius_m: 25000 }),
+    supabaseAdmin.rpc('trips_near', { center_lat: lat, center_lon: lon, radius_m: 50000, requester_id: session.userId }),
   ]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -61,5 +62,15 @@ export async function GET(request: Request) {
     }));
 
   const hotspots = (spots ?? []).map((s: any) => ({ lat: s.lat, lon: s.lon, count: Number(s.count) }));
-  return NextResponse.json({ configured: true, people, hotspots });
+  const visitors: Visitor[] = (tripRows ?? []).map((t: any) => ({
+    id: t.user_id,
+    handle: t.handle ?? null,
+    city: t.city,
+    arriveOn: t.arrive_on,
+    nights: t.nights,
+    photo: t.photo_blur_key ? photoUrl(t.photo_blur_key) : null,
+  }));
+  return NextResponse.json({ configured: true, people, hotspots, visitors });
 }
+
+export type Visitor = { id: string; handle: string | null; city: string; arriveOn: string; nights: number; photo: string | null };

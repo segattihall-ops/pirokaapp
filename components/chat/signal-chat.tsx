@@ -9,6 +9,7 @@ import { cachePlaintext, getCachedPlaintext } from '@/lib/encryption/signal-stor
 import { fingerprint } from '@/lib/encryption/x3dh';
 import { subscribeToMessages, subscribeToTyping, type MessageRow, type TypingController } from '@/lib/realtime/messages';
 import { SafetyMenu } from './safety-menu';
+import { VideoCall } from './video-call';
 
 type Msg = { id: number; mine: boolean; text: string | null; at: string; failed?: boolean };
 
@@ -165,7 +166,7 @@ export function SignalChat({
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-66px-var(--safe-bottom))] w-full max-w-[720px] flex-col overflow-hidden rail:h-dvh">
-      <header className="flex items-center gap-2 border-b border-line-1 px-3 py-2 sm:px-4">
+      <header className="relative flex items-center gap-2 border-b border-line-1 px-3 py-2 sm:px-4">
         <Link href="/app/chats" aria-label="Back" className="tap flex items-center justify-center text-[22px] text-fg-3 hover:text-fg">
           ‹
         </Link>
@@ -178,6 +179,7 @@ export function SignalChat({
           <h1 className="truncate text-[15px] font-semibold">{peerHandle ? `@${peerHandle}` : 'Anonymous'}</h1>
           <p className="truncate text-[12px] text-fg-3">🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}</p>
         </button>
+        <VideoCall conversationId={conversationId} userId={userId} peerHandle={peerHandle} />
         <SafetyMenu peerUserId={peerUserId} peerHandle={peerHandle} conversationId={conversationId} />
       </header>
 

@@ -2,11 +2,14 @@
 
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getPosition, INTENTS, intentMeta, type Position } from '@/lib/geo/client';
-import type { NearbyPerson } from '@/app/api/nearby/route';
+import type { NearbyPerson, Visitor } from '@/app/api/nearby/route';
 import { ProfileSheet } from './profile-sheet';
 import { StatusSheet, type MyStatus } from './status-sheet';
+import { TravelSheet, type TravelView } from './travel-sheet';
+import { VisitorsSheet } from './visitors-sheet';
 
 const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const ESRI_STYLE =
@@ -53,10 +56,23 @@ export function MapScreen({ userId }: { userId: string }) {
   const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number }[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
   const [status, setStatus] = useState<MyStatus>(null);
-  const [selected, setSelected] = useState<NearbyPerson | null>(null);
+  const [selected, setSelected] = useState<{ id: string; distanceM: number | null } | null>(null);
   const [showStatus, setShowStatus] = useState(false);
   const [notice, setNotice] = useState<string>('');
   const [configured, setConfigured] = useState(true);
+  const [view, setView] = useState<TravelView | null>(null);
+  const viewRef = useRef<TravelView | null>(null);
+  const [showTravel, setShowTravel] = useState(false);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [showVisitors, setShowVisitors] = useState(false);
+  const params = useSearchParams();
+
+  // Deep links: ?user=<id> opens a profile (notifications), ?travel=1 opens travel mode (Me → Trips).
+  useEffect(() => {
+    const u = params.get('user');
+    if (u && /^[0-9a-f-]{36}$/i.test(u)) setSelected({ id: u, distanceM: null });
+    if (params.get('travel') === '1') setShowTravel(true);
+  }, [params]);
 
   // 1) position → publish (fuzzed server-side) → fetch nearby
   const locate = useCallback(async (ask: boolean) => {
@@ -72,17 +88,32 @@ export function MapScreen({ userId }: { userId: string }) {
     return p;
   }, []);
 
+  // Travel mode looks at another city; nothing about your own position is published for it.
   const refresh = useCallback(
     async (p: Position | null) => {
-      if (!p) return;
-      const r = await fetch(`/api/nearby?lat=${p.lat}&lon=${p.lon}&radius=${RADIUS_M}`, { cache: 'no-store' }).catch(() => null);
+      const c = viewRef.current ?? p;
+      if (!c) return;
+      const r = await fetch(`/api/nearby?lat=${c.lat}&lon=${c.lon}&radius=${RADIUS_M}`, { cache: 'no-store' }).catch(() => null);
       if (!r?.ok) return;
-      const j = (await r.json()) as { configured: boolean; people: NearbyPerson[]; hotspots: typeof hotspots };
+      const j = (await r.json()) as { configured: boolean; people: NearbyPerson[]; hotspots: typeof hotspots; visitors?: Visitor[] };
       setConfigured(j.configured);
       setPeople(j.people);
       setHotspots(j.hotspots);
+      setVisitors(j.visitors ?? []);
     },
     [],
+  );
+
+  const travelTo = useCallback(
+    (v: TravelView | null) => {
+      viewRef.current = v;
+      setView(v);
+      const map = mapRef.current;
+      const target = v ?? pos;
+      if (map && target) map.flyTo({ center: [target.lon, target.lat], zoom: v ? 12 : 13, duration: 900 });
+      refresh(pos);
+    },
+    [pos, refresh],
   );
 
   useEffect(() => {
@@ -171,7 +202,7 @@ export function MapScreen({ userId }: { userId: string }) {
       const el = pinElement(p);
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        setSelected(p);
+        setSelected({ id: p.id, distanceM: viewRef.current ? null : p.distanceM });
       });
       const m = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([p.lon, p.lat]).addTo(map);
       // MapLibre replaces the element's aria-label with "Map marker" on mount; restore the person's.
@@ -203,26 +234,44 @@ export function MapScreen({ userId }: { userId: string }) {
       )}
 
       {/* Top overlay */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pt-[calc(14px+var(--safe-top))]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pr-[64px] pt-[calc(14px+var(--safe-top))] rail:pr-[72px]">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowStatus(true)}
-            className="tap pointer-events-auto flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
+            className="tap pointer-events-auto flex min-w-0 items-center gap-2.5 whitespace-nowrap rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
           >
-            <span className="h-2 w-2 rounded-full" style={{ background: mine?.color ?? 'transparent', border: mine ? 0 : '1px solid #666' }} />
-            {mine ? `You: ${mine.label}` : 'Set your intent'}
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: mine?.color ?? 'transparent', border: mine ? 0 : '1px solid #666' }} />
+            <span className="truncate">{mine ? `You: ${mine.label}` : 'Set your intent'}</span>
           </button>
-          {pos && !pos.precise && (
+          <button
+            type="button"
+            onClick={() => setShowTravel(true)}
+            aria-label="Travel mode"
+            className={`tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md ${
+              view ? 'border-sel-border text-green' : 'border-line-2'
+            }`}
+          >
+            ✈️ <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
+          </button>
+          {pos && !pos.precise && !view && (
             <button
               type="button"
               onClick={() => locate(true).then(refresh)}
-              className="tap pointer-events-auto ml-auto rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
+              className="tap pointer-events-auto ml-auto shrink-0 rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
             >
               Use my location
             </button>
           )}
         </div>
+        {view && (
+          <div className="pointer-events-auto flex items-center justify-between rounded-input border border-sel-border bg-ink-850/90 px-3 py-2 text-[12px] backdrop-blur-md">
+            <span className="truncate">Browsing {view.label}. Your pin stays home.</span>
+            <button type="button" onClick={() => travelTo(null)} className="tap-link ml-3 shrink-0 font-semibold text-green">
+              Back to me
+            </button>
+          </div>
+        )}
         <div className="pointer-events-auto -mx-3.5 flex gap-2 overflow-x-auto px-3.5 [scrollbar-width:none]">
           {FILTERS.map((f) => {
             const meta = intentMeta(f.intent);
@@ -247,19 +296,30 @@ export function MapScreen({ userId }: { userId: string }) {
         )}
       </div>
 
-      {/* Bottom pill */}
-      <div className="absolute inset-x-0 bottom-12 flex justify-center">
+      {/* Bottom pills */}
+      <div className="absolute inset-x-0 bottom-12 flex justify-center gap-2 px-3">
         <button
           type="button"
           onClick={() => setFilter(filter === 'now' ? null : 'now')}
-          className="tap flex items-center gap-2 rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
+          className="tap flex min-w-0 items-center gap-2 rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
         >
-          <span className="h-2 w-2 rounded-full bg-green" />
-          Right now{' '}
-          <span className="text-fg-3">
-            {nowCount} available · {people.length} nearby
+          <span className="h-2 w-2 shrink-0 rounded-full bg-green" />
+          <span className="truncate">
+            Right now{' '}
+            <span className="text-fg-3">
+              {nowCount} available · {people.length} nearby
+            </span>
           </span>
         </button>
+        {visitors.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowVisitors(true)}
+            className="tap flex shrink-0 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md"
+          >
+            ✈️ {visitors.length} visiting
+          </button>
+        )}
       </div>
 
       {showStatus && (
@@ -270,6 +330,17 @@ export function MapScreen({ userId }: { userId: string }) {
             refresh(pos);
           }}
           onClose={() => setShowStatus(false)}
+        />
+      )}
+      {showTravel && <TravelSheet view={view} onView={travelTo} onClose={() => setShowTravel(false)} />}
+      {showVisitors && (
+        <VisitorsSheet
+          visitors={visitors}
+          onOpen={(id) => {
+            setShowVisitors(false);
+            setSelected({ id, distanceM: null });
+          }}
+          onClose={() => setShowVisitors(false)}
         />
       )}
       {selected && <ProfileSheet userId={selected.id} distanceM={selected.distanceM} onClose={() => setSelected(null)} />}
