@@ -127,7 +127,7 @@ export async function retrieveSignalSession(
 
     // Recreate CryptoKey from stored data (simplified)
     // In production: implement proper key serialization
-    const { publicKey: privKey } = await generateECDHKeyPair();
+    const { privateKey: privKey } = await generateECDHKeyPair();
 
     return {
       conversationId: stored.conversationId,

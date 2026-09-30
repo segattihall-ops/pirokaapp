@@ -8,6 +8,9 @@
  * TODO: Migrate to native libsodium Curve25519 once available.
  */
 
+import { sha256 } from '@noble/hashes/sha2.js';
+import { extract, expand } from '@noble/hashes/hkdf.js';
+
 /**
  * Generate an ECDH key pair (Curve25519)
  */
@@ -47,7 +50,7 @@ export async function deriveSharedSecret(
   // Import the other party's public key
   const importedPublicKey = await crypto.subtle.importKey(
     'raw',
-    otherPublicKey,
+    otherPublicKey as BufferSource,
     {
       name: 'ECDH',
       namedCurve: 'P-256'
@@ -130,10 +133,9 @@ export async function tripleDH(
   combined.set(dh3, dh1.length + dh2.length);
 
   // KDF the combined secret
-  const { sha256, hkdfExtract, hkdfExpand } = await import('@noble/hashes/sha256');
-  const prk = hkdfExtract(sha256, combined, new Uint8Array(0));
+  const prk = extract(sha256, combined, new Uint8Array(0));
   const info = new TextEncoder().encode('Signal Protocol');
-  const dkm = hkdfExpand(sha256, prk, info, 32);
+  const dkm = expand(sha256, prk, info, 32);
 
   return dkm;
 }

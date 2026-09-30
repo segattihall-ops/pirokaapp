@@ -13,9 +13,10 @@
  * - Per-message keys ensure forward secrecy
  */
 
-import { sha256, sha512, hkdfExpand, hkdfExtract } from '@noble/hashes/sha256';
-import { chacha20poly1305 } from '@noble/ciphers/chacha';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { sha256, sha512 } from '@noble/hashes/sha2.js';
+import { expand, extract } from '@noble/hashes/hkdf.js';
+import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Double Ratchet state
@@ -64,9 +65,9 @@ function kdf(
   salt: Uint8Array,
   length: number = KDF_LENGTH
 ): Uint8Array {
-  const prk = hkdfExtract(sha256, key, salt);
+  const prk = extract(sha256, key, salt);
   const info = new TextEncoder().encode(usageString);
-  return hkdfExpand(sha256, prk, info, length);
+  return expand(sha256, prk, info, length);
 }
 
 /**
@@ -130,8 +131,8 @@ export function encryptDoubleRatchet(
   const nonce = crypto.getRandomValues(new Uint8Array(12));
 
   // Using ChaCha20-Poly1305 (AEAD)
-  const cipher = chacha20poly1305(messageKey);
-  const ciphertext = cipher.encrypt(nonce, plaintextBytes);
+  const cipher = chacha20poly1305(messageKey, nonce, new Uint8Array(0));
+  const ciphertext = cipher.encrypt(plaintextBytes);
 
   // Create encrypted message
   const message: EncryptedMessage = {
@@ -203,8 +204,8 @@ export function decryptDoubleRatchet(
     const tag = hexToBytes(message.tag);
 
     try {
-      const cipher = chacha20poly1305(skippedKey);
-      const plaintext = cipher.decrypt(nonce, new Uint8Array([...ciphertext, ...tag]));
+      const cipher = chacha20poly1305(skippedKey, nonce, new Uint8Array(0));
+      const plaintext = cipher.decrypt(new Uint8Array([...ciphertext, ...tag]));
       const decoder = new TextDecoder();
 
       // Remove used skipped key
@@ -227,7 +228,9 @@ export function decryptDoubleRatchet(
     if (newState.skippedMessageKeys.size > MAX_SKIPPED_MESSAGES) {
       console.error('Too many skipped messages, dropping oldest');
       const oldestKey = newState.skippedMessageKeys.keys().next().value;
-      newState.skippedMessageKeys.delete(oldestKey);
+      if (oldestKey) {
+        newState.skippedMessageKeys.delete(oldestKey);
+      }
     }
 
     newState.receivingChainKey = nextChainKey;
@@ -241,8 +244,8 @@ export function decryptDoubleRatchet(
   const tag = hexToBytes(message.tag);
 
   try {
-    const cipher = chacha20poly1305(messageKey);
-    const plaintext = cipher.decrypt(nonce, new Uint8Array([...ciphertext, ...tag]));
+    const cipher = chacha20poly1305(messageKey, nonce, new Uint8Array(0));
+    const plaintext = cipher.decrypt(new Uint8Array([...ciphertext, ...tag]));
     const decoder = new TextDecoder();
 
     newState.receivingChainKey = nextChainKey;
