@@ -22,7 +22,7 @@ Then run, in order, in **SQL Editor**:
 2. `lib/db/migrations/008_postgis_functions.sql`
 3. `lib/db/migrations/009_paypal_billing.sql`
 4. `lib/db/migrations/010_signal_push_admin.sql` ← creates the `auth.users → public.users` trigger, Signal pre-key tables, push subscriptions, and turns on realtime for `dm_messages`
-5. `lib/db/migrations/011_discovery.sql`, `012_places.sql`, `013_social.sql` ← map, places, notifications/favourites/album/trips
+5. `lib/db/migrations/011_discovery.sql`, `012_places.sql`, `013_social.sql`, `014_profile_edit.sql` ← map, places, notifications/favourites/album/trips, unique handles
 6. `lib/db/rls-policies-v2.sql`
 
 (The PIROKA project already has all of these applied.)

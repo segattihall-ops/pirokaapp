@@ -4,16 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 import { fetchSession, recordConsent } from '@/lib/auth/client';
 import { getPosition } from '@/lib/geo/client';
+import { COMM, GENDER, ICONS, ORIENT, PRONOUNS, SHOW_ME, VIS_OPTS } from '@/lib/profile/options';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-const PRONOUNS = ['he/him', 'she/her', 'they/them', 'he/they', 'she/they', 'any pronouns', 'ask me'];
-const GENDER = ['Man', 'Woman', 'Trans man', 'Trans woman', 'Non-binary', 'Genderqueer', 'Genderfluid', 'Agender', 'Bigender', 'Demiboy', 'Demigirl', 'Two-Spirit', 'Intersex', 'Transmasculine', 'Transfeminine', 'Questioning', 'Butch', 'Femme', 'Masc', 'Androgynous'];
-const ORIENT = ['Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Queer', 'Asexual', 'Demisexual', 'Greysexual', 'Omnisexual', 'Polysexual', 'Heteroflexible', 'Homoflexible', 'Sapphic', 'Achillean', 'Questioning', 'Straight but curious'];
-const COMM = ['Bear', 'Cub', 'Otter', 'Wolf', 'Twink', 'Jock', 'Daddy', 'Leather', 'Drag', 'Stud', 'Soft butch', 'Lipstick', 'Chubby', 'Chaser', 'Geek', 'Rugged', 'Poz', 'Sober', 'Discreet', 'Clean-cut', 'Punk', 'Latinx', 'Black & queer', 'Asian & queer', 'Deaf', 'Disabled', 'Neurodivergent', 'Polyamorous', 'Kink-friendly', 'Newcomer'];
-const SHOW_ME = [['Men', 'Cis & trans'], ['Women', 'Cis & trans'], ['Trans women', 'Only'], ['Trans men', 'Only'], ['Non-binary people', 'All NB identities'], ['Everyone', 'Show me all']];
-const VIS_OPTS = [['Neighborhood', '~0.3 mi fuzz'], ['Area', '~1 mi fuzz'], ['Hidden', 'Not on map']];
-const ICONS = [['πroka', 'π', 'bg-ink-900', 'text-fg'], ['Calculator', '±', 'bg-amber-600', 'text-ink-950'], ['Weather', '☀', 'bg-blue-500', 'text-white'], ['Notes', '≡', 'bg-yellow-300', 'text-ink-800']];
 
 export function OnboardingClient() {
   const router = useRouter();

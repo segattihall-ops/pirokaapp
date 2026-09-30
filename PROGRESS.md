@@ -408,6 +408,9 @@ vercel deploy --prod
 | Travel mode + trips | `components/map/travel-sheet.tsx`, `/api/geocode`, `/api/trips` | browse another city without moving your pin; announce a trip → favourites within 50 km get an arrival alert; visitors show under "✈️ n visiting" |
 | Video calls | `components/chat/video-call.tsx`, `lib/realtime/call.ts`, `/api/chat/[id]/ring` | WebRTC 1:1, signalling over a Supabase broadcast channel, ring every 3 s until answered, push "is calling"; STUN by default, TURN via `NEXT_PUBLIC_ICE_SERVERS` |
 
+| Edit profile | `app/app/me/edit`, `components/me/edit-profile.tsx`, `/api/me/profile`, `/api/me/photos` | every onboarding field editable afterwards; photos replace/remove with slot compaction; plan limit main+2 (free) / main+5 (Plus); handles unique case-insensitively (`014_profile_edit.sql`) |
+| Delete account | `components/me/delete-account.tsx`, `/api/me/account` | typed DELETE confirmation; wipes storage, every row (cascade) and the auth user; reports/mod actions keep the record with the user cleared; audit row |
+
 Migration `013_social.sql` (applied to PIROKA) adds the notification kinds/columns, `favoriters_of`, `favoriters_near`, `trips_near`, and makes chat/meet rows cascade on account deletion (reports and mod actions keep the row, user reference set null).
 
 Not verifiable from the build sandbox: the WebRTC media path (the proxy blocks WebSockets, so signalling never connects here). Everything else has browser e2e coverage.

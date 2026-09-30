@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/server';
 import { stripExif, createBlurVariant, validateImageFile } from '@/lib/upload/exif';
 import { generateStorageKey } from '@/lib/upload/storage';
 import { supabaseAdmin } from '@/lib/db/client';
+import { photoLimit } from '@/lib/profile/options';
 
 /**
  * POST /api/onboarding/photos/upload
@@ -24,6 +25,19 @@ export async function POST(req: NextRequest) {
         { error: 'Missing file or invalid slot (0-5)' },
         { status: 400 }
       );
+    }
+
+    // Plan limit: free = main + 2 album, Plus/Premium = main + 5. Replacing an existing slot is always allowed.
+    if (supabaseAdmin) {
+      const [{ data: u }, { data: existing }] = await Promise.all([
+        supabaseAdmin.from('users').select('plan').eq('id', session.userId).maybeSingle(),
+        supabaseAdmin.from('photos').select('slot').eq('user_id', session.userId),
+      ]);
+      const limit = photoLimit(u?.plan);
+      const slots = new Set((existing ?? []).map((p) => p.slot));
+      if (slot >= limit || (!slots.has(slot) && slots.size >= limit)) {
+        return NextResponse.json({ error: `Your plan allows ${limit} photos. Upgrade for more.` }, { status: 409 });
+      }
     }
 
     // Validate file
