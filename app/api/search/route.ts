@@ -24,6 +24,30 @@ export async function GET(request: Request) {
   if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
   try {
+    if (!process.env.DEEPSEEK_API_KEY) {
+      // Fallback: simple keyword search without validation
+      const keywords = q.split(' ');
+      const searchPattern = keywords.map((k: string) => `%${k}%`).join('|');
+
+      const { data: matches } = await supabaseAdmin
+        .from('users')
+        .select('id, handle, photo, intent')
+        .ilike('bio', searchPattern)
+        .or(`handle.ilike.${searchPattern}`)
+        .limit(20);
+
+      const results: SearchResult[] = (matches || []).map((m: any) => ({
+        userId: m.id,
+        handle: m.handle,
+        photo: m.photo,
+        intent: m.intent,
+        relevance: 0.5,
+        reason: `Matches: ${keywords.join(', ')}`,
+      }));
+
+      return NextResponse.json({ results });
+    }
+
     // Validate query with Deepseek: is it a reasonable search term?
     const validationPrompt = `Is this a valid profile search query? "${q}"
 Answer with ONLY: "valid" or "invalid" (nothing else).
