@@ -8,6 +8,7 @@ import { decryptFromConversation, encryptForConversation, peerIdentityKey, type 
 import { cachePlaintext, getCachedPlaintext } from '@/lib/encryption/signal-store';
 import { fingerprint } from '@/lib/encryption/x3dh';
 import { subscribeToMessages, subscribeToTyping, type MessageRow, type TypingController } from '@/lib/realtime/messages';
+import { SafetyMenu } from './safety-menu';
 
 type Msg = { id: number; mine: boolean; text: string | null; at: string; failed?: boolean };
 
@@ -178,6 +179,7 @@ export function SignalChat({
             🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}
           </button>
         </div>
+        <SafetyMenu peerUserId={peerUserId} peerHandle={peerHandle} conversationId={conversationId} />
       </header>
 
       {showSafety && (

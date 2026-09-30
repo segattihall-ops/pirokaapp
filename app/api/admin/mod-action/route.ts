@@ -56,6 +56,11 @@ export async function POST(request: Request) {
   const { error: e2 } = await supabaseAdmin.from('users').update(userPatch).eq('id', userId);
   if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
 
+  // Suspended/removed accounts must not be able to sign in; warnings and limits lift any earlier ban.
+  const banDuration = step === 'remove' ? '876000h' : step === 'suspend' ? '720h' : 'none';
+  const { error: e3 } = await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: banDuration });
+  if (e3) console.error('auth ban failed', e3.message);
+
   if (reportId) {
     await supabaseAdmin
       .from('reports')

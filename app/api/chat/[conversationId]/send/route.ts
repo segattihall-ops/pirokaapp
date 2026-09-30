@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
-import { getConversationForUser, getHandle, peerOf } from '@/lib/chat/server';
+import { getConversationForUser, getHandle, isBlocked, peerOf } from '@/lib/chat/server';
 import { sendPushToUser } from '@/lib/push/server';
 
 export const dynamic = 'force-dynamic';
 
 const MAX_ENVELOPE_BYTES = 64 * 1024;
+const MAX_PER_MINUTE = 40;
 
 /** Stores an opaque Signal envelope. The server never sees plaintext. */
 export async function POST(request: Request, { params }: { params: { conversationId: string } }) {
@@ -16,6 +17,8 @@ export async function POST(request: Request, { params }: { params: { conversatio
 
   const conv = await getConversationForUser(params.conversationId, session.userId);
   if (!conv) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const peerId = peerOf(conv, session.userId);
+  if (await isBlocked(session.userId, peerId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   const { ciphertext, kind = 'text' } = (await request.json().catch(() => ({}))) as {
     ciphertext?: string;
@@ -25,6 +28,15 @@ export async function POST(request: Request, { params }: { params: { conversatio
     return NextResponse.json({ error: 'ciphertext must be hex bytea' }, { status: 400 });
   }
   if (ciphertext.length > MAX_ENVELOPE_BYTES * 2) return NextResponse.json({ error: 'Too large' }, { status: 413 });
+  if (kind !== 'text') return NextResponse.json({ error: 'Unsupported kind' }, { status: 400 });
+
+  const minuteAgo = new Date(Date.now() - 60_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from('dm_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('sender_id', session.userId)
+    .gte('created_at', minuteAgo);
+  if ((count ?? 0) >= MAX_PER_MINUTE) return NextResponse.json({ error: 'Slow down' }, { status: 429 });
 
   const { data, error } = await supabaseAdmin
     .from('dm_messages')
@@ -33,7 +45,6 @@ export async function POST(request: Request, { params }: { params: { conversatio
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const peerId = peerOf(conv, session.userId);
   getHandle(session.userId)
     .then((handle) =>
       sendPushToUser(peerId, {

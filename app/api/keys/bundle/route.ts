@@ -1,26 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
+import { haveConversation, isBlocked } from '@/lib/chat/server';
 
 export const dynamic = 'force-dynamic';
 
-/** Fetch a peer's pre-key bundle to start a session. Consumes one of their one-time pre-keys. */
+/**
+ * Fetch a peer's pre-key bundle to start a session. Consumes one of their one-time pre-keys,
+ * so it is only allowed once a conversation exists between the two users (stops key draining).
+ */
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const userId = new URL(request.url).searchParams.get('userId');
-  if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
+  if (!userId || !/^[0-9a-f-]{36}$/i.test(userId)) return NextResponse.json({ error: 'userId required' }, { status: 400 });
+  if (userId === session.userId) return NextResponse.json({ error: 'Cannot fetch own bundle' }, { status: 400 });
 
-  const { data: blocked } = await supabaseAdmin
-    .from('blocks')
-    .select('blocker_id')
-    .or(
-      `and(blocker_id.eq.${userId},blocked_id.eq.${session.userId}),and(blocker_id.eq.${session.userId},blocked_id.eq.${userId})`,
-    )
-    .limit(1);
-  if (blocked && blocked.length) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  if (await isBlocked(session.userId, userId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  if (!(await haveConversation(session.userId, userId))) {
+    return NextResponse.json({ error: 'Start a conversation first' }, { status: 403 });
+  }
 
   const { data: identity } = await supabaseAdmin
     .from('signal_identities')

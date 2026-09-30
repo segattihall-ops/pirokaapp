@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
 import { PayPalCheckout } from '@/components/billing/paypal-checkout';
 import { PushToggle } from '@/components/push/push-toggle';
+import { NotifPrefs } from '@/components/me/notif-prefs';
 import { SignOutButton } from '@/components/account/sign-out-button';
 
 export const metadata: Metadata = { title: 'Me' };
@@ -39,6 +40,8 @@ export default async function MePage() {
       <PayPalCheckout userId={session.userId} />
 
       <PushToggle />
+
+      <NotifPrefs />
 
       <div className="flex flex-col gap-2">
         {ROWS.map((r) => (

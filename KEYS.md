@@ -109,13 +109,21 @@ Also set the same SMTP under Supabase → Authentication → SMTP so Supabase's 
 
 ---
 
-## 7. Age verification — *Optional until you switch off demo*
+## 7. Age verification — **Required before real users**
+
+The 18+ gate is what keeps the app legal. Today it runs in **demo** mode: `AGE_PROVIDER=local` accepts the
+on-device face/ID prototype flow and proves nothing. That mode is refused in production unless `AGE_PROVIDER=local`
+is set on purpose, so the preview works only because the variable is set explicitly.
 
 | Variable | Value |
 |---|---|
-| `AGE_PROVIDER` | `yoti` (default `local` accepts everyone — dev only) |
+| `AGE_PROVIDER` | `yoti` for launch (`local` = demo only) |
 | `YOTI_CLIENT_SDK_ID` | https://hub.yoti.com → your app |
-| `YOTI_PEM_PATH` | path to the downloaded `.pem`; on Vercel store the PEM contents as a secret and write it at build, or mount via a file env |
+| `YOTI_PEM_PATH` | path to the downloaded `.pem` (on Vercel: store the PEM as a secret and write it to disk in the build step) |
+
+Server-to-server verification against Yoti's Age Estimation API is stubbed to **fail closed** in
+`lib/age/index.ts` (`verifyYoti`): with `AGE_PROVIDER=yoti` nobody passes until that call is wired to your
+Yoti contract. Do not "fix" it by trusting a token decoded from the client — the server must ask Yoti.
 
 ---
 

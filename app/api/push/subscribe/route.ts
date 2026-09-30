@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.object({
   subscription: z.object({
-    endpoint: z.string().url(),
+    endpoint: z.string().url().startsWith('https://').max(2048),
     keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
   }),
   userAgent: z.string().max(500).optional(),

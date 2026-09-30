@@ -13,6 +13,10 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as { userId?: string; handle?: string };
   let peerId = body.userId?.trim();
+  if (peerId && !/^[0-9a-f-]{36}$/i.test(peerId)) return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+  if (body.handle !== undefined && (typeof body.handle !== 'string' || !/^@?[\w.-]{2,24}$/.test(body.handle.trim()))) {
+    return NextResponse.json({ error: 'Invalid handle' }, { status: 400 });
+  }
 
   if (!peerId && body.handle) {
     const { data } = await supabaseAdmin
