@@ -145,6 +145,15 @@
 - ⏳ Disguised app icon variants
 - ⏳ Help center + legal pages
 
+## Discovery ✅ Built (Map + Pulse)
+- ✅ `POST /api/me/location` stores the true position server-side, returns only the fuzzed one (0–800 m)
+- ✅ `POST /api/me/status` — intent (now / tonight / hosting / visiting / looking / later) for 0.5–8 h, auto-expires
+- ✅ `GET /api/nearby` — PostGIS `nearby_users()` within 5 km (fresh 24 h positions, blocks excluded, never true_geo) + hotspots
+- ✅ `GET /api/users/[id]` — public profile; album stays blurred until an album grant exists
+- ✅ Map screen (MapLibre + CARTO dark, Esri fallback): intent-ringed pins, filters, "Set your intent" sheet, profile sheet → Message → encrypted chat
+- ✅ Pulse: live counts by intent + list of people who set one
+- ✅ Migration `011_discovery.sql` applied
+
 ## Phase 8 ✅ Built
 ### Completed (Plans + Notifications)
 - ✅ PayPal subscriptions (Plus $5 + Premium $10) — buttons on Me, subscribe/cancel/status APIs

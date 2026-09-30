@@ -19,6 +19,12 @@ export function generateStorageKey(opts: UploadOptions): string {
   return `users/${opts.userId}/photos/${opts.slot}.${opts.variant}.${ext}`;
 }
 
+/** Public URL for a stored photo key (Supabase public bucket `photos`, or R2). */
+export function photoUrl(storageKey: string): string {
+  if (STORAGE_PROVIDER === 'r2') return getR2Url(storageKey, 3600);
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${storageKey}`;
+}
+
 /**
  * Generate a signed URL for photo access (Supabase Storage or R2)
  * For Supabase: uses getPublicUrl() for public bucket, generateSignedUrl() for private

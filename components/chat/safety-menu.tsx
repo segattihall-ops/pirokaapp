@@ -17,10 +17,12 @@ export function SafetyMenu({
   peerUserId,
   peerHandle,
   conversationId,
+  onBlocked,
 }: {
   peerUserId: string;
   peerHandle: string | null;
-  conversationId: string;
+  conversationId?: string;
+  onBlocked?: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -37,7 +39,7 @@ export function SafetyMenu({
     const r = await fetch('/api/safety/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetId: peerUserId, reason, details, conversationId }),
+      body: JSON.stringify({ targetId: peerUserId, reason, details, ...(conversationId ? { conversationId } : {}) }),
     });
     setBusy(false);
     if (!r.ok) return setErr((await r.json().catch(() => ({}))).error ?? 'Could not send report');
@@ -54,7 +56,8 @@ export function SafetyMenu({
     });
     setBusy(false);
     if (!r.ok) return setErr('Could not block');
-    router.replace('/app/chats');
+    if (onBlocked) onBlocked();
+    else router.replace('/app/chats');
   };
 
   return (
