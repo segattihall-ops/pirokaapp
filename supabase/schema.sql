@@ -141,7 +141,7 @@ create index on trips using gist (geo);
 
 -- 1:1 chat — ciphertext only (libsignal / MLS). Server never sees plaintext.
 create table conversations (id uuid primary key default gen_random_uuid(), a_id uuid references users(id), b_id uuid references users(id), mutual boolean default false, unique (a_id, b_id));
-create table messages (
+create table dm_messages (
   id bigserial primary key, conversation_id uuid references conversations(id) on delete cascade,
   sender_id uuid references users(id), ciphertext bytea not null, kind text default 'text',
   created_at timestamptz not null default now()

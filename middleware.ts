@@ -8,7 +8,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /** Routes that need a signed-in AND age-verified user. Everything else is public. */
-const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/];
+const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -52,5 +52,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|icon.svg|favicon.ico|.*\\.(?:png|jpg|svg|webp|ico)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|icon.svg|favicon.ico|sw.js|.*\\.(?:png|jpg|svg|webp|ico)$).*)'],
 };

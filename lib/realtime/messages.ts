@@ -1,139 +1,96 @@
-import { supabase } from '@/lib/db/client-side';
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/db/client-side';
+import type { RealtimeChannel, RealtimePostgresChangesPayload, SupabaseClient } from '@supabase/supabase-js';
 
-export type MessagePayload = {
-  id: string;
+export type MessageRow = {
+  id: number;
   conversation_id: string;
   sender_id: string;
-  ciphertext: string; // Base64 encoded encrypted content
+  ciphertext: string;
   kind: string;
   created_at: string;
 };
 
-export type MessageHandler = (payload: MessagePayload) => void;
+/** Realtime checks RLS with the token the channel joins with, so the session must be attached first. */
+async function withAuth(sb: SupabaseClient): Promise<void> {
+  const { data } = await sb.auth.getSession();
+  if (data.session?.access_token) await sb.realtime.setAuth(data.session.access_token);
+}
 
 /**
- * Subscribe to new messages in a conversation (realtime)
- * Returns unsubscribe function
+ * New rows in `dm_messages` for one conversation. Requires the RLS select policy + realtime publication.
+ * `onStatus(true)` once the channel is live; callers poll while it is not.
  */
 export function subscribeToMessages(
   conversationId: string,
-  onMessage: MessageHandler
-): (() => void) | null {
-  if (!supabase) return null;
+  onMessage: (row: MessageRow) => void,
+  onStatus?: (live: boolean) => void,
+): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+  let channel: RealtimeChannel | null = null;
+  let closed = false;
 
-  const channel = supabase
-    .channel(`conversation:${conversationId}`, {
-      config: { broadcast: { self: true } }
-    })
-    .on(
-      'postgres_changes' as const,
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversationId}`
-      },
-      (payload: RealtimePostgresChangesPayload<any>) => {
-        const message = payload.new as MessagePayload;
-        onMessage(message);
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'CLOSED') {
-        console.log(`Messages channel closed for ${conversationId}`);
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error(`Messages channel error for ${conversationId}`);
-      }
-    });
-
-  // Return unsubscribe function
-  return () => {
-    if (supabase) supabase.removeChannel(channel);
-  };
-}
-
-/**
- * Subscribe to typing indicators (via presence)
- * Returns unsubscribe function
- */
-export function subscribeToTypingIndicators(
-  conversationId: string,
-  userId: string,
-  onTyping: (typingUsers: string[]) => void
-): (() => void) | null {
-  if (!supabase) return null;
-
-  const channel = supabase.channel(`typing:${conversationId}`, {
-    config: { presence: { key: userId } }
+  withAuth(sb).then(() => {
+    if (closed) return;
+    channel = sb
+      .channel(`dm:${conversationId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dm_messages', filter: `conversation_id=eq.${conversationId}` },
+        (payload: RealtimePostgresChangesPayload<MessageRow>) => onMessage(payload.new as MessageRow),
+      )
+      .subscribe((status, err) => {
+        onStatus?.(status === 'SUBSCRIBED');
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('realtime messages:', status, err?.message);
+      });
   });
 
-  channel
-    .on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState() as any;
-      const typingUsers = Object.keys(state).filter(
-        (uid) => state[uid]?.[0]?.typing && uid !== userId
-      );
-      onTyping(typingUsers);
-    })
-    .on('presence', { event: 'join' }, ({ key }) => {
-      console.log(`${key} joined`);
-    })
-    .on('presence', { event: 'leave' }, ({ key }) => {
-      console.log(`${key} left`);
-    })
-    .subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        // Announce presence
-        await channel.track({ typing: false });
-      }
-    });
-
   return () => {
-    if (supabase) supabase.removeChannel(channel);
+    closed = true;
+    if (channel) sb.removeChannel(channel);
   };
 }
 
-/**
- * Broadcast typing indicator (throttled)
- */
-export async function broadcastTyping(
+export type TypingController = { setTyping: (typing: boolean) => void; unsubscribe: () => void };
+
+/** Presence-based typing indicator on a per-conversation channel. */
+export function subscribeToTyping(
   conversationId: string,
   userId: string,
-  isTyping: boolean
-): Promise<void> {
-  if (!supabase) return;
+  onTyping: (typingUserIds: string[]) => void,
+): TypingController {
+  const sb = getSupabase();
+  if (!sb) return { setTyping: () => {}, unsubscribe: () => {} };
 
-  const channel = supabase.channel(`typing:${conversationId}`);
-  await channel.track({ typing: isTyping });
-}
+  let channel: RealtimeChannel | null = null;
+  let ready = false;
+  let closed = false;
+  let last = false;
 
-/**
- * Listen to conversation metadata changes (deleted, etc)
- */
-export function subscribeToConversationChanges(
-  conversationId: string,
-  onUpdate: (updates: any) => void
-): (() => void) | null {
-  if (!supabase) return null;
+  withAuth(sb).then(() => {
+    if (closed) return;
+    channel = sb.channel(`typing:${conversationId}`, { config: { presence: { key: userId } } });
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel!.presenceState() as Record<string, { typing?: boolean }[]>;
+        onTyping(Object.keys(state).filter((uid) => uid !== userId && state[uid]?.some((p) => p.typing)));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          ready = true;
+          await channel!.track({ typing: last });
+        }
+      });
+  });
 
-  const channel = supabase
-    .channel(`conv:${conversationId}`)
-    .on(
-      'postgres_changes' as const,
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'conversations',
-        filter: `id=eq.${conversationId}`
-      },
-      (payload: RealtimePostgresChangesPayload<any>) => {
-        onUpdate(payload.new);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    if (supabase) supabase.removeChannel(channel);
+  return {
+    setTyping: (typing) => {
+      last = typing;
+      if (ready && channel) channel.track({ typing }).catch(() => {});
+    },
+    unsubscribe: () => {
+      closed = true;
+      if (channel) sb.removeChannel(channel);
+    },
   };
 }

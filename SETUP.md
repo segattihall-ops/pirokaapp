@@ -59,23 +59,37 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 **Setup Supabase**:
 1. Create project at supabase.com
-2. Run SQL schema from `lib/db/migrations/001_schema.sql`
+2. Run, in order: `lib/db/migrations/001_schema.sql`, `008_postgis_functions.sql`, `009_paypal_billing.sql`, `010_signal_push_admin.sql`, then `lib/db/rls-policies-v2.sql`
 3. Enable PostGIS extension: `create extension if not exists postgis;`
 4. Copy keys to `.env.local`
 
-### Phase 8: Billing (Stripe)
+### Phase 8: Billing (PayPal)
 
 ```env
-STRIPE_PUBLIC_KEY=pk_test_your_key
-STRIPE_SECRET_KEY=sk_test_your_key
-NEXT_PUBLIC_STRIPE_PRICE_PLUS=price_1234567890
-NEXT_PUBLIC_STRIPE_PRICE_PREMIUM=price_0987654321
+PAYPAL_ENV=sandbox
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_WEBHOOK_ID=
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=
+NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID=P-...
+NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID=P-...
 ```
 
-**Setup Stripe**:
-1. Create account at stripe.com
-2. Create products: Plus ($5/mo) and Premium ($10/mo)
-3. Copy price IDs and keys
+See `PAYPAL_SETUP.md` and `KEYS.md`.
+
+### Push notifications
+
+```env
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:you@yourdomain.com
+```
+
+### Admin
+
+```env
+ADMIN_EMAILS=you@yourdomain.com
+```
 
 ### Phase 9: AI (Claude API)
 
@@ -176,10 +190,11 @@ All actions logged to `audit_log` table with moderator ID and reason.
 | Price | Free | $5/mo | $10/mo |
 
 ### Webhooks
-- `customer.subscription.created`: Upgrade user to plan
-- `customer.subscription.deleted`: Downgrade to free tier
+- `BILLING.SUBSCRIPTION.ACTIVATED` / `UPDATED`: set `users.plan`
+- `BILLING.SUBSCRIPTION.CANCELLED` / `EXPIRED` / `SUSPENDED`: back to free
+- `PAYMENT.SALE.COMPLETED` / `BILLING.SUBSCRIPTION.PAYMENT.FAILED`: recorded in `payments`
 
-**Webhook endpoint**: `/api/webhooks/stripe`
+**Webhook endpoint**: `/api/webhooks/paypal` (signature verified with PayPal before any write)
 
 ---
 
@@ -256,7 +271,9 @@ All actions logged to `audit_log` table with moderator ID and reason.
 
 - [ ] Supabase project created + schema applied
 - [ ] OAuth keys configured (Google + Apple)
-- [ ] Stripe keys + product prices added
+- [ ] PayPal keys + plan IDs + webhook ID added
+- [ ] VAPID keys added (push)
+- [ ] ADMIN_EMAILS set
 - [ ] SMTP email server configured
 - [ ] Claude API key set
 - [ ] Yoti / Persona age verification key (or use local demo)
@@ -264,8 +281,9 @@ All actions logged to `audit_log` table with moderator ID and reason.
 - [ ] Test photo upload + EXIF stripping
 - [ ] Test location fuzzing (verify coords not sent to client)
 - [ ] Test PIN lock + moderation actions
-- [ ] Test Stripe billing flow
-- [ ] Test E2E chat (verify libsignal integration)
+- [ ] Test PayPal sandbox subscription + cancel
+- [ ] Test E2E chat on two accounts (compare safety numbers)
+- [ ] Test push notification on a phone
 - [ ] Performance audit (Lighthouse)
 - [ ] Mobile testing at 390px
 - [ ] SSL certificate auto-renewal (Vercel handles)

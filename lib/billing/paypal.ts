@@ -1,144 +1,128 @@
-/**
- * PayPal billing integration for πroka
- * Handles subscriptions, webhooks, and payment processing
- */
+import 'server-only';
 
 /**
- * Plan IDs for PayPal subscriptions
- * Create these in your PayPal Business account
+ * PayPal Subscriptions (REST v1). Server only.
+ * Env: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_ENV (sandbox|live),
+ *      NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID, NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID
  */
+
+export type Plan = 'free' | 'plus' | 'premium';
+
 export const PAYPAL_PLANS = {
-  plus: process.env.NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID || 'P-PLUS-MONTHLY',
-  premium: process.env.NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID || 'P-PREMIUM-MONTHLY',
+  plus: process.env.NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID ?? '',
+  premium: process.env.NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID ?? '',
 };
 
-/**
- * Get plan from subscription
- */
-export function getPlanFromPayPalSubscription(planId: string): 'plus' | 'premium' | 'free' {
-  if (planId === PAYPAL_PLANS.plus) return 'plus';
-  if (planId === PAYPAL_PLANS.premium) return 'premium';
+export function paypalBaseUrl() {
+  return process.env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+}
+
+export function paypalConfigured() {
+  return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+}
+
+export function planFromPayPalPlanId(planId: string | null | undefined): Plan {
+  if (planId && planId === PAYPAL_PLANS.plus) return 'plus';
+  if (planId && planId === PAYPAL_PLANS.premium) return 'premium';
   return 'free';
 }
 
-/**
- * Verify webhook signature from PayPal
- */
-export async function verifyPayPalWebhook(
-  webhookId: string,
-  event: any,
-  signature: string
-): Promise<boolean> {
-  try {
-    // In production, verify with PayPal API
-    // For now: basic validation
-    if (!event?.id || !event?.event_type) {
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('PayPal webhook verification failed:', error);
-    return false;
-  }
+let tokenCache: { token: string; expiresAt: number } | null = null;
+
+export async function getPayPalAccessToken(): Promise<string> {
+  if (tokenCache && tokenCache.expiresAt > Date.now() + 30_000) return tokenCache.token;
+  const id = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!id || !secret) throw new Error('PayPal is not configured');
+
+  const r = await fetch(`${paypalBaseUrl()}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+    cache: 'no-store',
+  });
+  if (!r.ok) throw new Error(`PayPal auth failed: ${r.status} ${await r.text()}`);
+  const j = (await r.json()) as { access_token: string; expires_in: number };
+  tokenCache = { token: j.access_token, expiresAt: Date.now() + j.expires_in * 1000 };
+  return j.access_token;
 }
 
-/**
- * Handle subscription.created event
- */
-export function handleSubscriptionCreated(event: any): {
-  userId: string;
-  subscriptionId: string;
-  plan: 'plus' | 'premium' | 'free';
-  customerId: string;
-  status: string;
-} {
-  const { id: subscriptionId, custom_id: userId, plan_id: planId, status } = event.resource;
-
-  return {
-    userId,
-    subscriptionId,
-    plan: getPlanFromPayPalSubscription(planId),
-    customerId: subscriptionId,
-    status,
-  };
+async function paypalFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await getPayPalAccessToken();
+  const r = await fetch(`${paypalBaseUrl()}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(init.headers ?? {}),
+    },
+    cache: 'no-store',
+  });
+  if (r.status === 204) return undefined as T;
+  const text = await r.text();
+  if (!r.ok) throw new Error(`PayPal ${path} failed: ${r.status} ${text}`);
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
-/**
- * Handle subscription.updated event
- */
-export function handleSubscriptionUpdated(event: any): {
-  userId: string;
-  subscriptionId: string;
-  plan: 'plus' | 'premium' | 'free';
-  status: string;
-} {
-  const { id: subscriptionId, custom_id: userId, plan_id: planId, status } = event.resource;
+export type PayPalSubscription = {
+  id: string;
+  plan_id: string;
+  status: 'APPROVAL_PENDING' | 'APPROVED' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED' | 'EXPIRED';
+  custom_id?: string;
+  subscriber?: { email_address?: string; payer_id?: string };
+  billing_info?: { next_billing_time?: string; last_payment?: { amount?: { value: string; currency_code: string } } };
+};
 
-  return {
-    userId,
-    subscriptionId,
-    plan: getPlanFromPayPalSubscription(planId),
-    status,
-  };
+export function getPayPalSubscription(id: string) {
+  return paypalFetch<PayPalSubscription>(`/v1/billing/subscriptions/${encodeURIComponent(id)}`);
 }
 
-/**
- * Handle subscription.cancelled event
- */
-export function handleSubscriptionCancelled(event: any): {
-  userId: string;
-  subscriptionId: string;
-  canceledReason?: string;
-} {
-  const { id: subscriptionId, custom_id: userId, reason_code } = event.resource;
-
-  return {
-    userId,
-    subscriptionId,
-    canceledReason: reason_code,
-  };
+export function cancelPayPalSubscription(id: string, reason = 'Cancelled by user') {
+  return paypalFetch<void>(`/v1/billing/subscriptions/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
 }
 
-/**
- * Handle billing.subscription.payment.completed event
- */
-export function handlePaymentCompleted(event: any): {
-  userId: string;
-  subscriptionId: string;
-  amount: number;
-  currency: string;
-  paymentId: string;
-  status: string;
-} {
-  const { id: paymentId, custom_id: userId } = event.resource;
-  const amount = parseFloat(event.resource.amount?.value || '0');
-  const currency = event.resource.amount?.currency_code || 'USD';
+export type WebhookHeaders = {
+  transmissionId: string;
+  transmissionTime: string;
+  certUrl: string;
+  authAlgo: string;
+  transmissionSig: string;
+};
 
-  return {
-    userId,
-    subscriptionId: paymentId,
-    amount,
-    currency,
-    paymentId,
-    status: event.resource.status,
-  };
+export function webhookHeadersFrom(h: Headers): WebhookHeaders | null {
+  const transmissionId = h.get('paypal-transmission-id');
+  const transmissionTime = h.get('paypal-transmission-time');
+  const certUrl = h.get('paypal-cert-url');
+  const authAlgo = h.get('paypal-auth-algo');
+  const transmissionSig = h.get('paypal-transmission-sig');
+  if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) return null;
+  return { transmissionId, transmissionTime, certUrl, authAlgo, transmissionSig };
 }
 
-/**
- * Handle billing.subscription.payment.failed event
- */
-export function handlePaymentFailed(event: any): {
-  userId: string;
-  subscriptionId: string;
-  failureReason?: string;
-  attemptCount: number;
-} {
-  const { custom_id: userId, id: subscriptionId } = event.resource;
-
-  return {
-    userId,
-    subscriptionId,
-    failureReason: event.resource.reason_code,
-    attemptCount: event.resource.attempt_number || 0,
-  };
+/** Asks PayPal to verify the webhook signature. Never trust an event that fails this. */
+export async function verifyPayPalWebhook(headers: WebhookHeaders, event: unknown): Promise<boolean> {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) throw new Error('PAYPAL_WEBHOOK_ID is not set');
+  const r = await paypalFetch<{ verification_status: 'SUCCESS' | 'FAILURE' }>(
+    '/v1/notifications/verify-webhook-signature',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        auth_algo: headers.authAlgo,
+        cert_url: headers.certUrl,
+        transmission_id: headers.transmissionId,
+        transmission_sig: headers.transmissionSig,
+        transmission_time: headers.transmissionTime,
+        webhook_id: webhookId,
+        webhook_event: event,
+      }),
+    },
+  );
+  return r.verification_status === 'SUCCESS';
 }

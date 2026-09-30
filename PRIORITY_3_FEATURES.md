@@ -32,9 +32,9 @@ broadcastTyping(conversationId, userId, true);
 
 ### 2. End-to-End Encryption
 
-**Files:**
-- `lib/encryption/keys.ts` - Key derivation & storage
-- `lib/encryption/messages.ts` - Message crypto
+**Files:** (superseded by the Signal Protocol stack — see `PHASE_4_LIBSIGNAL.md`)
+- `lib/encryption/signal-session.ts` - encrypt/decrypt per conversation
+- `lib/encryption/signal-store.ts` - IndexedDB key storage
 
 **Features:**
 - ✅ AES-256-GCM encryption (Web Crypto API)
@@ -100,22 +100,23 @@ const hotspots = await findHotspots(lat, lon, 25000);
 
 ## Component Integration
 
-### RealtimeChat Component
+### SignalChat Component
 
-**File:** `app/components/RealtimeChat.tsx`
+**File:** `components/chat/signal-chat.tsx` (rendered by `app/app/chats/[conversationId]/page.tsx`)
 
 Features:
-- Real-time message display
-- Encrypted send/receive
-- Typing indicators
-- Auto-scroll
-- Message timestamps
+- Real-time message display (Supabase postgres_changes)
+- Signal-encrypted send/receive with local plaintext cache
+- Typing indicators (presence)
+- Safety number (identity fingerprint)
+- Auto-scroll, timestamps
 
 ```typescript
-<RealtimeChat
+<SignalChat
   conversationId={convId}
   userId={userId}
-  otherUserHandle={handle}
+  peerUserId={peerId}
+  peerHandle={handle}
 />
 ```
 
@@ -191,7 +192,7 @@ npm run test:realtime
 ┌─────────────────────────┐
 │   Browser (Client)      │
 ├─────────────────────────┤
-│ RealtimeChat            │ ← Displays messages
+│ SignalChat              │ ← Displays messages
 │ useNearbyUsers Hook     │ ← Fetches locations
 └──────────┬──────────────┘
            │ (encrypted)

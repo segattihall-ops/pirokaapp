@@ -7,7 +7,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dm_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE health_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rsvps ENABLE ROW LEVEL SECURITY;
@@ -93,17 +93,17 @@ CREATE POLICY "Users can create conversations"
 
 -- Messages table
 CREATE POLICY "Users can read messages in their conversations"
-  ON messages FOR SELECT
+  ON dm_messages FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM conversations c
-      WHERE c.id = messages.conversation_id
+      WHERE c.id = dm_messages.conversation_id
         AND (c.a_id = auth.uid() OR c.b_id = auth.uid())
     )
   );
 
 CREATE POLICY "Users can send messages"
-  ON messages FOR INSERT
+  ON dm_messages FOR INSERT
   WITH CHECK (
     auth.uid() = sender_id
     AND EXISTS (

@@ -1,4 +1,5 @@
 import { Rail, TabBar } from '@/components/app-nav';
+import { SignalBootstrap } from '@/components/chat/signal-bootstrap';
 
 /**
  * App shell: 80px rail on desktop (≥820px), 66px bottom tab bar on mobile.
@@ -7,6 +8,7 @@ import { Rail, TabBar } from '@/components/app-nav';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-ink-950">
+      <SignalBootstrap />
       <Rail />
       <TabBar />
       <main className="min-h-dvh pb-[calc(66px+var(--safe-bottom))] rail:pb-0 rail:pl-rail">{children}</main>

@@ -1,216 +1,48 @@
-# PayPal Billing Setup Guide
+# PayPal Subscriptions — setup
 
-Complete guide to configure PayPal subscriptions for πroka.
+PayPal is the only payment provider. Plans: **Plus $5/mo**, **Premium $10/mo**.
 
----
+## How it works
 
-## 1. Create PayPal Developer Account
+1. **Me → Your plan** renders the PayPal Buttons (`components/billing/paypal-checkout.tsx`) with
+   `vault=true&intent=subscription`. `createSubscription` passes the plan ID and `custom_id = <our user id>`.
+2. `onApprove` posts the subscription ID to `POST /api/billing/subscribe`, which fetches the subscription from
+   PayPal, checks `custom_id` matches the signed-in user, and sets `users.plan` / `paypal_subscription_id`.
+3. PayPal calls `POST /api/webhooks/paypal` for lifecycle events. The handler verifies the signature with
+   PayPal's `verify-webhook-signature` API before touching the database, then keeps `users.plan`,
+   `users.subscription_status` and the `payments` table in sync.
+4. **Cancel** on the Me page calls `POST /api/billing/cancel` → PayPal cancel → plan back to `free`.
 
-1. Go to [PayPal Developer Dashboard](https://developer.paypal.com)
-2. Sign up or log in with your PayPal Business account
-3. Create a new Sandbox app for testing
+## Configure
 
----
+Follow **KEYS.md → 2. PayPal**. Variables:
 
-## 2. Get API Credentials
-
-### Sandbox (Testing)
-1. Go to **Apps & Credentials**
-2. Select **Sandbox** environment
-3. Under "REST API signature", copy:
-   - **Client ID**
-   - **Secret**
-
-### Production
-1. Switch to **Live** environment
-2. Get your production Client ID and Secret
-3. ⚠️ Never commit production credentials to git
-
----
-
-## 3. Create Billing Plans
-
-### Create Plus Plan ($5/month)
-1. Go to **Billing Plans**
-2. Click **Create Plan**
-3. Fill in:
-   - **Name:** πroka Plus
-   - **Type:** Regular
-   - **Billing Frequency:** Monthly
-   - **Price:** $5.00
-   - **Currency:** USD
-   - **Billing Cycles:** Set to recurring
-4. Copy the **Plan ID** (format: P-XXXX...)
-
-### Create Premium Plan ($10/month)
-1. Repeat above steps
-2. Set price to **$10.00**
-3. Name: πroka Premium
-4. Copy the **Plan ID**
-
----
-
-## 4. Environment Variables
-
-Add to `.env.local`:
-
-```env
-# PayPal API Credentials
-PAYPAL_CLIENT_ID=your_sandbox_client_id
-PAYPAL_CLIENT_SECRET=your_sandbox_secret
-
-# Billing Plan IDs
-PAYPAL_PLAN_PLUS_ID=P-PLUS-MONTHLY-ID
-PAYPAL_PLAN_PREMIUM_ID=P-PREMIUM-MONTHLY-ID
-
-# Webhook
-PAYPAL_WEBHOOK_ID=your_webhook_id
+```
+PAYPAL_ENV=sandbox|live
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_WEBHOOK_ID=
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=
+NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID=P-…
+NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID=P-…
 ```
 
----
+Webhook events to subscribe: `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.UPDATED`,
+`BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED`, `BILLING.SUBSCRIPTION.EXPIRED`,
+`BILLING.SUBSCRIPTION.PAYMENT.FAILED`, `PAYMENT.SALE.COMPLETED`.
 
-## 5. Create Webhook
+Database: `lib/db/migrations/009_paypal_billing.sql` (adds `users.paypal_subscription_id`,
+`users.subscription_status`, and `payments`).
 
-### Register Webhook Endpoint
-1. Go to **Webhooks** in PayPal Developer
-2. Click **Create Webhook**
-3. **Endpoint URL:**
-   ```
-   https://your-domain.com/api/webhooks/paypal
-   ```
-4. **Event Types:** Select all subscription events:
-   - `billing.subscription.created`
-   - `billing.subscription.updated`
-   - `billing.subscription.cancelled`
-   - `billing.subscription.payment.completed`
-   - `billing.subscription.payment.failed`
-5. Copy the **Webhook ID**
+## Test in sandbox
 
----
+1. Developer dashboard → **Sandbox → Accounts**: use the auto-created *personal* buyer account.
+2. Sign in to πroka, open **Me**, pick a plan, pay with the sandbox buyer.
+3. Check Supabase: `select plan, subscription_status, paypal_subscription_id from users where id = '<you>'`.
+4. Webhooks → your webhook → **Simulate** an event, or watch the live log after the real purchase.
+5. Cancel from the Me page; `plan` returns to `free`.
 
-## 6. Database Updates
+## Go live
 
-The following tables are used:
-
-### users table
-- `plan` (plus | premium | free)
-- `paypal_subscription_id` (subscription ID)
-- `subscription_status` (ACTIVE | CANCELLED | PAYMENT_FAILED)
-
-### payments table (optional)
-```sql
-CREATE TABLE IF NOT EXISTS payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  payment_id TEXT NOT NULL UNIQUE,
-  amount DECIMAL(10, 2),
-  currency VARCHAR(3),
-  status TEXT, -- COMPLETED, FAILED
-  provider TEXT, -- paypal
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
----
-
-## 7. Testing
-
-### Test Subscription Flow
-1. Use PayPal Sandbox account
-2. Create subscription with plan ID
-3. Check webhook logs in `/api/webhooks/paypal`
-
-### Test Webhook
-Use PayPal Webhook Simulator:
-1. Go to **Webhooks** dashboard
-2. Find your webhook
-3. Click **Send Test Event**
-4. Select event type
-5. Check logs for processing
-
----
-
-## 8. Frontend Integration
-
-### Subscribe Button
-```typescript
-import { PAYPAL_PLANS } from '@/lib/billing/paypal';
-
-export function SubscribeButton() {
-  return (
-    <PayPalButtons
-      createSubscription={(data, actions) =>
-        actions.subscription.create({
-          plan_id: PAYPAL_PLANS.plus,
-          custom_id: userId, // Your user ID
-        })
-      }
-      onApprove={(data) => {
-        // Subscription created successfully
-        console.log('Subscription ID:', data.subscriptionID);
-      }}
-    />
-  );
-}
-```
-
----
-
-## 9. Migrate from Stripe
-
-If migrating existing Stripe subscriptions:
-
-```sql
--- Update users with PayPal subscription IDs
-UPDATE users SET 
-  stripe_subscription_id = NULL,
-  stripe_customer_id = NULL,
-  paypal_subscription_id = NEW_PAYPAL_SUB_ID
-WHERE id = USER_ID;
-```
-
----
-
-## 10. Production Checklist
-
-- [ ] Create production PayPal account
-- [ ] Register production apps
-- [ ] Create production billing plans
-- [ ] Update environment variables
-- [ ] Register production webhook
-- [ ] Test subscription flow
-- [ ] Set up monitoring/alerts
-- [ ] Document cancellation process
-- [ ] Enable dispute handling
-- [ ] Set refund policy
-
----
-
-## Troubleshooting
-
-### Webhook not firing
-- Check webhook URL is publicly accessible
-- Verify endpoint returns 200 OK
-- Check webhook logs in PayPal dashboard
-
-### Subscription not created
-- Verify plan ID is correct
-- Check custom_id (user ID) is passed
-- Confirm user has PayPal account
-
-### Payment failed
-- Check PayPal account has sufficient funds
-- Verify payment method on file
-- Review failure reason in webhook
-
----
-
-## References
-
-- [PayPal Subscriptions API](https://developer.paypal.com/docs/subscriptions/)
-- [PayPal Webhooks](https://developer.paypal.com/docs/webhooks/)
-- [PayPal Node.js SDK](https://github.com/paypal/Checkout-NodeJS-SDK)
-
----
-
-**Status:** Ready for testing ✅
+Create a Live REST app and Live plans (different IDs), register the Live webhook, set `PAYPAL_ENV=live`,
+swap all seven variables in Vercel, redeploy.

@@ -9,7 +9,7 @@
 - **Backend**: API routes with Supabase auth, PostGIS geospatial, RLS policies
 - **Database**: PostgreSQL 15 + PostGIS (Supabase managed)
 - **Auth**: Auth.js v4 with OAuth (Google, Apple) + email magic link + anonymous
-- **Payments**: Stripe (Plus $5 + Premium $10 tiers)
+- **Payments**: PayPal subscriptions (Plus $5 + Premium $10 tiers)
 - **AI**: Claude API for search/moderation + vision for photo verification
 - **E2E Encryption**: libsignal readiness + envelope keys for health data
 - **Age Verification**: Yoti SDK + Persona fallback
@@ -147,15 +147,14 @@
 
 ## Phase 8 ✅ Built
 ### Completed (Plans + Notifications)
-- ✅ Stripe checkout (Plus $5 + Premium $10)
-- ✅ Plan webhook handlers
-- ✅ Notification center shell
-- ✅ Web push (VAPID) hooks
+- ✅ PayPal subscriptions (Plus $5 + Premium $10) — buttons on Me, subscribe/cancel/status APIs
+- ✅ PayPal webhook with signature verification (`/api/webhooks/paypal`)
+- ✅ Web push (VAPID): service worker, subscribe API, push on new message, toggle on Me
+- ✅ Admin dashboard (`/admin`): stats + reports queue + moderation ladder
 
 ### Pending
-- ⏳ Stripe webhook integration
-- ⏳ Web push implementation
-- ⏳ Notification preferences
+- ⏳ Notification center UI (in-app list)
+- ⏳ Notification preferences UI (stored in `users.notif_prefs`)
 
 ## Phase 9 ✅ Built
 ### Completed (AI)
@@ -309,7 +308,7 @@ DEMO_AUTH_SECRET=<generate with: openssl rand -base64 32>
 - Reports, appeals and warnings ladder
 
 ### Phase 8 — Plans + notifications
-- Stripe billing for Plus/Premium
+- PayPal billing for Plus/Premium
 - Web push notifications (VAPID)
 - Notification center
 
