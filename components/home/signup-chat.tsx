@@ -102,11 +102,9 @@ export function SignupChat({ gated }: { gated: boolean }) {
     [bot],
   );
 
-  /** Resume where the signed-in visitor left off (OAuth / magic-link return, or a gate redirect). */
-  useEffect(() => {
-    let cancelled = false;
-    fetchSession().then((s) => {
-      if (cancelled || !s) return;
+  /** Continue from wherever a signed-in visitor is in the gate: consent, face check, or done. */
+  const resume = useCallback(
+    (s: Session) => {
       setSession(s);
       if (s.ageVerified) {
         bot(
@@ -130,11 +128,20 @@ export function SignupChat({ gated }: { gated: boolean }) {
           600,
         );
       }
+    },
+    [bot, gated],
+  );
+
+  /** Resume on mount (OAuth / magic-link return, or a gate redirect). */
+  useEffect(() => {
+    let cancelled = false;
+    fetchSession().then((s) => {
+      if (!cancelled && s) resume(s);
     });
     return () => {
       cancelled = true;
     };
-  }, [bot, gated]);
+  }, [resume]);
 
   useEffect(() => {
     const s = scrollRef.current;
@@ -352,7 +359,12 @@ export function SignupChat({ gated }: { gated: boolean }) {
     setCErr('');
     try {
       await signInWithPassword(cEmail.trim(), cPass);
-      router.push(APP_PATH);
+      const s = await fetchSession();
+      if (s?.ageVerified) return router.push(APP_PATH);
+      // Not through the gate yet: hand over to the chat, which continues at consent or the face check.
+      setCBusy('');
+      setView('chat');
+      if (s) resume(s);
     } catch (e) {
       setCBusy('');
       setCErr(e instanceof Error ? e.message : 'Could not sign in.');
