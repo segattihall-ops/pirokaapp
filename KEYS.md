@@ -125,6 +125,7 @@ openssl rand -base64 32   # run twice
 | `NEXTAUTH_SECRET` | signs sessions |
 | `DEMO_AUTH_SECRET` | only needed while demo mode is on |
 | `NEXTAUTH_URL` | `https://<your-domain>` in production |
+| `CRON_SECRET` | SafeMeet check-in reminders. `vercel.json` schedules `/api/cron/safemeet` every 5 min; Vercel sends this value as the bearer token automatically once the variable exists. (Hobby plan runs crons once a day — the contact page is still correct because its state comes from timestamps; only the push nudges arrive late.) |
 
 ---
 

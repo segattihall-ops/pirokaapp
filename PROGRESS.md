@@ -409,6 +409,7 @@ vercel deploy --prod
 | Video calls | `components/chat/video-call.tsx`, `lib/realtime/call.ts`, `/api/chat/[id]/ring` | WebRTC 1:1, signalling over a Supabase broadcast channel, ring every 3 s until answered, push "is calling"; STUN by default, TURN via `NEXT_PUBLIC_ICE_SERVERS` |
 
 | Edit profile | `app/app/me/edit`, `components/me/edit-profile.tsx`, `/api/me/profile`, `/api/me/photos` | every onboarding field editable afterwards; photos replace/remove with slot compaction; plan limit main+2 (free) / main+5 (Plus); handles unique case-insensitively (`014_profile_edit.sql`) |
+| SafeMeet | `components/meet/*`, `/api/meet`, `/api/meet/[id]`, `/api/safe/[token]`, `/safe/[token]`, `/api/cron/safemeet` | start from a chat (where, how long, check-in every 15–60 min, boundaries sent to the peer, trusted contact); live card in the chat and on Me with I’m OK / Not OK / +1 h / End; public no-login page for the contact derived from timestamps (ok / due / overdue / alert / home safe); Vercel Cron sweep pushes "time to check in" and "missed" nudges (`CRON_SECRET`); `015_safemeet.sql` |
 | Delete account | `components/me/delete-account.tsx`, `/api/me/account` | typed DELETE confirmation; wipes storage, every row (cascade) and the auth user; reports/mod actions keep the record with the user cleared; audit row |
 
 Migration `013_social.sql` (applied to PIROKA) adds the notification kinds/columns, `favoriters_of`, `favoriters_near`, `trips_near`, and makes chat/meet rows cascade on account deletion (reports and mod actions keep the row, user reference set null).
