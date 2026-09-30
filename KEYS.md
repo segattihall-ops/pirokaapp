@@ -41,12 +41,19 @@ The app sends a Cloudflare **Turnstile** token with every email, password and an
 site key exists. Supabase rejects those sign-ins if its captcha is on but no token arrives — so add the key to
 the app **first**, then flip the Supabase switch.
 
-1. https://dash.cloudflare.com → **Turnstile** → **Add widget**: name `piroka`, hostnames = your domain and
-   `*.vercel.app` (previews), widget mode **Managed**, pre-clearance off → Create. Copy **Site Key** and **Secret Key**.
-2. Vercel → Environment Variables → `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = Site Key → redeploy.
-3. Supabase → PIROKA → **Authentication** → **Attack Protection** → **Enable Captcha protection** → provider
+1. https://dash.cloudflare.com → **Turnstile** → **Add widget**: name `piroka`, widget mode **Managed**,
+   pre-clearance off → Create. Copy **Site Key** and **Secret Key**.
+2. Same widget → **Hostname management**. Turnstile only accepts exact hostnames (no `*` wildcards) and each
+   one covers its own subdomains, so add every host the app is served from, one per line:
+   - `pirokaapp.vercel.app` (production)
+   - `pirokaapp-git-claude-phase-1-homepage-auth-6smkpp-mm-website.vercel.app` (branch preview, if you test there)
+   - `localhost` (local dev)
+   - your custom domain once you have one
+   A host that is missing fails every sign-in with **error 110200** ("Security check failed" in the chat).
+3. Vercel → Environment Variables → `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = Site Key → redeploy.
+4. Supabase → PIROKA → **Authentication** → **Attack Protection** → **Enable Captcha protection** → provider
    **Turnstile** → paste the **Secret Key** → Save.
-4. Open the homepage and sign in with email once; Cloudflare's badge appears only if it decides to challenge.
+5. Open the homepage and sign in with email once; Cloudflare's badge appears only if it decides to challenge.
 
 | Variable | Where |
 |---|---|
