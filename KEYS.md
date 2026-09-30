@@ -35,6 +35,26 @@ Auth providers (Supabase → Authentication → Sign In / Providers):
 
 Then add `https://<your-domain>/auth/callback` (and your Vercel preview URL) to Authentication → URL Configuration → Redirect URLs.
 
+### CAPTCHA (bot protection) — do it in this order or sign-ins break
+
+The app sends a Cloudflare **Turnstile** token with every email, password and anonymous sign-in as soon as the
+site key exists. Supabase rejects those sign-ins if its captcha is on but no token arrives — so add the key to
+the app **first**, then flip the Supabase switch.
+
+1. https://dash.cloudflare.com → **Turnstile** → **Add widget**: name `piroka`, hostnames = your domain and
+   `*.vercel.app` (previews), widget mode **Managed**, pre-clearance off → Create. Copy **Site Key** and **Secret Key**.
+2. Vercel → Environment Variables → `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = Site Key → redeploy.
+3. Supabase → PIROKA → **Authentication** → **Attack Protection** → **Enable Captcha protection** → provider
+   **Turnstile** → paste the **Secret Key** → Save.
+4. Open the homepage and sign in with email once; Cloudflare's badge appears only if it decides to challenge.
+
+| Variable | Where |
+|---|---|
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Vercel (public) |
+| Turnstile Secret Key | Supabase dashboard only — never in the app |
+
+OAuth (Google/Apple) sign-ins don't go through the captcha; Supabase only checks it for email/password/anonymous.
+
 | Variable | Where to get it |
 |---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client (Web) |
