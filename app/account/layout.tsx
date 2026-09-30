@@ -19,7 +19,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         <span className="text-[19px] font-semibold tracking-[-0.02em]">πroka</span>
       </Link>
       {children}
-      <Link href="/help/support" className="text-[13px] text-fg-3 hover:text-green">
+      <Link href="/help/support" className="tap-link text-[13px] text-fg-3 hover:text-green">
         Locked out? Talk to a person
       </Link>
     </div>

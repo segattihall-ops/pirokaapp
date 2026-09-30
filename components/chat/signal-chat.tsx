@@ -164,21 +164,20 @@ export function SignalChat({
   };
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-[720px] flex-col rail:h-dvh">
-      <header className="flex items-center gap-3 border-b border-line-1 px-4 py-3">
-        <Link href="/app/chats" aria-label="Back" className="tap flex items-center justify-center text-fg-3 hover:text-fg">
+    <div className="mx-auto flex h-[calc(100dvh-66px-var(--safe-bottom))] w-full max-w-[720px] flex-col overflow-hidden rail:h-dvh">
+      <header className="flex items-center gap-2 border-b border-line-1 px-3 py-2 sm:px-4">
+        <Link href="/app/chats" aria-label="Back" className="tap flex items-center justify-center text-[22px] text-fg-3 hover:text-fg">
           ‹
         </Link>
-        <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setShowSafety((s) => !s)}
+          aria-expanded={showSafety}
+          className="tap min-w-0 flex-1 rounded-[12px] px-1 text-left hover:bg-ink-850"
+        >
           <h1 className="truncate text-[15px] font-semibold">{peerHandle ? `@${peerHandle}` : 'Anonymous'}</h1>
-          <button
-            type="button"
-            onClick={() => setShowSafety((s) => !s)}
-            className="text-[12px] text-fg-3 hover:text-fg"
-          >
-            🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}
-          </button>
-        </div>
+          <p className="truncate text-[12px] text-fg-3">🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}</p>
+        </button>
         <SafetyMenu peerUserId={peerUserId} peerHandle={peerHandle} conversationId={conversationId} />
       </header>
 
@@ -228,7 +227,7 @@ export function SignalChat({
           e.preventDefault();
           send();
         }}
-        className="flex gap-2 border-t border-line-1 px-4 py-3 pb-[calc(12px+var(--safe-bottom))] rail:pb-3"
+        className="flex gap-2 border-t border-line-1 px-3 py-2.5 sm:px-4"
       >
         <input
           value={input}

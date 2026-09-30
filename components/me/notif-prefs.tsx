@@ -53,7 +53,7 @@ export function NotifPrefs() {
               aria-label={row.label}
               disabled={!prefs || saving === row.key}
               onClick={() => toggle(row.key)}
-              className={`relative h-7 w-12 rounded-chip border transition-colors disabled:opacity-40 ${
+              className={`tap-hit h-7 w-12 shrink-0 rounded-chip border transition-colors disabled:opacity-40 ${
                 on ? 'border-sel-border bg-green' : 'border-line-3 bg-ink-800'
               }`}
             >

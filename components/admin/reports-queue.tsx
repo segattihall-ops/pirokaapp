@@ -91,7 +91,7 @@ export function ReportsQueue() {
               key={f.value}
               type="button"
               onClick={() => setFilter(f.value)}
-              className={`chip h-8 ${filter === f.value ? 'chip-selected' : ''}`}
+              className={`chip ${filter === f.value ? 'chip-selected' : ''}`}
             >
               {f.label}
             </button>

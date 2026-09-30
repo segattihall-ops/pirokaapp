@@ -55,7 +55,7 @@ export function PushToggle() {
         aria-checked={enabled}
         disabled={!supported || denied || busy}
         onClick={toggle}
-        className={`relative h-7 w-12 rounded-chip border transition-colors disabled:opacity-40 ${
+        className={`tap-hit h-7 w-12 shrink-0 rounded-chip border transition-colors disabled:opacity-40 ${
           enabled ? 'border-sel-border bg-green' : 'border-line-3 bg-ink-800'
         }`}
       >

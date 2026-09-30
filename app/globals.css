@@ -29,12 +29,13 @@
     border-radius: 6px;
   }
 
-  /* Inputs stay at 16px under the rail breakpoint so iOS Safari never zooms (handoff v5 → Mobile). */
+  /* Inputs stay at 16px under the rail breakpoint so iOS Safari never zooms (handoff v5 → Mobile).
+     !important because utility classes like text-[15px] land later in the cascade. */
   @media (max-width: 819px) {
     input,
     select,
     textarea {
-      font-size: 16px;
+      font-size: 16px !important;
     }
   }
 
@@ -79,7 +80,14 @@
     @apply tap inline-flex items-center justify-center rounded-btn px-4.5 text-[14px] font-medium text-fg-3 transition-colors hover:text-fg;
   }
   .chip {
-    @apply inline-flex h-9 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850 px-3.5 text-[13px] font-medium text-fg-2 transition-colors;
+    @apply inline-flex min-h-[40px] items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850 px-3.5 text-[13px] font-medium text-fg-2 transition-colors;
+  }
+  /* Text links and small toggles keep their look but get a finger-sized hit area. */
+  .tap-link {
+    @apply inline-flex min-h-[40px] items-center;
+  }
+  .tap-hit {
+    @apply relative before:absolute before:-inset-2 before:content-[''];
   }
   .chip-selected {
     @apply border-sel-border bg-sel-fill text-fg;

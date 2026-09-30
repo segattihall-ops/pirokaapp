@@ -78,7 +78,7 @@ export function HomeClient({ gated, demo }: { gated: boolean; demo: boolean }) {
               type="button"
               onClick={requestPrecise}
               title="Approximate area — your exact location is never shown"
-              className="flex items-center gap-[7px] whitespace-nowrap rounded-chip border border-line-2 bg-white/[0.04] px-3 py-1.5 text-[12px] font-medium text-fg-3 transition-colors hover:border-[rgba(52,211,153,0.45)] hover:text-fg"
+              className="flex min-h-[40px] items-center gap-[7px] whitespace-nowrap rounded-chip border border-line-2 bg-white/[0.04] px-3 py-1.5 text-[12px] font-medium text-fg-3 transition-colors hover:border-[rgba(52,211,153,0.45)] hover:text-fg"
             >
               <svg
                 width="12"
@@ -119,7 +119,7 @@ export function HomeClient({ gated, demo }: { gated: boolean; demo: boolean }) {
         <footer className="flex flex-col gap-3 px-[clamp(20px,5vw,64px)] pb-[calc(24px+var(--safe-bottom))] pt-2 text-[12px] text-fg-3">
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             {FOOTER.map(([l, h]) => (
-              <Link key={h} href={h} className="hover:text-green">
+              <Link key={h} href={h} className="tap-link hover:text-green">
                 {l}
               </Link>
             ))}
@@ -127,7 +127,7 @@ export function HomeClient({ gated, demo }: { gated: boolean; demo: boolean }) {
               href="https://www.openstreetmap.org/copyright"
               target="_blank"
               rel="noreferrer"
-              className="text-fg-4 hover:text-fg-3"
+              className="tap-link text-fg-4 hover:text-fg-3"
             >
               © OpenStreetMap contributors
             </a>

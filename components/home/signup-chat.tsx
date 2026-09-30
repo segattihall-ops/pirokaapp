@@ -439,7 +439,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
                 onClick={restart}
                 title="Start over"
                 aria-label="Start over"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-line-2 bg-white/5 text-fg-3 transition-colors hover:border-[rgba(52,211,153,0.45)] hover:text-fg"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-line-2 bg-white/5 text-fg-3 transition-colors hover:border-[rgba(52,211,153,0.45)] hover:text-fg"
               >
                 <svg
                   width="14"
@@ -464,7 +464,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
                   setCErr('');
                   setCBusy('');
                 }}
-                className="h-8 rounded-chip border border-line-2 bg-white/5 px-[13px] text-[12px] font-medium text-fg transition-colors hover:border-[rgba(52,211,153,0.5)]"
+                className="h-10 rounded-chip border border-line-2 bg-white/5 px-[13px] text-[12px] font-medium text-fg transition-colors hover:border-[rgba(52,211,153,0.5)]"
               >
                 Log in
               </button>
@@ -472,7 +472,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
               <button
                 type="button"
                 onClick={() => setView('chat')}
-                className="flex h-8 items-center gap-1.5 rounded-chip border border-line-2 bg-white/5 px-[13px] text-[12px] font-medium text-fg transition-colors hover:border-[rgba(52,211,153,0.5)]"
+                className="flex h-10 items-center gap-1.5 rounded-chip border border-line-2 bg-white/5 px-[13px] text-[12px] font-medium text-fg transition-colors hover:border-[rgba(52,211,153,0.5)]"
               >
                 <svg
                   width="12"

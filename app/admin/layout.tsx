@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-dvh bg-ink-950">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line-1 bg-ink-900/95 px-4 py-3 backdrop-blur-md sm:px-6">
-        <Link href="/app/map" aria-label="Back to app">
+        <Link href="/app/map" aria-label="Back to app" className="tap flex items-center justify-center rounded-logo">
           <LogoTile size={32} />
         </Link>
         <span className="eyebrow">Admin</span>

@@ -310,7 +310,7 @@ export function AccountFlow({ initial }: { initial: AccountView }) {
 
       <div className="flex flex-wrap justify-between gap-3 text-[13px]">
         {links.map((l) => (
-          <Link key={l.href + l.label} href={l.href} className="text-fg-3 hover:text-green">
+          <Link key={l.href + l.label} href={l.href} className="tap-link text-fg-3 hover:text-green">
             {l.label}
           </Link>
         ))}
