@@ -13,6 +13,8 @@
     "format:check": "prettier --check \"{app,components,lib}/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.10",
     "@supabase/ssr": "^0.5.2",
@@ -30,6 +32,7 @@
     "sharp": "^0.35.5",
     "stripe": "^22.6.2",
     "three": "^0.169.0",
+    "tweetnacl": "^1.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
