@@ -145,6 +145,18 @@
 - ⏳ Disguised app icon variants
 - ⏳ Help center + legal pages
 
+## Onboarding ✅ Persists
+- ✅ `/onboarding` now mounts the real five-step flow (it was still the Phase-0 static shell)
+- ✅ Saves profile (`POST /api/onboarding/save`), uploads photos (EXIF-stripped original + blur to the `photos` bucket), publishes location
+- ✅ `photos` storage bucket created (public read, 5 MB, jpeg/png/webp)
+
+## Places ✅ Built
+- ✅ `GET /api/places` — venues within radius with live "here" (4 h) / "going" (24 h) counts via `nearby_places()`
+- ✅ `POST /api/places` — members suggest a venue at their position (unverified until an admin verifies), 5/day
+- ✅ `POST/DELETE /api/places/checkin` against the real `checkins` table (one "here" at a time)
+- ✅ Places screen with check-in chips and "Suggest a place" sheet; migration `012_places.sql` applied
+- ✅ Removed the broken events/RSVP route (tables it used never existed)
+
 ## Discovery ✅ Built (Map + Pulse)
 - ✅ `POST /api/me/location` stores the true position server-side, returns only the fuzzed one (0–800 m)
 - ✅ `POST /api/me/status` — intent (now / tonight / hosting / visiting / looking / later) for 0.5–8 h, auto-expires

@@ -1,97 +1,43 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
+import { ensureUserRow } from '@/lib/db/users';
 
+export const dynamic = 'force-dynamic';
+
+const Body = z.object({ placeId: z.string().uuid(), kind: z.enum(['here', 'going']) });
+const TTL_MIN = { here: 240, going: 1440 } as const;
+
+/** "I'm here" lasts 4 h, "Going" 24 h. One active check-in per member (you can only be in one place). */
 export async function POST(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const session = await getSession();
+  if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
-    if (!supabaseAdmin) {
-      return Response.json({ error: 'Database not configured' }, { status: 503 });
-    }
+  const parsed = Body.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'placeId and kind required' }, { status: 400 });
+  const { placeId, kind } = parsed.data;
 
-    const { placeId, kind } = await request.json() as {
-      placeId: string;
-      kind: 'here' | 'going';
-    };
+  const { data: place } = await supabaseAdmin.from('places').select('id').eq('id', placeId).maybeSingle();
+  if (!place) return NextResponse.json({ error: 'Place not found' }, { status: 404 });
 
-    if (!placeId || !['here', 'going'].includes(kind)) {
-      return Response.json({ error: 'Invalid params' }, { status: 400 });
-    }
-
-    const ttlMinutes = kind === 'here' ? 240 : 1440;
-    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
-
-    const place = await supabaseAdmin
-      .from('places')
-      .select('id, name, lat, lng')
-      .eq('id', placeId)
-      .single();
-
-    if (place.error) {
-      return Response.json({ error: 'Place not found' }, { status: 404 });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('place_checkins')
-      .upsert({
-        user_id: session.userId,
-        place_id: placeId,
-        kind,
-        expires_at: expiresAt,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Checkin error:', error);
-      return Response.json({ error: 'Checkin failed' }, { status: 500 });
-    }
-
-    return Response.json({
-      success: true,
-      checkin: data,
-      expiresAt,
-    });
-  } catch (error) {
-    console.error('Checkin error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  await ensureUserRow(session);
+  const expiresAt = new Date(Date.now() + TTL_MIN[kind] * 60_000).toISOString();
+  if (kind === 'here') await supabaseAdmin.from('checkins').delete().eq('user_id', session.userId).eq('kind', 'here');
+  const { error } = await supabaseAdmin
+    .from('checkins')
+    .upsert({ user_id: session.userId, place_id: placeId, kind, expires_at: expiresAt }, { onConflict: 'user_id,place_id' });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, kind, expiresAt });
 }
 
 export async function DELETE(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!supabaseAdmin) {
-      return Response.json({ error: 'Database not configured' }, { status: 503 });
-    }
-
-    const { placeId } = await request.json() as { placeId: string };
-
-    if (!placeId) {
-      return Response.json({ error: 'Place ID required' }, { status: 400 });
-    }
-
-    const { error } = await supabaseAdmin
-      .from('place_checkins')
-      .delete()
-      .eq('user_id', session.userId)
-      .eq('place_id', placeId);
-
-    if (error) {
-      console.error('Checkout error:', error);
-      return Response.json({ error: 'Checkout failed' }, { status: 500 });
-    }
-
-    return Response.json({ success: true });
-  } catch (error) {
-    console.error('Checkout error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  const session = await getSession();
+  if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!supabaseAdmin) return NextResponse.json({ ok: true });
+  const { placeId } = (await request.json().catch(() => ({}))) as { placeId?: string };
+  if (!placeId) return NextResponse.json({ error: 'placeId required' }, { status: 400 });
+  await supabaseAdmin.from('checkins').delete().eq('user_id', session.userId).eq('place_id', placeId);
+  return NextResponse.json({ ok: true });
 }

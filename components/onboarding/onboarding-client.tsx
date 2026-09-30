@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 import { fetchSession, recordConsent } from '@/lib/auth/client';
+import { getPosition } from '@/lib/geo/client';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -32,6 +33,9 @@ export function OnboardingClient() {
   const [visibility, setVisibility] = useState('Neighborhood');
   const [icon, setIcon] = useState('πroka');
   const [idQ_val, setIdQ_val] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,26 +66,64 @@ export function OnboardingClient() {
   const isStep1Ready = mode === 'anon' || name.trim().length >= 2;
   const isStep3Ready = showMe.length > 0;
 
-  const handleNext = async () => {
-    if (step < 5) {
-      setStep((step + 1) as Step);
-    } else {
-      await recordConsent();
+  const finish = async () => {
+    setSaving(true);
+    setSaveErr('');
+    try {
+      const allPronouns = customPronoun.trim() ? [...pronouns, customPronoun.trim()] : pronouns;
+      const r = await fetch('/api/onboarding/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anonymous: mode === 'anon',
+          displayName: name.trim(),
+          pronouns: allPronouns,
+          gender,
+          orientation,
+          communities: community,
+          showMe,
+          ...safety,
+          visibility: visibility.toLowerCase(),
+          disguiseIcon: icon === 'πroka' ? 'piroka' : icon.toLowerCase(),
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? 'Could not save your profile');
+
+      for (let slot = 0; slot < photos.length; slot++) {
+        const blob = await (await fetch(photos[slot])).blob();
+        const fd = new FormData();
+        fd.append('file', blob, `photo-${slot}.jpg`);
+        fd.append('slot', String(slot));
+        const u = await fetch('/api/onboarding/photos/upload', { method: 'POST', body: fd });
+        if (!u.ok) throw new Error((await u.json().catch(() => ({}))).error ?? 'Photo upload failed');
+      }
+
+      if (coords) {
+        await fetch('/api/me/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(coords),
+        });
+      }
+
+      await recordConsent().catch(() => {});
       router.push('/app/map');
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : 'Something went wrong');
+      setSaving(false);
     }
   };
 
-  const askLocation = () => {
-    if (!navigator.geolocation) {
-      setLocation('denied');
-      return;
-    }
+  const handleNext = async () => {
+    if (step < 5) setStep((step + 1) as Step);
+    else await finish();
+  };
+
+  const askLocation = async () => {
     setLocation('asking');
-    navigator.geolocation.getCurrentPosition(
-      () => setLocation('ok'),
-      () => setLocation('denied'),
-      { timeout: 8000 }
-    );
+    const p = await getPosition({ ask: true });
+    setCoords({ lat: p.lat, lng: p.lon });
+    setLocation(p.precise ? 'ok' : 'denied');
   };
 
   const addFiles = (files: FileList | null) => {
@@ -479,14 +521,20 @@ export function OnboardingClient() {
         <button
           onClick={handleNext}
           disabled={
+            saving ||
             (step === 1 && !isStep1Ready) ||
             (step === 3 && !isStep3Ready)
           }
           className="btn-primary flex-1 disabled:bg-white/8 disabled:text-fg-4"
         >
-          {step === 5 ? 'Enter πroka' : 'Continue'}
+          {saving ? 'Saving…' : step === 5 ? 'Enter πroka' : 'Continue'}
         </button>
       </div>
+      {saveErr && (
+        <p role="alert" className="text-center text-xs text-danger">
+          {saveErr}
+        </p>
+      )}
 
       <p className="text-center text-xs text-fg-4">
         Everything here can be changed later in ME.

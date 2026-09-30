@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { INTENTS, timeLeft } from '@/lib/geo/client';
 
 export type MyStatus = { intent: string; starts_at: string; ends_at: string } | null;
@@ -99,9 +100,22 @@ export function StatusSheet({
   );
 }
 
-/** Bottom sheet on phones, centered card on the rail layout. */
+/** Bottom sheet on phones, centered card on the rail layout. Portaled to <body> so animated/transformed ancestors can't reposition it. */
 export function Sheet({ title, onClose, children }: { title?: string; onClose: () => void; children: React.ReactNode }) {
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+  if (!mounted) return null;
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center rail:items-center" role="dialog" aria-modal="true">
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60" />
       <div className="relative flex max-h-[88dvh] w-full max-w-[520px] flex-col gap-4 overflow-y-auto rounded-t-sheet bg-ink-900 px-5 pb-[calc(20px+var(--safe-bottom))] pt-3 shadow-sheet rail:rounded-sheet rail:pb-5">
@@ -109,6 +123,7 @@ export function Sheet({ title, onClose, children }: { title?: string; onClose: (
         {title && <h2 className="text-[20px] font-semibold tracking-[-0.02em]">{title}</h2>}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
