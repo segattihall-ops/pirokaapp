@@ -1,4 +1,10 @@
-export type EventCategory = 'party' | 'meetup' | 'sports' | 'cultural' | 'nightlife' | 'other';
+export type EventCategory =
+  | 'party'
+  | 'meetup'
+  | 'sports'
+  | 'cultural'
+  | 'nightlife'
+  | 'other';
 export type RSVPStatus = 'interested' | 'going' | 'maybe';
 
 export interface Event {
@@ -6,19 +12,18 @@ export interface Event {
   creator_id: string;
   title: string;
   description?: string;
-  location: { type: string; coordinates: [number, number] };
   location_name: string;
+  distance_km?: number;
   photo?: string;
   starts_at: string;
   ends_at: string;
   category: EventCategory;
   max_attendees?: number;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   attendee_count?: number;
-  my_rsvp_status?: RSVPStatus;
+  my_rsvp_status?: RSVPStatus | null;
   creator?: { id: string; handle: string; photo?: string };
-  event_attendees?: Array<{ user_id: string; status: RSVPStatus; rsvp_at: string }>;
 }
 
 export const CATEGORY_LABEL: Record<EventCategory, string> = {
