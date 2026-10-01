@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { deepseekChat } from '@/lib/ai/deepseek';
 import type { ModerationFlag, ModerationResult } from '@/lib/ai/types';
+import { requireUser } from '@/lib/api/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,9 @@ function parseModelResponse(raw: string): ModerationResult | null {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+
   let body: unknown;
   try {
     body = await request.json();
