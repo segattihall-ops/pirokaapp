@@ -1,111 +1,24 @@
 {
-  "nav": {
-    "map": "MAP",
-    "pulse": "PULSE",
-    "chats": "CHATS",
-    "places": "PLACES",
-    "me": "ME"
-  },
-  "intent": {
-    "now": "Available now",
-    "next": "Next hour",
-    "hosting": "Hosting",
-    "travel": "Can travel",
-    "tonight": "Tonight",
-    "later": "Later",
-    "visiting": "Visiting",
-    "looking": "Just looking"
-  },
-  "chips": {
-    "all": "Everyone",
-    "now": "Now",
-    "tonight": "Tonight",
-    "hosting": "Hosting",
-    "visitors": "Visitors"
-  },
-  "map": {
-    "setIntent": "Set your intent",
-    "ready": "{n} ready",
-    "places": "Places",
-    "travel": "Travel",
-    "filter": "Filter",
-    "rightNow": "Right now",
-    "inTime": "In {t}",
-    "backNow": "Back to now",
-    "loading": "Finding people near you…",
-    "empty": "No one matches right now",
-    "reset": "Reset filters",
-    "offline": "You’re offline. Messages will send when you reconnect."
+  "common": {
+    "language": "Language",
+    "en": "English",
+    "pt-BR": "Português (Brasil)",
+    "es": "Español"
   },
   "profile": {
-    "chat": "Chat",
-    "interested": "Interested",
-    "mutual": "Mutual ✓",
-    "next": "Next →",
-    "report": "Report",
-    "block": "Block",
-    "requestAlbum": "Request album",
-    "from": "From {place}",
-    "comingFrom": "Coming from {place}",
-    "blurred": "Blurred — unlocks when mutual"
+    "ethnicity": "Ethnicity",
+    "positionMarks": "Position Marks",
+    "top": "Top",
+    "versatile": "Versatile",
+    "bottom": "Bottom",
+    "selectEthnicity": "Select your ethnicity",
+    "selectPositions": "Select your position(s)"
   },
-  "chats": {
-    "title": "Chats",
-    "buckets": {
-      "NOW": "NOW",
-      "MUTUAL": "MUTUAL",
-      "ACTIVE": "ACTIVE",
-      "LATER": "LATER",
-      "EXPIRED": "EXPIRED"
-    },
-    "e2e": "End-to-end encrypted",
-    "typeMessage": "Type a message…",
-    "send": "Send",
-    "notSent": "Not sent · Tap to retry",
-    "video": "Video (blurred)",
-    "unlockAlbum": "Unlock my album",
-    "shareHealth": "Share health"
-  },
-  "me": {
-    "language": "Language",
-    "sexualHealth": "Sexual health",
-    "yourType": "Your type",
-    "favorites": "Favorites",
-    "privacy": "Privacy & safety",
-    "quietHours": "Quiet hours",
-    "discreet": "Discreet previews",
-    "invite": "Invite friends",
-    "ambassador": "Become an ambassador",
-    "logout": "Log out"
-  },
-  "sheets": {
-    "status": "PIROKA Mode",
-    "filters": "Filter",
-    "trip": "Plan a trip",
-    "meet": "Propose a meet",
-    "checkin": "SafeMeet check-in",
-    "report": "Report",
-    "plans": "πroka plans",
-    "notifs": "Notifications",
-    "health": "Sexual health",
-    "care": "Chemsex & party safety",
-    "viewers": "Who’s interested"
-  },
-  "ai": {
-    "ask": "Ask πroka",
-    "placeholder": "Ask anything — who’s around, an opener, safety…",
-    "describe": "Describe who you’re looking for",
-    "apply": "Apply"
-  },
-  "plans": {
-    "free": "Free",
-    "plus": "Plus",
-    "premium": "Premium",
-    "upgrade": "See Premium"
-  },
-  "safety": {
-    "call911": "Call 911",
-    "quickExit": "Quick exit",
-    "imOk": "I’m OK"
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "places": "Places",
+    "messages": "Messages",
+    "me": "Me"
   }
 }
