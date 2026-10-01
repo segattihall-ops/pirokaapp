@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabaseAdmin } from '@/lib/db/client';
+
 import { requireUser } from '@/lib/api/guard';
+import { supabaseAdmin } from '@/lib/db/client';
 
 export const dynamic = 'force-dynamic';
 
 const CreateEvent = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
-  location: z.object({ lat: z.number(), lon: z.number() }),
-  locationName: z.string().min(1).max(100),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2000).optional(),
+  location: z.object({
+    lat: z.number().min(-90).max(90),
+    lon: z.number().min(-180).max(180),
+  }),
+  locationName: z.string().trim().min(1).max(100),
   photo: z.string().url().optional(),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
@@ -17,57 +21,104 @@ const CreateEvent = z.object({
   maxAttendees: z.number().int().positive().optional(),
 });
 
+const ListQuery = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+  radius: z.coerce.number().min(1).max(50).default(10),
+});
+
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const lat = searchParams.get('lat');
-  const lon = searchParams.get('lon');
-  const radius = searchParams.get('radius') || '10'; // km
-
-  if (!lat || !lon) {
-    return NextResponse.json({ error: 'lat and lon required' }, { status: 400 });
-  }
-
+  const g = await requireUser();
+  if (g.error) return g.error;
   if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
-  const radiusKm = Math.max(1, Math.min(50, parseInt(radius, 10)));
+  const { searchParams } = new URL(request.url);
+  const parsed = ListQuery.safeParse({
+    lat: searchParams.get('lat'),
+    lon: searchParams.get('lon'),
+    radius: searchParams.get('radius') ?? undefined,
+  });
 
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid location parameters' }, { status: 400 });
+  }
+
+  const { lat, lon, radius } = parsed.data;
   const { data: events, error } = await supabaseAdmin.rpc('nearby_events', {
-    user_lat: parseFloat(lat),
-    user_lon: parseFloat(lon),
-    radius_km: radiusKm,
+    user_lat: lat,
+    user_lon: lon,
+    radius_km: radius,
   });
 
   if (error) {
-    console.error('nearby_events error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('nearby_events error:', error.message);
+    return NextResponse.json({ error: 'Failed to load events' }, { status: 500 });
   }
 
-  return NextResponse.json({ events: events || [] });
+  const rows = events ?? [];
+  const ids = rows.map((event: { id: string }) => event.id);
+  const statusByEvent = new Map<string, string>();
+
+  if (ids.length > 0) {
+    const { data: mine, error: rsvpError } = await supabaseAdmin
+      .from('event_attendees')
+      .select('event_id,status')
+      .eq('user_id', g.session.userId)
+      .in('event_id', ids);
+
+    if (rsvpError) {
+      console.error('event RSVP lookup error:', rsvpError.message);
+    } else {
+      for (const row of mine ?? []) statusByEvent.set(row.event_id, row.status);
+    }
+  }
+
+  return NextResponse.json(
+    {
+      events: rows.map((event: Record<string, unknown> & { id: string }) => ({
+        ...event,
+        my_rsvp_status: statusByEvent.get(event.id) ?? null,
+      })),
+    },
+    { headers: { 'Cache-Control': 'private, no-store' } },
+  );
 }
 
 export async function POST(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
-  const me = g.session.userId;
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
-  const body = await request.json();
-  const parsed = CreateEvent.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  const parsed = CreateEvent.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  }
 
-  const { title, description, location, locationName, photo, startsAt, endsAt, category, maxAttendees } = parsed.data;
+  const {
+    title,
+    description,
+    location,
+    locationName,
+    photo,
+    startsAt,
+    endsAt,
+    category,
+    maxAttendees,
+  } = parsed.data;
 
   const starts = new Date(startsAt);
   const ends = new Date(endsAt);
-  if (ends <= starts) return NextResponse.json({ error: 'endsAt must be after startsAt' }, { status: 400 });
+  if (ends <= starts) {
+    return NextResponse.json({ error: 'endsAt must be after startsAt' }, { status: 400 });
+  }
   if (ends.getTime() - starts.getTime() > 7 * 24 * 60 * 60 * 1000) {
     return NextResponse.json({ error: 'Event duration must be <= 7 days' }, { status: 400 });
   }
 
-  const db = supabaseAdmin!;
-  const { data: event, error } = await db
+  const { data: event, error } = await supabaseAdmin
     .from('events')
     .insert({
-      creator_id: me,
+      creator_id: g.session.userId,
       title,
       description: description || null,
       location: `POINT(${location.lon} ${location.lat})`,
@@ -78,12 +129,14 @@ export async function POST(request: Request) {
       category,
       max_attendees: maxAttendees || null,
     })
-    .select()
+    .select(
+      'id,creator_id,title,description,location_name,photo,starts_at,ends_at,category,max_attendees,created_at',
+    )
     .single();
 
-  if (error) {
-    console.error('create event error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error || !event) {
+    console.error('create event error:', error?.message);
+    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
   }
 
   return NextResponse.json({ event }, { status: 201 });

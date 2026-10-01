@@ -1,62 +1,80 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/db/client';
+
 import { isUuid, requireUser } from '@/lib/api/guard';
+import { supabaseAdmin } from '@/lib/db/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  if (!isUuid(params.id)) return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
-  if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
-
-  const { data: event, error } = await supabaseAdmin
-    .from('events')
-    .select('*')
-    .eq('id', params.id)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // Fetch attendees separately
-  const { data: attendees, error: attErr } = await supabaseAdmin
-    .from('event_attendees')
-    .select('user_id, status, rsvp_at')
-    .eq('event_id', params.id);
-
-  if (attErr) {
-    console.error('attendees fetch error:', attErr);
-    return NextResponse.json({ event: { ...event, event_attendees: [] } });
-  }
-
-  return NextResponse.json({ event: { ...event, event_attendees: attendees || [] } });
-}
-
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const g = await requireUser();
   if (g.error) return g.error;
-  const me = g.session.userId;
 
-  if (!isUuid(params.id)) return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
+  if (!isUuid(params.id)) {
+    return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
+  }
   if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
-  const { data: event, error: getErr } = await supabaseAdmin
-    .from('events')
-    .select('creator_id')
-    .eq('id', params.id)
-    .single();
+  const [{ data: event, error }, { count }, { data: mine }] = await Promise.all([
+    supabaseAdmin
+      .from('events')
+      .select(
+        'id,creator_id,title,description,location_name,photo,starts_at,ends_at,category,max_attendees,created_at,updated_at',
+      )
+      .eq('id', params.id)
+      .single(),
+    supabaseAdmin
+      .from('event_attendees')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('event_id', params.id),
+    supabaseAdmin
+      .from('event_attendees')
+      .select('status')
+      .eq('event_id', params.id)
+      .eq('user_id', g.session.userId)
+      .maybeSingle(),
+  ]);
 
-  if (getErr) {
-    if (getErr.code === 'PGRST116') return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ error: getErr.message }, { status: 500 });
+  if (error || !event) {
+    if (error?.code === 'PGRST116') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Failed to load event' }, { status: 500 });
   }
 
-  if (event.creator_id !== me) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json(
+    {
+      event: {
+        ...event,
+        attendee_count: count ?? 0,
+        my_rsvp_status: mine?.status ?? null,
+      },
+    },
+    { headers: { 'Cache-Control': 'private, no-store' } },
+  );
+}
 
-  const { error } = await supabaseAdmin.from('events').delete().eq('id', params.id);
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const g = await requireUser();
+  if (g.error) return g.error;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!isUuid(params.id)) {
+    return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
+  }
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
+
+  const { data, error } = await supabaseAdmin
+    .from('events')
+    .delete()
+    .eq('id', params.id)
+    .eq('creator_id', g.session.userId)
+    .select('id')
+    .maybeSingle();
+
+  if (error) {
+    console.error('delete event error:', error.message);
+    return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 });
+  }
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }
