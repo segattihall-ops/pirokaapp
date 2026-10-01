@@ -23,7 +23,9 @@ export async function subscribeToPushNotifications(
     // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: options.userVisibleOnly ?? true,
-      applicationServerKey: urlBase64ToUint8Array(options.vapidPublicKey),
+      applicationServerKey: urlBase64ToUint8Array(
+        options.vapidPublicKey
+      ) as BufferSource,
     });
 
     // Send to backend

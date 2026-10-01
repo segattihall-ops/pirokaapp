@@ -64,8 +64,9 @@ class PerformanceMonitor {
       result = result.filter((m) => m.name === filter.name);
     }
 
-    if (filter?.minDuration) {
-      result = result.filter((m) => m.duration >= filter.minDuration);
+    if (filter?.minDuration !== undefined) {
+      const minDuration = filter.minDuration;
+      result = result.filter((m) => m.duration >= minDuration);
     }
 
     return result;
