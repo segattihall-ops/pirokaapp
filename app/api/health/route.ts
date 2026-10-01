@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     // Create health card with verification status
     const testMonth = new Date(testDate).getMonth();
-    const cardData = {
+    const cardData: Record<string, any> = {
       user_id: userId,
       status: verification.confidence >= 0.8 ? 'verified' : 'pending',
       prevention: verification.prevention || [],
@@ -67,9 +67,9 @@ export async function POST(request: Request) {
     };
 
     if (testType === 'hiv') {
-      cardData[`${testType}_month`] = testMonth;
+      cardData.hiv_month = testMonth;
     } else if (testType === 'sti') {
-      cardData[`${testType}_month`] = testMonth;
+      cardData.sti_month = testMonth;
     }
 
     const { data, error } = await supabaseAdmin
