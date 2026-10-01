@@ -1,10 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import createIntlMiddleware from 'next-intl/middleware';
 import { DEMO_COOKIE, verifySession } from '@/lib/auth/demo-token';
 import { sessionFromUser } from '@/lib/auth/session-from-user';
 import { GATE_PATH } from '@/lib/auth/types';
-import { i18n } from '@/i18n.config';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -12,22 +10,10 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 /** Routes that need a signed-in AND age-verified user. Everything else is public. */
 const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/];
 
-const intlMiddleware = createIntlMiddleware({
-  locales: i18n.locales,
-  defaultLocale: i18n.defaultLocale,
-  localePrefix: 'as-needed',
-});
-
 export async function middleware(req: NextRequest) {
-  // Apply i18n middleware first
-  const intlRes = intlMiddleware(req);
-  if (intlRes) {
-    req = intlRes.request;
-  }
-
   const { pathname } = req.nextUrl;
   const gated = GATED.some((r) => r.test(pathname));
-  let res = intlRes || NextResponse.next({ request: req });
+  let res = NextResponse.next({ request: req });
 
   let ageVerified = false;
   let signedIn = false;
