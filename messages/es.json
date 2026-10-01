@@ -1,111 +1,24 @@
 {
-  "nav": {
-    "map": "MAPA",
-    "pulse": "PULSO",
-    "chats": "CHATS",
-    "places": "LUGARES",
-    "me": "YO"
-  },
-  "intent": {
-    "now": "Disponible ahora",
-    "next": "Próxima hora",
-    "hosting": "Anfitrión",
-    "travel": "Puedo ir",
-    "tonight": "Esta noche",
-    "later": "Más tarde",
-    "visiting": "De visita",
-    "looking": "Solo mirando"
-  },
-  "chips": {
-    "all": "Todos",
-    "now": "Ahora",
-    "tonight": "Esta noche",
-    "hosting": "Anfitrión",
-    "visitors": "Visitantes"
-  },
-  "map": {
-    "setIntent": "Define tu intención",
-    "ready": "{n} listos",
-    "places": "Lugares",
-    "travel": "Viaje",
-    "filter": "Filtro",
-    "rightNow": "Ahora mismo",
-    "inTime": "En {t}",
-    "backNow": "Volver a ahora",
-    "loading": "Buscando gente cerca de ti…",
-    "empty": "Nadie coincide ahora",
-    "reset": "Borrar filtros",
-    "offline": "Estás sin conexión. Los mensajes se enviarán al reconectar."
+  "common": {
+    "language": "Idioma",
+    "en": "English",
+    "pt-BR": "Português (Brasil)",
+    "es": "Español"
   },
   "profile": {
-    "chat": "Chatear",
-    "interested": "Me interesa",
-    "mutual": "Mutuo ✓",
-    "next": "Siguiente →",
-    "report": "Denunciar",
-    "block": "Bloquear",
-    "requestAlbum": "Pedir álbum",
-    "from": "De {place}",
-    "comingFrom": "Viene de {place}",
-    "blurred": "Borrosa — se desbloquea si es mutuo"
+    "ethnicity": "Etnia",
+    "positionMarks": "Posiciones",
+    "top": "Activo",
+    "versatile": "Versátil",
+    "bottom": "Pasivo",
+    "selectEthnicity": "Selecciona tu etnia",
+    "selectPositions": "Selecciona tu(s) posición(iones)"
   },
-  "chats": {
-    "title": "Chats",
-    "buckets": {
-      "NOW": "AHORA",
-      "MUTUAL": "MUTUO",
-      "ACTIVE": "ACTIVOS",
-      "LATER": "DESPUÉS",
-      "EXPIRED": "VENCIDOS"
-    },
-    "e2e": "Cifrado de extremo a extremo",
-    "typeMessage": "Escribe un mensaje…",
-    "send": "Enviar",
-    "notSent": "No enviado · Toca para reintentar",
-    "video": "Video (borroso)",
-    "unlockAlbum": "Desbloquear mi álbum",
-    "shareHealth": "Compartir salud"
-  },
-  "me": {
-    "language": "Idioma",
-    "sexualHealth": "Salud sexual",
-    "yourType": "Tu tipo",
-    "favorites": "Favoritos",
-    "privacy": "Privacidad y seguridad",
-    "quietHours": "Horas de silencio",
-    "discreet": "Vistas previas discretas",
-    "invite": "Invitar amigos",
-    "ambassador": "Hazte embajador",
-    "logout": "Cerrar sesión"
-  },
-  "sheets": {
-    "status": "Modo PIROKA",
-    "filters": "Filtro",
-    "trip": "Planear viaje",
-    "meet": "Proponer encuentro",
-    "checkin": "Check-in SafeMeet",
-    "report": "Denunciar",
-    "plans": "Planes πroka",
-    "notifs": "Notificaciones",
-    "health": "Salud sexual",
-    "care": "Chemsex y seguridad",
-    "viewers": "Quién se interesó"
-  },
-  "ai": {
-    "ask": "Pregunta a πroka",
-    "placeholder": "Pregunta lo que sea — quién está cerca, cómo empezar, seguridad…",
-    "describe": "Describe a quién buscas",
-    "apply": "Aplicar"
-  },
-  "plans": {
-    "free": "Gratis",
-    "plus": "Plus",
-    "premium": "Premium",
-    "upgrade": "Ver Premium"
-  },
-  "safety": {
-    "call911": "Llamar al 911",
-    "quickExit": "Salida rápida",
-    "imOk": "Estoy bien"
+  "nav": {
+    "home": "Inicio",
+    "discover": "Descubrir",
+    "places": "Lugares",
+    "messages": "Mensajes",
+    "me": "Perfil"
   }
 }
