@@ -1,8 +1,9 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // three.js and maplibre ship ESM that Next should compile rather than externalize.
   transpilePackages: ['three'],
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
@@ -22,4 +23,9 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: 'mmatch',
+  project: 'piroka',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+});
