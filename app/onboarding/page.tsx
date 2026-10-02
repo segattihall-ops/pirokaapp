@@ -10,5 +10,11 @@ export const dynamic = 'force-dynamic';
 export default async function OnboardingPage() {
   const session = await getSession();
   if (!session) redirect('/?gate=1&next=%2Fonboarding');
+
+  // Require age verification before onboarding
+  if (!session.user.age_verified) {
+    redirect('/auth/age-gate?next=%2Fonboarding');
+  }
+
   return <OnboardingClient />;
 }
