@@ -73,43 +73,22 @@
 
 ---
 
-## Storage Configuration (Privacy Policy Required)
+## Storage Configuration (LOCKED: Supabase Storage Only)
 
-### Launch Configuration (Default)
+### Production Configuration
 ```
 STORAGE_PROVIDER=supabase  # All media → Supabase Storage
 ```
 
 **Data Flow:**
-- Profile photos (slots 0-5): `users/{userId}/photos/0-5.original.jpg` → Supabase Storage
-- Blur placeholders: `users/{userId}/photos/0-5.blur.jpg` → Supabase Storage
-- Access: Public URLs for profile display, signed URLs for private albums
+- Profile photos (slots 0-5): `users/{userId}/photos/0-5.original.jpg` → Supabase Storage (public)
+- Blur placeholders: `users/{userId}/photos/0-5.blur.jpg` → Supabase Storage (public)
+- Private albums: Signed URLs with expiry (Supabase)
+- Access: Public URLs for profile display, signed URLs for private/members-only
 
-### Optional: Cloudflare R2
-```
-STORAGE_PROVIDER=r2
-R2_ACCOUNT_ID=xxxxxxxx
-R2_ACCESS_KEY_ID=xxxxxxxx
-R2_SECRET_ACCESS_KEY=xxxxxxxx
-R2_BUCKET=piroka-media
-```
+### Privacy Policy Statement (LOCKED)
 
-**Data Flow (R2 enabled):**
-- Same photo paths, different physical storage
-- R2 URLs: `https://{account_id}.r2.cloudflarestorage.com/piroka-media/{path}`
-- Can use Cloudflare's CDN edge caching
-
-### Privacy Policy Statement
-❗ **MUST SELECT ONE FOR PRIVACY POLICY:**
-
-**Option A (Current):**
-> "Media files (profile photos, albums) are stored on Supabase Storage, operated by Supabase Inc. Photos are served via Supabase's CDN. See [Supabase Privacy Policy](https://supabase.com/privacy)."
-
-**Option B (If using R2):**
-> "Media files (profile photos, albums) are stored on Cloudflare R2, operated by Cloudflare Inc. Photos are served via Cloudflare's global CDN. See [Cloudflare Privacy Policy](https://www.cloudflare.com/privacy/)."
-
-**Option C (If dual):**
-> "Media files may be stored on Supabase Storage or Cloudflare R2, depending on configuration. Both are encrypted in transit and at rest. See privacy policies: [Supabase](https://supabase.com/privacy), [Cloudflare](https://www.cloudflare.com/privacy/)."
+> "Media files including profile photos and private albums are stored on Supabase Storage, operated by Supabase Inc. All media is encrypted in transit (HTTPS) and at rest. Public profile photos are served via Supabase's CDN globally. Private album photos require authentication and use time-limited signed URLs. See [Supabase Privacy Policy](https://supabase.com/privacy) for their data handling practices."
 
 ---
 
@@ -151,12 +130,13 @@ R2_BUCKET=piroka-media
 
 ---
 
-## Storage Decision (REQUIRED BEFORE PRIVACY POLICY)
+## Storage Decision (✅ LOCKED: Supabase Storage Only)
 
-**Choose one:**
-- [ ] **Supabase Storage only** (current default) → Use Privacy Policy Option A
-- [ ] **Cloudflare R2 only** (higher volume) → Use Privacy Policy Option B  
-- [ ] **Both (dual-stack)** → Use Privacy Policy Option C (specify migration plan)
+**Selected:** ✅ **Supabase Storage only**
+- All profile photos and private albums stored in Supabase
+- Encrypted in transit (HTTPS) and at rest
+- Public photos served via Supabase CDN
+- Private albums: signed URLs with expiry
 
 ---
 
@@ -176,27 +156,41 @@ R2_BUCKET=piroka-media
 
 ## Launch Checklist (Before Go-Live)
 
-**Configuration:**
-- [ ] Choose storage provider (Supabase / R2 / Both)
+**Configuration (All Locked):**
+- ✅ Storage: Supabase Storage only
+- ✅ Mapping: MapLibre + PostGIS + Photon/Nominatim disclosed
 - [ ] Sentry DSN configured (server + client)
 - [ ] Zoho Desk portal ID & account name set
 - [ ] Carto API key set (optional for custom map tiles)
 - [ ] Turnstile site key set (optional for CAPTCHA)
 - [ ] Remove `NEXT_PUBLIC_AUTH_DEMO=1` from production
 
-**Legal & Compliance:**
-- [ ] **Privacy Policy finalized** with storage choice + mapping disclosure + vendor list
-- [ ] Data Processing Addendum (DPA) signed with:
-  - [ ] Supabase
-  - [ ] PayPal
-  - [ ] Zoho Desk
-  - [ ] Sentry
-  - [ ] Resend
-  - [ ] Cloudflare (if using Turnstile or R2)
-  - [ ] Komoot/Nominatim (if using geocoding)
-  - [ ] Carto (if using custom tiles)
-  - [ ] Google (if using OAuth)
-- [ ] Terms of Service finalized (arbitration, governing law)
+**Legal & Compliance (9 Vendors):**
+- [ ] **Privacy Policy finalized** with:
+  - ✅ Storage: Supabase Storage (encrypted, CDN, signed URLs)
+  - ✅ Mapping: Photon (Komoot) + Nominatim (OSM) + Google OAuth disclosed
+  - ✅ Complete vendor list (below)
+
+- [ ] **Data Processing Addendum (DPA) signed with:**
+  - [ ] Supabase (database, storage)
+  - [ ] Vercel (hosting, CDN)
+  - [ ] PayPal (payments, subscriptions)
+  - [ ] Sentry (error monitoring)
+  - [ ] Zoho Desk (customer support)
+  - [ ] Resend (transactional email)
+  - [ ] Cloudflare (Turnstile CAPTCHA)
+  - [ ] Google (OAuth authentication)
+  - [ ] Komoot (Photon geocoding API)
+  - [ ] OpenStreetMap/Nominatim (geocoding fallback)
+  - [ ] Carto (optional map tiles, if enabled)
+
+- [ ] **Terms of Service finalized:**
+  - [ ] Arbitration clause with 30-day opt-out
+  - [ ] Governing law & venue selected
+  - [ ] Content policies (nudity, explicit content, age assurance)
+  - [ ] Acceptable use & abuse reporting
+
 - [ ] GDPR consent banner implemented (if serving EU users)
 - [ ] Cookies policy documented
-- [ ] Attorney review ✅ PENDING
+- [ ] Incident response plan documented
+- [ ] ✅ **READY FOR ATTORNEY REVIEW**
