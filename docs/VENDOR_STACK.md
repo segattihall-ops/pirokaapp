@@ -28,7 +28,7 @@
 
 | Service | Provider | Purpose | Data Classification | Privacy Link |
 |---------|----------|---------|---------------------|--------------|
-| **Email (SMTP)** | Nodemailer (self-hosted relay) | Verification codes, notifications | Auth codes, user email | N/A (server-side) |
+| **Email (Transactional)** | Resend | Verification codes, welcome, password reset, notifications | Auth codes, user email | [Resend Privacy](https://resend.com/privacy) |
 | **Web Push** | Native Web Push API (VAPID) | Real-time notifications | Push subscription tokens | N/A (local only) |
 | **Customer Support** | Zoho Desk | Ticketing, user support inquiries | Support conversations, contact info | [Zoho Privacy](https://www.zoho.com/privacy.html) |
 
