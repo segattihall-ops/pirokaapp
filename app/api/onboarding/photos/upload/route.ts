@@ -62,10 +62,10 @@ export async function POST(req: NextRequest) {
       const [origResult, blurResult] = await Promise.all([
         supabaseAdmin.storage
           .from('photos')
-          .upload(storageKey, cleanBuffer, { contentType: file.type, upsert: true }),
+          .upload(storageKey, cleanBuffer, { contentType: 'image/jpeg', upsert: true }),
         supabaseAdmin.storage
           .from('photos')
-          .upload(blurKey, blurBuffer, { contentType: file.type, upsert: true }),
+          .upload(blurKey, blurBuffer, { contentType: 'image/jpeg', upsert: true }),
       ]);
 
       if (origResult.error || blurResult.error) {

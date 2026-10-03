@@ -133,11 +133,11 @@ export function OnboardingClient() {
           const img = new Image();
           img.onload = () => {
             const c = document.createElement('canvas');
-            const k = 360 / Math.max(img.width, img.height);
+            const k = Math.min(1, 1600 / Math.max(img.width, img.height));
             c.width = img.width * k;
             c.height = img.height * k;
             c.getContext('2d')?.drawImage(img, 0, 0, c.width, c.height);
-            setPhotos((prev) => [...prev, c.toDataURL('image/jpeg', 0.8)].slice(0, 3));
+            setPhotos((prev) => [...prev, c.toDataURL('image/jpeg', 0.85)].slice(0, 3));
           };
           img.src = r.result as string;
         };

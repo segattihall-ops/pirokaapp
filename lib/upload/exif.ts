@@ -11,7 +11,8 @@ export async function stripExif(buffer: Buffer, mimeType: string): Promise<Buffe
     // Auto-rotate based on EXIF, then convert to JPEG without metadata
     const processed = await sharp(buffer)
       .rotate() // Auto-rotate based on EXIF orientation
-      .jpeg({ quality: 90, progressive: true })
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 88, progressive: true })
       .toBuffer();
 
     return processed;
@@ -29,13 +30,14 @@ export async function stripExif(buffer: Buffer, mimeType: string): Promise<Buffe
 export async function createBlurVariant(
   buffer: Buffer,
   mimeType: string,
-  blurAmount: number = 20
+  blurAmount: number = 20,
 ): Promise<Buffer> {
   try {
     // Clamp blur amount to safe range (sharp accepts 0.3-1000)
     const blurSigma = Math.max(0.5, Math.min(blurAmount / 5, 50));
 
     const blurred = await sharp(buffer)
+      .resize({ width: 480, height: 480, fit: 'inside', withoutEnlargement: true })
       .blur(blurSigma)
       .jpeg({ quality: 75 }) // Lower quality for blur variant (removes metadata in JPEG)
       .toBuffer();
@@ -55,7 +57,7 @@ export async function createBlurVariant(
  */
 export async function validateImageFile(
   buffer: Buffer,
-  mimeType: string
+  mimeType: string,
 ): Promise<{ ok: boolean; error?: string; width?: number; height?: number }> {
   const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
