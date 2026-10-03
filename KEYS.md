@@ -36,7 +36,21 @@ Auth providers (Supabase → Authentication → Sign In / Providers):
    (Authentication → Attack Protection → Bot and abuse protection) once anonymous sign-ins are on.
 3. **Google** / **Apple** — optional, with the IDs below.
 
-Then add `https://<your-domain>/auth/callback` (and your Vercel preview URL) to Authentication → URL Configuration → Redirect URLs.
+Then, under Authentication → URL Configuration:
+
+- **Site URL**: the canonical production origin, e.g. `https://www.pirokaapp.com` (the `www` host — the apex
+  `pirokaapp.com` is a 308 redirect on Vercel).
+- **Redirect URLs**: one entry per host the app runs on, each ending in `**` so the `?next=` query the app
+  appends still matches:
+  - `https://www.pirokaapp.com/auth/callback**`
+  - `https://pirokaapp.com/auth/callback**`
+  - `https://pirokaapp.vercel.app/auth/callback**`
+  - `https://*-mm-website.vercel.app/auth/callback**` (branch previews)
+  - `http://localhost:3000/auth/callback**`
+
+If a redirect URL is missing from that list, Supabase silently ignores the app's `redirectTo` and sends the
+browser back to the Site URL with `?code=…`. The middleware forwards that code to `/auth/callback` so sign-in
+still completes, but keep the list current so the flow doesn't depend on the fallback.
 
 ### CAPTCHA (bot protection) — do it in this order or sign-ins break
 
