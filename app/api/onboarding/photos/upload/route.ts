@@ -21,22 +21,22 @@ export async function POST(req: NextRequest) {
     const slot = parseInt(formData.get('slot') as string, 10);
 
     if (!file || isNaN(slot) || slot < 0 || slot > 5) {
-      return NextResponse.json(
-        { error: 'Missing file or invalid slot (0-5)' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing file or invalid slot (0-5)' }, { status: 400 });
     }
 
     // Plan limit: free = main + 2 album, Plus/Premium = main + 5. Replacing an existing slot is always allowed.
     if (supabaseAdmin) {
       const [{ data: u }, { data: existing }] = await Promise.all([
-        supabaseAdmin.from('users').select('plan').eq('id', session.userId).maybeSingle(),
+        supabaseAdmin.from('users').select('plan, auth_provider').eq('id', session.userId).maybeSingle(),
         supabaseAdmin.from('photos').select('slot').eq('user_id', session.userId),
       ]);
-      const limit = photoLimit(u?.plan);
+      const limit = photoLimit(u?.plan, u?.auth_provider);
       const slots = new Set((existing ?? []).map((p) => p.slot));
       if (slot >= limit || (!slots.has(slot) && slots.size >= limit)) {
-        return NextResponse.json({ error: `Your plan allows ${limit} photos. Upgrade for more.` }, { status: 409 });
+        return NextResponse.json(
+          { error: `Your plan allows ${limit} photos. Upgrade for more.` },
+          { status: 409 },
+        );
       }
     }
 
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
           blur_key: blurKey,
           created_at: new Date().toISOString(),
         },
-        { onConflict: 'user_id,slot' }
+        { onConflict: 'user_id,slot' },
       )
       .select();
 

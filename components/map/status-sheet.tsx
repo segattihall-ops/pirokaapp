@@ -6,7 +6,7 @@ import { INTENTS, timeLeft } from '@/lib/geo/client';
 
 export type MyStatus = { intent: string; starts_at: string; ends_at: string } | null;
 
-const DURATIONS = [1, 2, 4, 8];
+const DURATIONS = [0.5, 1, 2, 4];
 
 export function StatusSheet({
   status,
@@ -46,7 +46,7 @@ export function StatusSheet({
   };
 
   return (
-    <Sheet onClose={onClose} title="What are you up to?">
+    <Sheet onClose={onClose} title="PIROKA Mode">
       <p className="text-[13px] text-fg-3">
         Your intent shows on the map for the time you pick, then disappears. Your exact location never does.
       </p>
@@ -77,7 +77,7 @@ export function StatusSheet({
             onClick={() => setHours(h)}
             className={`chip ${hours === h ? 'chip-selected' : ''}`}
           >
-            {h}h
+            {h < 1 ? `${Math.round(h * 60)}m` : `${h}h`}
           </button>
         ))}
       </div>
@@ -92,7 +92,12 @@ export function StatusSheet({
             End status ({timeLeft(status.ends_at)})
           </button>
         )}
-        <button type="button" onClick={save} disabled={busy} className="btn-primary h-12 flex-1 bg-green hover:bg-green-hover">
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy}
+          className="btn-primary h-12 flex-1 bg-green hover:bg-green-hover"
+        >
           {busy ? '…' : status ? 'Update' : 'Go live'}
         </button>
       </div>
@@ -101,7 +106,15 @@ export function StatusSheet({
 }
 
 /** Bottom sheet on phones, centered card on the rail layout. Portaled to <body> so animated/transformed ancestors can't reposition it. */
-export function Sheet({ title, onClose, children }: { title?: string; onClose: () => void; children: React.ReactNode }) {
+export function Sheet({
+  title,
+  onClose,
+  children,
+}: {
+  title?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -116,7 +129,11 @@ export function Sheet({ title, onClose, children }: { title?: string; onClose: (
   }, [onClose]);
   if (!mounted) return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center rail:items-center" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center rail:items-center"
+      role="dialog"
+      aria-modal="true"
+    >
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60" />
       <div className="relative flex max-h-[88dvh] w-full max-w-[520px] flex-col gap-4 overflow-y-auto rounded-t-sheet bg-ink-900 px-5 pb-[calc(20px+var(--safe-bottom))] pt-3 shadow-sheet rail:rounded-sheet rail:pb-5">
         <span aria-hidden className="mx-auto h-1 w-10 rounded-full bg-line-3 rail:hidden" />

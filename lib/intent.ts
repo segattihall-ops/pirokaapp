@@ -60,4 +60,4 @@ export function photoBlur(o: { mutual: boolean; inMeet: boolean; chatted: boolea
 
 /** Album limit by plan. */
 export const albumLimit = (plan: 'anonymous' | 'free' | 'plus' | 'premium') =>
-  plan === 'plus' || plan === 'premium' ? 5 : 2;
+  plan === 'plus' || plan === 'premium' || plan === 'anonymous' ? 5 : 2;

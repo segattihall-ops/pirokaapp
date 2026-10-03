@@ -8,7 +8,6 @@ import { COMM, GENDER, ICONS, ORIENT, PRONOUNS, SHOW_ME, VIS_OPTS } from '@/lib/
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-
 export function OnboardingClient() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -32,30 +31,34 @@ export function OnboardingClient() {
   const [saveErr, setSaveErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Anonymous members skip the identity and photo steps: show-up → who to see → location & privacy.
+  // Everything skipped can be filled in later from ME → Edit profile.
+  const STEPS: Step[] = mode === 'anon' ? [1, 3, 5] : [1, 2, 3, 4, 5];
+  const stepIndex = Math.max(0, STEPS.indexOf(step));
+  const isLast = stepIndex === STEPS.length - 1;
+
   useEffect(() => {
-    fetchSession().then(s => {
+    fetchSession().then((s) => {
       if (!s?.ageVerified) router.push('/?gate=1');
     });
   }, [router]);
 
   const toggleArray = (arr: string[], val: string) =>
-    arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+    arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 
   const toggleShowMe = (val: string) => {
     if (val === 'Everyone') {
       setShowMe(showMe.includes('Everyone') ? [] : ['Everyone']);
     } else {
-      setShowMe(prev =>
-        prev.includes(val)
-          ? prev.filter(x => x !== val)
-          : [...prev.filter(x => x !== 'Everyone'), val]
+      setShowMe((prev) =>
+        prev.includes(val) ? prev.filter((x) => x !== val) : [...prev.filter((x) => x !== 'Everyone'), val],
       );
     }
   };
 
-  const filteredGender = GENDER.filter(g => !idQ_val || g.toLowerCase().includes(idQ_val.toLowerCase()));
-  const filteredOrient = ORIENT.filter(o => !idQ_val || o.toLowerCase().includes(idQ_val.toLowerCase()));
-  const filteredComm = COMM.filter(c => !idQ_val || c.toLowerCase().includes(idQ_val.toLowerCase()));
+  const filteredGender = GENDER.filter((g) => !idQ_val || g.toLowerCase().includes(idQ_val.toLowerCase()));
+  const filteredOrient = ORIENT.filter((o) => !idQ_val || o.toLowerCase().includes(idQ_val.toLowerCase()));
+  const filteredComm = COMM.filter((c) => !idQ_val || c.toLowerCase().includes(idQ_val.toLowerCase()));
 
   const isStep1Ready = mode === 'anon' || name.trim().length >= 2;
   const isStep3Ready = showMe.length > 0;
@@ -109,7 +112,8 @@ export function OnboardingClient() {
   };
 
   const handleNext = async () => {
-    if (step < 5) setStep((step + 1) as Step);
+    const next = STEPS[stepIndex + 1];
+    if (next) setStep(next);
     else await finish();
   };
 
@@ -121,30 +125,46 @@ export function OnboardingClient() {
   };
 
   const addFiles = (files: FileList | null) => {
-    Array.from(files || []).slice(0, 3 - photos.length).forEach(f => {
-      const r = new FileReader();
-      r.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const c = document.createElement('canvas');
-          const k = 360 / Math.max(img.width, img.height);
-          c.width = img.width * k;
-          c.height = img.height * k;
-          c.getContext('2d')?.drawImage(img, 0, 0, c.width, c.height);
-          setPhotos(prev => [...prev, c.toDataURL('image/jpeg', 0.8)].slice(0, 3));
+    Array.from(files || [])
+      .slice(0, 3 - photos.length)
+      .forEach((f) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const c = document.createElement('canvas');
+            const k = 360 / Math.max(img.width, img.height);
+            c.width = img.width * k;
+            c.height = img.height * k;
+            c.getContext('2d')?.drawImage(img, 0, 0, c.width, c.height);
+            setPhotos((prev) => [...prev, c.toDataURL('image/jpeg', 0.8)].slice(0, 3));
+          };
+          img.src = r.result as string;
         };
-        img.src = r.result as string;
-      };
-      r.readAsDataURL(f);
-    });
+        r.readAsDataURL(f);
+      });
   };
 
   const stepTitles: Record<Step, [string, string]> = {
-    1: ['How do you want to show up?', 'Stay anonymous or pick a name. You can switch any time.'],
-    2: ['Who are you?', 'Gender, orientation and communities. Pick everything that fits — or nothing at all.'],
-    3: ['Who do you want to see?', 'This shapes your map and your Pulse. Safety defaults apply from day one.'],
+    1: [
+      'How do you want to show up?',
+      mode === 'anon'
+        ? 'Anonymous keeps it to three quick steps. Add a name, identities or photos later in ME.'
+        : 'Stay anonymous or pick a name. You can switch any time.',
+    ],
+    2: [
+      'Who are you?',
+      'Gender, orientation and communities. Pick everything that fits — or nothing at all.',
+    ],
+    3: [
+      'Who do you want to see?',
+      'This shapes your map and your Pulse. Safety defaults apply from day one.',
+    ],
     4: ['Add photos', 'One main photo and up to two in your private album.'],
-    5: ['Location & privacy', 'We use your location to show who\'s nearby. Others only ever see an approximate area.'],
+    5: [
+      'Location & privacy',
+      "We use your location to show who's nearby. Others only ever see an approximate area.",
+    ],
   };
 
   const [title, subtitle] = stepTitles[step];
@@ -154,29 +174,29 @@ export function OnboardingClient() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-line-2 bg-gradient-to-br from-[#262626] to-ink-950 text-base font-bold text-fg">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-[12px] border border-line-2 bg-gradient-to-br from-[#262626] to-ink-950 text-base font-bold text-fg">
             π
             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-green shadow-[0_0_8px_#34d399]" />
           </div>
           <span className="text-base font-semibold tracking-[-0.02em]">πroka</span>
         </div>
         <span className="text-xs text-fg-3">
-          Step {step} of 5
+          Step {stepIndex + 1} of {STEPS.length}
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="grid grid-cols-5 gap-1.5">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div
-            key={i}
-            className={`h-1 rounded-full ${i <= step ? 'bg-green' : 'bg-white/10'}`}
-          />
+      <div
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${STEPS.length}, minmax(0, 1fr))` }}
+      >
+        {STEPS.map((s, i) => (
+          <div key={s} className={`h-1 rounded-full ${i <= stepIndex ? 'bg-green' : 'bg-white/10'}`} />
         ))}
       </div>
 
       {/* Card */}
-      <section className="glass flex flex-col gap-5 rounded-[28px] border border-line px-6 py-7 shadow-lg">
+      <section className="glass border-line flex flex-col gap-5 rounded-[28px] border px-6 py-7 shadow-lg">
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">{title}</h1>
           <p className="mt-1.5 text-sm leading-relaxed text-fg-3">{subtitle}</p>
@@ -189,14 +209,14 @@ export function OnboardingClient() {
               {[
                 { k: 'named', l: 'Display name', s: 'Pick a handle. Never your legal name.' },
                 { k: 'anon', l: 'Anonymous', s: 'No name. Shown as "Anonymous".' },
-              ].map(opt => (
+              ].map((opt) => (
                 <button
                   key={opt.k}
                   onClick={() => setMode(opt.k as 'named' | 'anon')}
                   className={`relative space-y-1 rounded-[16px] border p-3.5 text-left text-sm transition-all ${
                     mode === opt.k
                       ? 'border-green/75 bg-green/10'
-                      : 'border-line-2 bg-transparent hover:border-line'
+                      : 'hover:border-line border-line-2 bg-transparent'
                   }`}
                 >
                   <div className="font-semibold">{opt.l}</div>
@@ -211,7 +231,7 @@ export function OnboardingClient() {
                 <input
                   type="text"
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   maxLength={24}
                   placeholder="Anything but your legal name"
                   className="input"
@@ -222,14 +242,14 @@ export function OnboardingClient() {
             <div className="space-y-2">
               <span className="text-sm font-semibold">Pronouns</span>
               <div className="flex flex-wrap gap-1.5">
-                {PRONOUNS.map(p => (
+                {PRONOUNS.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPronouns(toggleArray(pronouns, p))}
                     className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
                       pronouns.includes(p)
-                        ? 'border-green/75 bg-green/14 text-fg'
-                        : 'border-line-2 text-fg hover:border-line'
+                        ? 'bg-green/14 border-green/75 text-fg'
+                        : 'hover:border-line border-line-2 text-fg'
                     }`}
                   >
                     {p}
@@ -239,13 +259,13 @@ export function OnboardingClient() {
               <input
                 type="text"
                 value={customPronoun}
-                onChange={e => setCustomPronoun(e.target.value)}
+                onChange={(e) => setCustomPronoun(e.target.value)}
                 placeholder="Or write your own"
                 className="input mt-2"
               />
             </div>
 
-            <div className="flex gap-2 rounded-[12px] bg-green/8 px-3 py-2.5 text-xs text-green">
+            <div className="bg-green/8 flex gap-2 rounded-[12px] px-3 py-2.5 text-xs text-green">
               <span>✓</span>
               <span>Age verified 18+ — your birthday is never shown.</span>
             </div>
@@ -258,7 +278,7 @@ export function OnboardingClient() {
             <input
               type="text"
               value={idQ_val}
-              onChange={e => setIdQ_val(e.target.value)}
+              onChange={(e) => setIdQ_val(e.target.value)}
               placeholder={`Search ${GENDER.length + ORIENT.length + COMM.length} identities…`}
               className="input"
             />
@@ -270,14 +290,12 @@ export function OnboardingClient() {
                   {gender.length > 0 && <span className="text-fg-3">{gender.length} selected</span>}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {filteredGender.map(g => (
+                  {filteredGender.map((g) => (
                     <button
                       key={g}
                       onClick={() => setGender(toggleArray(gender, g))}
                       className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
-                        gender.includes(g)
-                          ? 'border-green/75 bg-green/14'
-                          : 'border-line-2 hover:border-line'
+                        gender.includes(g) ? 'bg-green/14 border-green/75' : 'hover:border-line border-line-2'
                       }`}
                     >
                       {g}
@@ -294,14 +312,14 @@ export function OnboardingClient() {
                   {orientation.length > 0 && <span className="text-fg-3">{orientation.length} selected</span>}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {filteredOrient.map(o => (
+                  {filteredOrient.map((o) => (
                     <button
                       key={o}
                       onClick={() => setOrientation(toggleArray(orientation, o))}
                       className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
                         orientation.includes(o)
-                          ? 'border-green/75 bg-green/14'
-                          : 'border-line-2 hover:border-line'
+                          ? 'bg-green/14 border-green/75'
+                          : 'hover:border-line border-line-2'
                       }`}
                     >
                       {o}
@@ -318,14 +336,14 @@ export function OnboardingClient() {
                   {community.length > 0 && <span className="text-fg-3">{community.length} selected</span>}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {filteredComm.map(c => (
+                  {filteredComm.map((c) => (
                     <button
                       key={c}
                       onClick={() => setCommunity(toggleArray(community, c))}
                       className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
                         community.includes(c)
-                          ? 'border-green/75 bg-green/14'
-                          : 'border-line-2 hover:border-line'
+                          ? 'bg-green/14 border-green/75'
+                          : 'hover:border-line border-line-2'
                       }`}
                     >
                       {c}
@@ -335,7 +353,9 @@ export function OnboardingClient() {
               </div>
             )}
 
-            <p className="text-xs text-fg-3">Choose as many as fit. You can hide any of them from your public profile later.</p>
+            <p className="text-xs text-fg-3">
+              Choose as many as fit. You can hide any of them from your public profile later.
+            </p>
           </div>
         )}
 
@@ -365,21 +385,27 @@ export function OnboardingClient() {
               <div className="space-y-2">
                 {[
                   { k: 'blurPhotos', l: 'Blur photos until mutual', s: 'Yours and theirs' },
-                  { k: 'verifiedOnly', l: 'Only verified humans can message me', s: 'Cuts spam and fake accounts' },
+                  {
+                    k: 'verifiedOnly',
+                    l: 'Only verified humans can message me',
+                    s: 'Cuts spam and fake accounts',
+                  },
                   { k: 'strangerFilter', l: 'Filter explicit first messages', s: 'You can still open them' },
                 ].map(({ k, l, s }) => (
                   <button
                     key={k}
-                    onClick={() => setSafety(prev => ({ ...prev, [k]: !prev[k as keyof typeof prev] }))}
-                    className="flex items-center justify-between gap-3 rounded-[14px] border border-white/8 bg-white/2 px-3.5 py-3 transition-colors hover:border-white/12"
+                    onClick={() => setSafety((prev) => ({ ...prev, [k]: !prev[k as keyof typeof prev] }))}
+                    className="border-white/8 bg-white/2 hover:border-white/12 flex items-center justify-between gap-3 rounded-[14px] border px-3.5 py-3 transition-colors"
                   >
                     <div className="space-y-0.5 text-left">
                       <div className="text-xs font-semibold">{l}</div>
                       <div className="text-xs text-fg-3">{s}</div>
                     </div>
                     <div
-                      className={`flex-shrink-0 h-6 w-10 rounded-full p-1 transition-all ${
-                        safety[k as keyof typeof safety] ? 'bg-green justify-end' : 'bg-white/14 justify-start'
+                      className={`h-6 w-10 flex-shrink-0 rounded-full p-1 transition-all ${
+                        safety[k as keyof typeof safety]
+                          ? 'justify-end bg-green'
+                          : 'bg-white/14 justify-start'
                       } flex`}
                     >
                       <div className="h-4 w-4 rounded-full bg-fg" />
@@ -395,17 +421,17 @@ export function OnboardingClient() {
         {step === 4 && (
           <div className="space-y-4">
             <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
-              {[0, 1, 2].map(i => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="relative aspect-[3/4] overflow-hidden rounded-[16px] border-2 border-dashed border-white/20 bg-white/3"
+                  className="bg-white/3 relative aspect-[3/4] overflow-hidden rounded-[16px] border-2 border-dashed border-white/20"
                 >
                   {photos[i] ? (
                     <>
                       <img src={photos[i]} alt="uploaded" className="h-full w-full object-cover" />
                       <button
                         onClick={() => setPhotos(photos.filter((_, j) => j !== i))}
-                        className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/80 text-fg text-lg font-bold"
+                        className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/80 text-lg font-bold text-fg"
                       >
                         ×
                       </button>
@@ -423,12 +449,10 @@ export function OnboardingClient() {
               ))}
             </div>
             <p className="text-xs text-fg-3">
-              Your main photo stays blurred for others until it&apos;s mutual. The other two form your private album.
+              Your main photo stays blurred for others until it&apos;s mutual. The other two form your private
+              album.
             </p>
-            <button
-              onClick={() => setStep(5)}
-              className="text-xs font-medium text-fg-3 hover:text-fg"
-            >
+            <button onClick={() => setStep(5)} className="text-xs font-medium text-fg-3 hover:text-fg">
               Stay faceless for now
             </button>
             <input
@@ -436,7 +460,7 @@ export function OnboardingClient() {
               type="file"
               accept="image/*"
               multiple
-              onChange={e => addFiles(e.currentTarget.files)}
+              onChange={(e) => addFiles(e.currentTarget.files)}
               className="hidden"
             />
           </div>
@@ -445,7 +469,7 @@ export function OnboardingClient() {
         {/* Step 5: Location & Privacy */}
         {step === 5 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-white/8 bg-white/3 px-3.5 py-3.5">
+            <div className="border-white/8 bg-white/3 flex items-center justify-between gap-3 rounded-[16px] border px-3.5 py-3.5">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold">Location</span>
                 <span className="text-xs text-fg-3">
@@ -492,14 +516,18 @@ export function OnboardingClient() {
                       icon === l ? 'border-green/75 bg-green/10' : 'border-line-2'
                     }`}
                   >
-                    <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-[11px] ${bg} font-bold ${fg}`}>
+                    <div
+                      className={`mx-auto flex h-10 w-10 items-center justify-center rounded-[11px] ${bg} font-bold ${fg}`}
+                    >
                       {g}
                     </div>
                     <div className="text-xs font-medium">{l}</div>
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-fg-3">Disguised icons change the name and icon on your home screen. Add a PIN in ME → Privacy.</p>
+              <p className="text-xs text-fg-3">
+                Disguised icons change the name and icon on your home screen. Add a PIN in ME → Privacy.
+              </p>
             </div>
           </div>
         )}
@@ -507,21 +535,17 @@ export function OnboardingClient() {
 
       {/* Footer buttons */}
       <div className="flex gap-2">
-        {step > 1 && (
-          <button onClick={() => setStep((step - 1) as Step)} className="btn-secondary">
+        {stepIndex > 0 && (
+          <button onClick={() => setStep(STEPS[stepIndex - 1])} className="btn-secondary">
             Back
           </button>
         )}
         <button
           onClick={handleNext}
-          disabled={
-            saving ||
-            (step === 1 && !isStep1Ready) ||
-            (step === 3 && !isStep3Ready)
-          }
-          className="btn-primary flex-1 disabled:bg-white/8 disabled:text-fg-4"
+          disabled={saving || (step === 1 && !isStep1Ready) || (step === 3 && !isStep3Ready)}
+          className="btn-primary h-[50px] flex-1 rounded-[16px] bg-green text-ink-950 hover:bg-green-hover disabled:bg-white/10 disabled:text-fg-4"
         >
-          {saving ? 'Saving…' : step === 5 ? 'Enter πroka' : 'Continue'}
+          {saving ? 'Saving…' : isLast ? 'Enter πroka' : 'Continue'}
         </button>
       </div>
       {saveErr && (
@@ -530,9 +554,7 @@ export function OnboardingClient() {
         </p>
       )}
 
-      <p className="text-center text-xs text-fg-4">
-        Everything here can be changed later in ME.
-      </p>
+      <p className="text-center text-xs text-fg-4">Everything here can be changed later in ME.</p>
     </div>
   );
 }

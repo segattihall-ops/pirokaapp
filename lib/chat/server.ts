@@ -1,9 +1,13 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/db/client';
+import { photoUrl } from '@/lib/upload/storage';
 
 export type ConversationRow = { id: string; a_id: string; b_id: string; mutual: boolean };
 
-export async function getConversationForUser(conversationId: string, userId: string): Promise<ConversationRow | null> {
+export async function getConversationForUser(
+  conversationId: string,
+  userId: string,
+): Promise<ConversationRow | null> {
   if (!supabaseAdmin) return null;
   const { data } = await supabaseAdmin
     .from('conversations')
@@ -15,6 +19,24 @@ export async function getConversationForUser(conversationId: string, userId: str
 }
 
 export const peerOf = (c: ConversationRow, userId: string) => (c.a_id === userId ? c.b_id : c.a_id);
+
+/** Peer card for a chat header: handle plus main photo (blurred until the conversation is mutual). */
+export async function getPeerCard(
+  userId: string,
+  mutual: boolean,
+): Promise<{ handle: string | null; photo: string | null }> {
+  if (!supabaseAdmin) return { handle: null, photo: null };
+  const [{ data: u }, { data: p }] = await Promise.all([
+    supabaseAdmin.from('users').select('handle').eq('id', userId).maybeSingle(),
+    supabaseAdmin
+      .from('photos')
+      .select('storage_key, blur_key')
+      .eq('user_id', userId)
+      .eq('slot', 0)
+      .maybeSingle(),
+  ]);
+  return { handle: u?.handle ?? null, photo: p ? photoUrl(mutual ? p.storage_key : p.blur_key) : null };
+}
 
 export async function getHandle(userId: string): Promise<string | null> {
   if (!supabaseAdmin) return null;

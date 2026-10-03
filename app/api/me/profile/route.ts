@@ -20,7 +20,9 @@ const Patch = z
     bio: z.string().trim().max(160).nullable(),
     visibility: z.enum(['neighborhood', 'area', 'hidden']),
     disguiseIcon: z.string().trim().max(24),
-    safetyPrefs: z.object({ blurPhotos: z.boolean(), verifiedOnly: z.boolean(), strangerFilter: z.boolean() }).partial(),
+    safetyPrefs: z
+      .object({ blurPhotos: z.boolean(), verifiedOnly: z.boolean(), strangerFilter: z.boolean() })
+      .partial(),
   })
   .partial();
 
@@ -34,7 +36,9 @@ export async function GET() {
   const [{ data: u }, { data: photos }] = await Promise.all([
     supabaseAdmin!
       .from('users')
-      .select('handle, pronouns, gender, orientation, communities, show_me, bio, visibility, disguise_icon, safety_prefs, plan, verified_at, created_at')
+      .select(
+        'handle, pronouns, gender, orientation, communities, show_me, bio, visibility, disguise_icon, safety_prefs, plan, auth_provider, verified_at, created_at',
+      )
       .eq('id', me)
       .maybeSingle(),
     supabaseAdmin!.from('photos').select('slot, storage_key').eq('user_id', me).order('slot'),
@@ -52,13 +56,18 @@ export async function GET() {
       bio: u.bio ?? '',
       visibility: u.visibility,
       disguiseIcon: u.disguise_icon,
-      safetyPrefs: { blurPhotos: true, verifiedOnly: false, strangerFilter: true, ...((u.safety_prefs as object) ?? {}) },
+      safetyPrefs: {
+        blurPhotos: true,
+        verifiedOnly: false,
+        strangerFilter: true,
+        ...((u.safety_prefs as object) ?? {}),
+      },
       plan: u.plan,
       verified: Boolean(u.verified_at),
       memberSince: u.created_at,
     },
     photos: (photos ?? []).map((p) => ({ slot: p.slot, url: `${photoUrl(p.storage_key)}?v=${Date.now()}` })),
-    photoLimit: photoLimit(u.plan),
+    photoLimit: photoLimit(u.plan, u.auth_provider),
   });
 }
 
@@ -77,10 +86,19 @@ export async function PATCH(request: Request) {
   if (b.handle !== undefined) {
     const handle = b.handle === null || b.handle === '' ? null : b.handle.replace(/^@/, '');
     if (handle !== null && !HANDLE_RE.test(handle)) {
-      return NextResponse.json({ error: 'Pick a name of 2–24 letters, numbers, dots or dashes' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Pick a name of 2–24 letters, numbers, dots or dashes' },
+        { status: 400 },
+      );
     }
     if (handle !== null) {
-      const { data: taken } = await db.from('users').select('id').ilike('handle', handle).neq('id', me).is('deleted_at', null).limit(1);
+      const { data: taken } = await db
+        .from('users')
+        .select('id')
+        .ilike('handle', handle)
+        .neq('id', me)
+        .is('deleted_at', null)
+        .limit(1);
       if (taken?.length) return NextResponse.json({ error: 'That name is taken' }, { status: 409 });
     }
     patch.handle = handle;
@@ -95,13 +113,20 @@ export async function PATCH(request: Request) {
   if (b.disguiseIcon) patch.disguise_icon = b.disguiseIcon;
   if (b.safetyPrefs) {
     const { data: cur } = await db.from('users').select('safety_prefs').eq('id', me).maybeSingle();
-    patch.safety_prefs = { blurPhotos: true, verifiedOnly: false, strangerFilter: true, ...((cur?.safety_prefs as object) ?? {}), ...b.safetyPrefs };
+    patch.safety_prefs = {
+      blurPhotos: true,
+      verifiedOnly: false,
+      strangerFilter: true,
+      ...((cur?.safety_prefs as object) ?? {}),
+      ...b.safetyPrefs,
+    };
   }
 
   await ensureUserRow(g.session);
   const { error } = await db.from('users').update(patch).eq('id', me);
   if (error) {
-    if (/idx_users_handle_lower|duplicate key/i.test(error.message)) return NextResponse.json({ error: 'That name is taken' }, { status: 409 });
+    if (/idx_users_handle_lower|duplicate key/i.test(error.message))
+      return NextResponse.json({ error: 'That name is taken' }, { status: 409 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true, handle: patch.handle });
