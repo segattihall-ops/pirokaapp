@@ -47,7 +47,7 @@ const CONSENT_INTRO: Record<AuthProvider, string> = {
 };
 const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-export function SignupChat({ gated }: { gated: boolean }) {
+export function SignupChat({ gated, authError = null }: { gated: boolean; authError?: string | null }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [step, setStep] = useState<Step>('ask');
@@ -136,12 +136,23 @@ export function SignupChat({ gated }: { gated: boolean }) {
   useEffect(() => {
     let cancelled = false;
     fetchSession().then((s) => {
-      if (!cancelled && s) resume(s);
+      if (cancelled) return;
+      if (s) resume(s);
+      else if (authError) {
+        // A failed OAuth / magic-link return: say what went wrong instead of silently showing the welcome.
+        bot(
+          `That sign-in didn't complete (${authError}). Pick an option below to try again.`,
+          () => setStep('ask'),
+          400,
+        );
+        // Drop the error from the address bar so a refresh doesn't repeat it.
+        router.replace('/');
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [resume]);
+  }, [resume, authError, bot, router]);
 
   useEffect(() => {
     const s = scrollRef.current;
