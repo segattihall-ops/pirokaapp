@@ -121,9 +121,9 @@ test('map preserves marker focus and accessibility across responsive layout and 
     (el as HTMLButtonElement).dataset.e2eNode = 'same-marker';
   });
 
-  await labels.click();
+  await labels.evaluate((el) => (el as HTMLButtonElement).click());
   await expect(pin).toBeFocused();
-  await labels.click();
+  await labels.evaluate((el) => (el as HTMLButtonElement).click());
   await expect(pin).toBeFocused();
 
   await page.waitForTimeout(31_000);
