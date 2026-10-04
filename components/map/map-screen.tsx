@@ -3,7 +3,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { getPosition, INTENTS, intentMeta, type Position } from '@/lib/geo/client';
 import { LOCATION_REFRESH_MS, PRESENCE_HEARTBEAT_MS } from '@/lib/geo/presence';
 import { ringDegrees as statusRingDegrees, type Intent as StatusIntent } from '@/lib/intent';
@@ -217,6 +217,9 @@ export function MapScreen({ userId }: { userId: string }) {
   const [configured, setConfigured] = useState(true);
   const [view, setView] = useState<TravelView | null>(null);
   const viewRef = useRef<TravelView | null>(null);
+  const layersButtonRef = useRef<HTMLButtonElement>(null);
+  const layersMenuRef = useRef<HTMLDivElement>(null);
+  const layersInitialFocusRef = useRef<'first' | 'last'>('first');
   const [showTravel, setShowTravel] = useState(false);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [showVisitors, setShowVisitors] = useState(false);
@@ -226,6 +229,19 @@ export function MapScreen({ userId }: { userId: string }) {
     const timer = setInterval(() => setNow(Date.now()), RING_TICK_MS);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!layersOpen) return;
+    const frame = requestAnimationFrame(() => {
+      const items = Array.from(
+        layersMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [],
+      );
+      const target =
+        layersInitialFocusRef.current === 'last' ? items[items.length - 1] : items[0];
+      target?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [layersOpen]);
 
   // Deep links: ?user=<id> opens a profile (notifications), ?travel=1 opens travel mode (Me → Trips).
   useEffect(() => {
@@ -475,6 +491,39 @@ export function MapScreen({ userId }: { userId: string }) {
     setIntentFilter(null);
   };
 
+  const closeLayersMenu = () => {
+    setLayersOpen(false);
+    requestAnimationFrame(() => layersButtonRef.current?.focus());
+  };
+
+  const onLayersMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      layersMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [],
+    );
+    if (!items.length) return;
+    const current = items.indexOf(document.activeElement as HTMLButtonElement);
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeLayersMenu();
+      return;
+    }
+    if (event.key === 'Tab') {
+      setLayersOpen(false);
+      return;
+    }
+
+    let next: number | null = null;
+    if (event.key === 'ArrowDown') next = current < 0 ? 0 : (current + 1) % items.length;
+    if (event.key === 'ArrowUp') next = current < 0 ? items.length - 1 : (current - 1 + items.length) % items.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = items.length - 1;
+    if (next === null) return;
+
+    event.preventDefault();
+    items[next]?.focus();
+  };
+
   return (
     <div
       data-map-user={userId}
@@ -530,11 +579,21 @@ export function MapScreen({ userId }: { userId: string }) {
         <div className="pointer-events-auto flex items-center gap-2">
           <div className="relative">
             <button
+              ref={layersButtonRef}
               type="button"
+              aria-haspopup="menu"
               aria-expanded={layersOpen}
               aria-controls="map-layers-menu"
               onClick={() => {
+                layersInitialFocusRef.current = 'first';
                 setLayersOpen((v) => !v);
+                setFiltersOpen(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+                event.preventDefault();
+                layersInitialFocusRef.current = event.key === 'ArrowUp' ? 'last' : 'first';
+                setLayersOpen(true);
                 setFiltersOpen(false);
               }}
               className={`tap flex h-10 items-center gap-2 rounded-[14px] border bg-ink-850/90 px-3.5 text-[12px] font-semibold backdrop-blur-md ${
@@ -546,8 +605,11 @@ export function MapScreen({ userId }: { userId: string }) {
             </button>
             {layersOpen && (
               <div
+                ref={layersMenuRef}
                 id="map-layers-menu"
                 role="menu"
+                aria-label="Map layers"
+                onKeyDown={onLayersMenuKeyDown}
                 className="absolute left-0 top-12 z-30 w-[220px] rounded-[16px] border border-line-2 bg-ink-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
               >
                 {[
