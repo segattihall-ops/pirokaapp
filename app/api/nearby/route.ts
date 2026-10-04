@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
+import { presenceActivity } from '@/lib/geo/presence';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,13 +84,7 @@ export async function GET(request: Request) {
         intent: r.intent ?? null,
         intentStartsAt: status?.starts_at ?? null,
         intentEndsAt: status?.ends_at ?? r.intent_ends_at ?? null,
-        activity: (() => {
-          const updated = new Date(r.updated_at ?? 0).getTime();
-          const age = Date.now() - updated;
-          if (Number.isFinite(updated) && age <= 15 * 60_000) return 'active' as const;
-          if (Number.isFinite(updated) && age <= 60 * 60_000) return 'recent' as const;
-          return 'today' as const;
-        })(),
+        activity: presenceActivity(r.presence_at),
         photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
         verified: Boolean(r.verified),
         plan: r.plan,
