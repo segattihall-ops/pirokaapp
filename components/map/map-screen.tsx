@@ -17,6 +17,7 @@ const ESRI_STYLE =
   'https://basemap.arcgisonline.com/arcgis/rest/services/World_Dark_Gray_Base/VectorTileServer/resources/styles/root.json';
 const RADIUS_M = 5000;
 const REFRESH_MS = 60_000;
+const PRESENCE_HEARTBEAT_MS = 5 * 60_000;
 const RING_TICK_MS = 30_000;
 
 const FILTERS: { label: string; intent: string | null }[] = [
@@ -96,70 +97,95 @@ function matchesDiscoveryFilters(p: NearbyPerson, filters: DiscoveryFilters): bo
   return p.distanceM <= filters.maxDistanceM;
 }
 
-function pinElement(p: NearbyPerson, now: number, showLabels: boolean): HTMLElement {
+function pinElement(p: NearbyPerson, now: number, showLabels: boolean): HTMLButtonElement {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'tap';
+  el.style.cssText =
+    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px';
+
+  const shell = document.createElement('span');
+  shell.dataset.pinShell = 'true';
+  shell.style.cssText =
+    'position:relative;width:48px;height:48px;border-radius:999px;padding:3px;box-shadow:0 7px 18px rgba(0,0,0,.58);display:block';
+
+  const photo = document.createElement('span');
+  photo.dataset.pinPhoto = 'true';
+  photo.style.cssText =
+    'position:relative;display:flex;width:100%;height:100%;border-radius:999px;border:2px solid #070707;background:#1a1a1a center/cover no-repeat;align-items:center;justify-content:center;font:700 15px/1 Geist,ui-sans-serif,sans-serif;color:#f5f5f5;overflow:hidden';
+  shell.appendChild(photo);
+
+  const verified = document.createElement('span');
+  verified.dataset.pinVerified = 'true';
+  verified.setAttribute('aria-label', 'Verified');
+  verified.textContent = '✓';
+  verified.style.cssText =
+    'position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:999px;background:#f5f5f5;color:#070707;display:flex;align-items:center;justify-content:center;font:800 10px/1 Geist,sans-serif;box-shadow:0 0 0 2px #070707';
+  shell.appendChild(verified);
+
+  const time = document.createElement('span');
+  time.dataset.pinTime = 'true';
+  time.style.cssText =
+    'position:absolute;left:50%;top:-8px;transform:translateX(-50%);height:18px;padding:0 5px;border-radius:999px;background:#070707;color:#f5f5f5;display:flex;align-items:center;font:700 9px/1 Geist,sans-serif;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.12)';
+  shell.appendChild(time);
+
+  const live = document.createElement('span');
+  live.dataset.pinLive = 'true';
+  live.setAttribute('aria-hidden', 'true');
+  live.style.cssText =
+    'position:absolute;left:-2px;bottom:2px;width:9px;height:9px;border-radius:999px;background:#34d399;box-shadow:0 0 0 2px #070707,0 0 10px rgba(52,211,153,.75)';
+  shell.appendChild(live);
+
+  el.appendChild(shell);
+
+  const label = document.createElement('span');
+  label.dataset.pinLabel = 'true';
+  label.style.cssText =
+    'max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:rgba(7,7,7,.82);padding:3px 7px;font:700 9px/1.15 Geist,ui-sans-serif,sans-serif;text-shadow:0 1px 2px #000';
+  el.appendChild(label);
+
+  updatePinElement(el, p, now, showLabels);
+  return el;
+}
+
+function updatePinElement(
+  el: HTMLButtonElement,
+  p: NearbyPerson,
+  now: number,
+  showLabels: boolean,
+) {
   const meta = intentMeta(p.intent);
   const color = meta?.color ?? 'rgba(255,255,255,0.38)';
   const degrees = pinRingDegrees(p, now);
   const left = timeLeftLabel(p.intentEndsAt, now);
   const recent = isRecent(p);
 
-  const el = document.createElement('button');
-  el.type = 'button';
   el.setAttribute('aria-label', p.handle ? `@${p.handle}` : 'Member');
   el.dataset.userId = p.id;
   el.dataset.intent = p.intent ?? 'none';
   el.dataset.activity = p.activity;
-  el.className = 'tap';
-  el.style.cssText =
-    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px';
+  el.dataset.distanceM = String(p.distanceM);
 
-  const shell = document.createElement('span');
-  shell.style.cssText = `position:relative;width:48px;height:48px;border-radius:999px;padding:3px;background:conic-gradient(${color} ${degrees}deg,rgba(255,255,255,.14) 0deg);box-shadow:0 7px 18px rgba(0,0,0,.58);display:block`;
+  const shell = el.querySelector<HTMLElement>('[data-pin-shell]');
+  const photo = el.querySelector<HTMLElement>('[data-pin-photo]');
+  const verified = el.querySelector<HTMLElement>('[data-pin-verified]');
+  const time = el.querySelector<HTMLElement>('[data-pin-time]');
+  const live = el.querySelector<HTMLElement>('[data-pin-live]');
+  const label = el.querySelector<HTMLElement>('[data-pin-label]');
+  if (!shell || !photo || !verified || !time || !live || !label) return;
 
-  const photo = document.createElement('span');
-  photo.style.cssText =
-    'position:relative;display:flex;width:100%;height:100%;border-radius:999px;border:2px solid #070707;background:#1a1a1a center/cover no-repeat;align-items:center;justify-content:center;font:700 15px/1 Geist,ui-sans-serif,sans-serif;color:#f5f5f5;overflow:hidden';
-  if (p.photo) photo.style.backgroundImage = `url('${escapeUrl(p.photo)}')`;
-  else photo.textContent = (p.handle ?? '?').slice(0, 1).toUpperCase();
-  shell.appendChild(photo);
+  shell.style.background = `conic-gradient(${color} ${degrees}deg,rgba(255,255,255,.14) 0deg)`;
+  photo.style.backgroundImage = p.photo ? `url('${escapeUrl(p.photo)}')` : 'none';
+  photo.textContent = p.photo ? '' : (p.handle ?? '?').slice(0, 1).toUpperCase();
 
-  if (p.verified) {
-    const verified = document.createElement('span');
-    verified.setAttribute('aria-label', 'Verified');
-    verified.textContent = '✓';
-    verified.style.cssText =
-      'position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:999px;background:#f5f5f5;color:#070707;display:flex;align-items:center;justify-content:center;font:800 10px/1 Geist,sans-serif;box-shadow:0 0 0 2px #070707';
-    shell.appendChild(verified);
-  }
+  verified.hidden = !p.verified;
+  time.hidden = !left;
+  time.textContent = left;
+  live.hidden = !recent;
 
-  if (left) {
-    const time = document.createElement('span');
-    time.textContent = left;
-    time.style.cssText =
-      'position:absolute;left:50%;top:-8px;transform:translateX(-50%);height:18px;padding:0 5px;border-radius:999px;background:#070707;color:#f5f5f5;display:flex;align-items:center;font:700 9px/1 Geist,sans-serif;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.12)';
-    shell.appendChild(time);
-  }
-
-  if (recent) {
-    const live = document.createElement('span');
-    live.setAttribute('aria-hidden', 'true');
-    live.style.cssText =
-      'position:absolute;left:-2px;bottom:2px;width:9px;height:9px;border-radius:999px;background:#34d399;box-shadow:0 0 0 2px #070707,0 0 10px rgba(52,211,153,.75)';
-    shell.appendChild(live);
-  }
-
-  el.appendChild(shell);
-
-  if (showLabels) {
-    const label = document.createElement('span');
-    const activity = activityLabel(p.activity);
-    label.textContent = [meta?.label, activity].filter(Boolean).join(' · ');
-    label.style.cssText =
-      `max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:rgba(7,7,7,.82);padding:3px 7px;font:700 9px/1.15 Geist,ui-sans-serif,sans-serif;color:${meta?.color ?? '#aaa'};text-shadow:0 1px 2px #000`;
-    el.appendChild(label);
-  }
-
-  return el;
+  label.hidden = !showLabels;
+  label.textContent = [meta?.label, activityLabel(p.activity)].filter(Boolean).join(' · ');
+  label.style.color = meta?.color ?? '#aaa';
 }
 
 function youElement(): HTMLElement {
@@ -222,6 +248,14 @@ export function MapScreen({ userId }: { userId: string }) {
     return p;
   }, []);
 
+  const heartbeat = useCallback(async () => {
+    const r = await fetch('/api/me/location', {
+      method: 'PATCH',
+      cache: 'no-store',
+    }).catch(() => null);
+    if (r?.status === 503) setConfigured(false);
+  }, []);
+
   // Travel mode looks at another city; nothing about your own position is published for it.
   const refresh = useCallback(
     async (p: Position | null) => {
@@ -260,12 +294,30 @@ export function MapScreen({ userId }: { userId: string }) {
 
   useEffect(() => {
     let alive = true;
-    let timer: ReturnType<typeof setInterval> | undefined;
+    let refreshTimer: ReturnType<typeof setInterval> | undefined;
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    let currentPosition: Position | null = null;
+
+    const refreshVisible = () => {
+      if (alive && document.visibilityState === 'visible') void refresh(currentPosition);
+    };
+    const heartbeatVisible = () => {
+      if (alive && document.visibilityState === 'visible') void heartbeat();
+    };
+    const resumeVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      heartbeatVisible();
+      refreshVisible();
+    };
+
     (async () => {
       const p = await locate(false);
       if (!alive) return;
+      currentPosition = p;
       await refresh(p);
-      timer = setInterval(() => document.visibilityState === 'visible' && refresh(p), REFRESH_MS);
+      refreshTimer = setInterval(refreshVisible, REFRESH_MS);
+      heartbeatTimer = setInterval(heartbeatVisible, PRESENCE_HEARTBEAT_MS);
+      document.addEventListener('visibilitychange', resumeVisible);
     })();
     fetch('/api/me/status', { cache: 'no-store' })
       .then((r) => r.json())
@@ -273,9 +325,11 @@ export function MapScreen({ userId }: { userId: string }) {
       .catch(() => {});
     return () => {
       alive = false;
-      if (timer) clearInterval(timer);
+      if (refreshTimer) clearInterval(refreshTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      document.removeEventListener('visibilitychange', resumeVisible);
     };
-  }, [locate, refresh]);
+  }, [heartbeat, locate, refresh]);
 
   // 2) map
   useEffect(() => {
@@ -345,20 +399,37 @@ export function MapScreen({ userId }: { userId: string }) {
     const map = mapRef.current;
     if (!map) return;
 
-    for (const marker of markersRef.current.values()) marker.remove();
-    markersRef.current.clear();
+    const visibleIds = new Set(layers.people ? filteredPeople.map((p) => p.id) : []);
+    for (const [id, marker] of markersRef.current) {
+      if (!visibleIds.has(id)) {
+        marker.remove();
+        markersRef.current.delete(id);
+      }
+    }
 
     if (layers.people) {
       for (const p of filteredPeople) {
+        const existing = markersRef.current.get(p.id);
+        if (existing) {
+          const el = existing.getElement() as HTMLButtonElement;
+          updatePinElement(el, p, now, layers.labels);
+          existing.setLngLat([p.lon, p.lat]);
+          continue;
+        }
+
         const el = pinElement(p, now, layers.labels);
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          setSelected({ id: p.id, distanceM: viewRef.current ? null : p.distanceM });
+          const target = e.currentTarget as HTMLButtonElement;
+          const distanceM = Number(target.dataset.distanceM);
+          setSelected({
+            id: target.dataset.userId ?? p.id,
+            distanceM: viewRef.current || !Number.isFinite(distanceM) ? null : distanceM,
+          });
         });
         const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([p.lon, p.lat])
           .addTo(map);
-        el.setAttribute('aria-label', p.handle ? `@${p.handle}` : 'Member');
         markersRef.current.set(p.id, marker);
       }
     }
