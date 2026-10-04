@@ -166,15 +166,48 @@ test('full app smoke as a new anonymous member', async ({ page, baseURL }) => {
     await page.setViewportSize({ width: 430, height: 932 });
     await shot(page, '05-map-mobile-restored');
 
+    const heartbeatResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/me/location') && r.request().method() === 'PATCH',
+      { timeout: 10_000 },
+    );
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    const heartbeat = await heartbeatResponse;
+    if (heartbeat.status() !== 503 && heartbeat.status() >= 400)
+      throw new Error(`presence heartbeat → ${heartbeat.status()}`);
+
     if (await visible(page.getByText(/needs Supabase/)))
       return 'controls responsive; demo mode: no Supabase keys, discovery/places/chat data unavailable';
 
     const pin = page.locator('button[data-user-id]').first();
     if (await visible(pin, 3000)) {
       await expect(pin).toHaveAttribute('data-activity', /active|recent|today/);
-      return 'controls responsive; person pin exposes coarse activity state only';
+      const pinId = await pin.getAttribute('data-user-id');
+      if (!pinId) throw new Error('person pin missing data-user-id');
+
+      await page.getByRole('button', { name: /^Layers/ }).evaluate((el) => (el as HTMLButtonElement).click());
+      const pinLabels = page.getByRole('menuitemcheckbox', { name: 'Pin labels' });
+      await expect(pinLabels).toBeVisible();
+
+      await pin.focus();
+      await expect(pin).toBeFocused();
+
+      await pinLabels.evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(pinLabels).toHaveAttribute('aria-checked', 'false');
+      const stablePin = page.locator(`button[data-user-id="${pinId}"]`).first();
+      await expect(stablePin).toBeFocused();
+
+      await pinLabels.evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(pinLabels).toHaveAttribute('aria-checked', 'true');
+      await expect(stablePin).toBeFocused();
+
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog')).toBeHidden({ timeout: 10_000 });
+
+      return 'controls responsive; heartbeat verified; pin focus survives label/ring reconciliation and keyboard activation works';
     }
-    return 'controls responsive; no people nearby on this deployment';
+    return 'controls responsive; heartbeat verified; no people nearby for keyboard pin check';
   });
 
   await step(page, '07 status: go live (PIROKA Mode)', async () => {
