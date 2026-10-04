@@ -85,7 +85,7 @@ function isRecent(p: NearbyPerson): boolean {
   return p.activity === 'active' || p.activity === 'recent';
 }
 
-function matchesDiscoveryFilters(p: NearbyPerson, filters: DiscoveryFilters, now: number): boolean {
+function matchesDiscoveryFilters(p: NearbyPerson, filters: DiscoveryFilters): boolean {
   if (filters.photosOnly && !p.photo) return false;
   if (filters.verifiedOnly && !p.verified) return false;
   if (filters.recentOnly && !isRecent(p)) return false;
@@ -326,13 +326,13 @@ export function MapScreen({ userId }: { userId: string }) {
       people.filter(
         (p) =>
           (!intentFilter || p.intent === intentFilter) &&
-          matchesDiscoveryFilters(p, filters, now),
+          matchesDiscoveryFilters(p, filters),
       ),
     [people, intentFilter, filters, now],
   );
 
   const attributeFilteredPeople = useMemo(
-    () => people.filter((p) => matchesDiscoveryFilters(p, filters, now)),
+    () => people.filter((p) => matchesDiscoveryFilters(p, filters)),
     [people, filters, now],
   );
 
