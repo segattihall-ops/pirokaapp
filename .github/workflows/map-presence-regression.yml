@@ -1,0 +1,32 @@
+name: Map presence regression
+
+on:
+  push:
+    branches:
+      - feat/map-people-pins-layers-filters
+  pull_request:
+    paths:
+      - 'app/api/me/location/route.ts'
+      - 'app/api/nearby/route.ts'
+      - 'components/map/**'
+      - 'lib/geo/**'
+      - 'lib/db/migrations/**'
+      - 'e2e/**'
+
+permissions:
+  contents: read
+
+jobs:
+  map-presence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npx playwright test e2e/presence.spec.ts e2e/map-presence-navigation.spec.ts --project=chromium
