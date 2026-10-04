@@ -6,11 +6,7 @@ export function sessionFromUser(u: User): Session {
   const meta = (u.app_metadata ?? {}) as Record<string, unknown>;
   const providerRaw = String(meta.provider ?? 'email');
   const anonymous = Boolean((u as User & { is_anonymous?: boolean }).is_anonymous);
-  const provider: AuthProvider = anonymous
-    ? 'anonymous'
-    : providerRaw === 'google' || providerRaw === 'apple'
-      ? providerRaw
-      : 'email';
+  const provider: AuthProvider = anonymous ? 'anonymous' : providerRaw === 'google' ? 'google' : 'email';
   return {
     userId: u.id,
     provider,

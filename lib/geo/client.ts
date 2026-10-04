@@ -56,7 +56,8 @@ export async function getPosition(opts: { ask?: boolean } = {}): Promise<Positio
   if (c && (c.precise || !opts.ask)) return c;
   let granted = false;
   try {
-    if (navigator.permissions) granted = (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted';
+    if (navigator.permissions)
+      granted = (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted';
   } catch {}
   if (granted || opts.ask) {
     try {
@@ -79,12 +80,13 @@ export function distanceLabel(m: number): string {
 }
 
 export const INTENTS: { value: string; label: string; color: string; hint: string }[] = [
-  { value: 'now', label: 'Now', color: '#34d399', hint: 'Free right now' },
-  { value: 'tonight', label: 'Tonight', color: '#fbbf24', hint: 'Later today' },
-  { value: 'hosting', label: 'Hosting', color: '#a78bfa', hint: 'Can host' },
-  { value: 'visiting', label: 'Visiting', color: '#38bdf8', hint: 'In town for a bit' },
-  { value: 'looking', label: 'Looking', color: '#f472b6', hint: 'Open to chat' },
-  { value: 'later', label: 'Later', color: '#cccccc', hint: 'This week' },
+  // Design: green = people available now (now / hosting), white = tonight / later / visiting, grey = just looking.
+  { value: 'now', label: 'Available now', color: '#34d399', hint: 'Free right now' },
+  { value: 'hosting', label: 'Hosting', color: '#34d399', hint: 'Can host' },
+  { value: 'tonight', label: 'Tonight', color: '#f5f5f5', hint: 'Later today' },
+  { value: 'later', label: 'Later', color: '#f5f5f5', hint: 'This week' },
+  { value: 'visiting', label: 'Visiting', color: '#f5f5f5', hint: 'In town for a bit' },
+  { value: 'looking', label: 'Just looking', color: '#666666', hint: 'Open to chat' },
 ];
 
 export const intentMeta = (v: string | null | undefined) => INTENTS.find((i) => i.value === v) ?? null;

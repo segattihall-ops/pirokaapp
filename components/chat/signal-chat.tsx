@@ -2,12 +2,23 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Avatar } from '@/components/people/user-row';
 import { decodeEnvelope, encodeEnvelope } from '@/lib/chat/envelope';
 import { fromB64 } from '@/lib/encryption/primitives';
-import { decryptFromConversation, encryptForConversation, peerIdentityKey, type Envelope } from '@/lib/encryption/signal-session';
+import {
+  decryptFromConversation,
+  encryptForConversation,
+  peerIdentityKey,
+  type Envelope,
+} from '@/lib/encryption/signal-session';
 import { cachePlaintext, getCachedPlaintext } from '@/lib/encryption/signal-store';
 import { fingerprint } from '@/lib/encryption/x3dh';
-import { subscribeToMessages, subscribeToTyping, type MessageRow, type TypingController } from '@/lib/realtime/messages';
+import {
+  subscribeToMessages,
+  subscribeToTyping,
+  type MessageRow,
+  type TypingController,
+} from '@/lib/realtime/messages';
 import { SafetyMenu } from './safety-menu';
 import { VideoCall } from './video-call';
 import { SafeMeetBar } from '@/components/meet/safemeet-bar';
@@ -21,11 +32,13 @@ export function SignalChat({
   userId,
   peerUserId,
   peerHandle,
+  peerPhoto = null,
 }: {
   conversationId: string;
   userId: string;
   peerUserId: string;
   peerHandle: string | null;
+  peerPhoto?: string | null;
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -69,7 +82,8 @@ export function SignalChat({
         if (cached !== null) return upsert({ id: row.id, mine, text: cached, at: row.created_at });
 
         const env = decodeEnvelope<Envelope>(row.ciphertext);
-        if (!env || env.v !== 1) return upsert({ id: row.id, mine, text: null, at: row.created_at, failed: true });
+        if (!env || env.v !== 1)
+          return upsert({ id: row.id, mine, text: null, at: row.created_at, failed: true });
 
         if (mine) {
           const text = pending.current.get(outgoingKey(env)) ?? null;
@@ -105,13 +119,17 @@ export function SignalChat({
       .catch(() => setError('Could not load messages'));
 
     const unsub = subscribeToMessages(conversationId, ingest, (isLive) => (live.current = isLive));
-    typing.current = subscribeToTyping(conversationId, userId, (ids) => setPeerTyping(ids.includes(peerUserId)));
+    typing.current = subscribeToTyping(conversationId, userId, (ids) =>
+      setPeerTyping(ids.includes(peerUserId)),
+    );
 
     // Fallback when the realtime socket is blocked (corporate proxies etc.): poll for rows newer than the last seen.
     const poll = setInterval(async () => {
       if (live.current || cancelled || document.hidden) return;
       const qs = latestAt.current ? `?after=${encodeURIComponent(latestAt.current)}` : '';
-      const r = await fetch(`/api/chat/${conversationId}/messages${qs}`, { cache: 'no-store' }).catch(() => null);
+      const r = await fetch(`/api/chat/${conversationId}/messages${qs}`, { cache: 'no-store' }).catch(
+        () => null,
+      );
       if (!r?.ok) return;
       const j = (await r.json()) as { messages?: MessageRow[] };
       for (const row of j.messages ?? []) await ingest(row);
@@ -168,17 +186,26 @@ export function SignalChat({
   return (
     <div className="mx-auto flex h-[calc(100dvh-66px-var(--safe-bottom))] w-full max-w-[720px] flex-col overflow-hidden rail:h-dvh">
       <header className="relative flex items-center gap-2 border-b border-line-1 px-3 py-2 sm:px-4">
-        <Link href="/app/chats" aria-label="Back" className="tap flex items-center justify-center text-[22px] text-fg-3 hover:text-fg">
+        <Link
+          href="/app/chats"
+          aria-label="Back"
+          className="tap flex items-center justify-center text-[22px] text-fg-3 hover:text-fg"
+        >
           ‹
         </Link>
+        <Avatar user={{ handle: peerHandle, photo: peerPhoto }} size={34} />
         <button
           type="button"
           onClick={() => setShowSafety((s) => !s)}
           aria-expanded={showSafety}
           className="tap min-w-0 flex-1 rounded-[12px] px-1 text-left hover:bg-ink-850"
         >
-          <h1 className="truncate text-[15px] font-semibold">{peerHandle ? `@${peerHandle}` : 'Anonymous'}</h1>
-          <p className="truncate text-[12px] text-fg-3">🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}</p>
+          <h1 className="truncate text-[15px] font-semibold">
+            {peerHandle ? `@${peerHandle}` : 'Anonymous'}
+          </h1>
+          <p className="truncate text-[12px] text-fg-3">
+            🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}
+          </p>
         </button>
         <VideoCall conversationId={conversationId} userId={userId} peerHandle={peerHandle} />
         <SafetyMenu peerUserId={peerUserId} peerHandle={peerHandle} conversationId={conversationId} />
@@ -194,13 +221,18 @@ export function SignalChat({
           ) : (
             <p>Available after the first message is exchanged.</p>
           )}
-          <p className="mt-1">Compare this with {peerHandle ? `@${peerHandle}` : 'them'} in person to verify nobody is in the middle.</p>
+          <p className="mt-1">
+            Compare this with {peerHandle ? `@${peerHandle}` : 'them'} in person to verify nobody is in the
+            middle.
+          </p>
         </div>
       )}
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {messages.length === 0 && !error && (
-          <p className="py-10 text-center text-[13px] text-fg-4">No messages yet. Say hi — it&apos;s encrypted before it leaves your device.</p>
+          <p className="py-10 text-center text-[13px] text-fg-4">
+            No messages yet. Say hi — it&apos;s encrypted before it leaves your device.
+          </p>
         )}
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>

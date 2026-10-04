@@ -19,7 +19,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       .from('favorites')
       .delete()
       .eq('user_id', userId)
-      .eq('favorite_id', favoriteId);
+      .eq('fav_id', favoriteId);
 
     if (error) {
       return NextResponse.json({ error: 'Failed to remove favorite' }, { status: 500 });

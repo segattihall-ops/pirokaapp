@@ -30,7 +30,12 @@ export default async function MePage() {
   const [{ data: me }, { data: photo }] = supabaseAdmin
     ? await Promise.all([
         supabaseAdmin.from('users').select('handle').eq('id', session.userId).maybeSingle(),
-        supabaseAdmin.from('photos').select('storage_key').eq('user_id', session.userId).eq('slot', 0).maybeSingle(),
+        supabaseAdmin
+          .from('photos')
+          .select('storage_key')
+          .eq('user_id', session.userId)
+          .eq('slot', 0)
+          .maybeSingle(),
       ])
     : [{ data: null }, { data: null }];
   const handle = me?.handle ?? null;
@@ -42,12 +47,18 @@ export default async function MePage() {
       <h1 className="text-h2 sm:text-h1">Your profile</h1>
 
       <div className="glass flex items-center gap-3 rounded-card px-4 py-3.5">
-        <Link href="/app/me/edit" aria-label="Edit profile" className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-ink-800">
+        <Link
+          href="/app/me/edit"
+          aria-label="Edit profile"
+          className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[14px] bg-ink-800"
+        >
           {mainPhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={mainPhoto} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center text-[22px] font-bold text-fg-3">{(handle ?? '?').slice(0, 1).toUpperCase()}</span>
+            <span className="flex h-full w-full items-center justify-center text-[22px] font-bold text-fg-3">
+              {(handle ?? '?').slice(0, 1).toUpperCase()}
+            </span>
           )}
         </Link>
         <div className="min-w-0 flex-1">

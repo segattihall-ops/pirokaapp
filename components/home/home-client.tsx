@@ -40,7 +40,7 @@ export function HomeClient({
 
   return (
     <div
-      className="relative min-h-dvh overflow-hidden text-fg"
+      className="relative h-dvh overflow-hidden text-fg lg:h-auto lg:min-h-dvh"
       style={{
         background: 'radial-gradient(ellipse 80% 70% at 72% 50%, #111111 0%, #0a0a0a 45%, #070707 100%)',
       }}
@@ -60,8 +60,8 @@ export function HomeClient({
         style={{ background: 'radial-gradient(closest-side, rgba(52,211,153,0.11), rgba(52,211,153,0) 72%)' }}
       />
 
-      <div className="relative z-[1] flex min-h-dvh flex-col">
-        <header className="flex animate-[piIn_.7s_ease-out_both] items-center justify-between gap-4 px-[clamp(20px,5vw,64px)] pb-7 pt-[calc(28px+var(--safe-top))]">
+      <div className="relative z-[1] flex h-dvh min-h-0 flex-col lg:h-auto lg:min-h-dvh">
+        <header className="flex animate-[piIn_.7s_ease-out_both] items-center justify-between gap-4 px-[clamp(20px,5vw,64px)] pb-3 pt-[calc(14px+var(--safe-top))] lg:pb-7 lg:pt-[calc(28px+var(--safe-top))]">
           <div className="flex items-center gap-3.5">
             <div
               className="relative flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-[rgba(255,255,255,0.14)] text-[22px] font-bold leading-none text-fg"
@@ -124,8 +124,8 @@ export function HomeClient({
           <SignupChat gated={gated} authError={authError} />
         </main>
 
-        <footer className="flex flex-col gap-3 px-[clamp(20px,5vw,64px)] pb-[calc(24px+var(--safe-bottom))] pt-2 text-[12px] text-fg-3">
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <footer className="flex shrink-0 flex-col gap-1 px-[clamp(20px,5vw,64px)] pb-[calc(8px+var(--safe-bottom))] pt-1 text-[11px] text-fg-3 lg:gap-3 lg:pb-[calc(24px+var(--safe-bottom))] lg:pt-2 lg:text-[12px]">
+          <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 lg:gap-x-4 lg:gap-y-1.5">
             {FOOTER.map(([l, h]) => (
               <Link key={h} href={h} className="tap-link hover:text-green">
                 {l}
@@ -141,7 +141,7 @@ export function HomeClient({
             </a>
             <span className="text-fg-4">Esri, HERE, Garmin</span>
           </nav>
-          <div className="flex items-center gap-2 text-fg-4">
+          <div className="hidden items-center gap-2 text-fg-4 lg:flex">
             <span className="rounded-[6px] border border-line-2 px-1.5 py-0.5 text-[11px] font-semibold text-fg-2">
               18+
             </span>

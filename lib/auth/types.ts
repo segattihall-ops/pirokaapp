@@ -1,4 +1,4 @@
-export type AuthProvider = 'google' | 'apple' | 'email' | 'anonymous';
+export type AuthProvider = 'google' | 'email' | 'anonymous';
 
 /** The only session facts the app needs. Never carries raw location, never the age itself. */
 export type Session = {
