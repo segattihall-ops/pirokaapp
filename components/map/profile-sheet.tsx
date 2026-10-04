@@ -25,7 +25,8 @@ type Profile = {
   conversation: boolean;
 };
 
-const fmtDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const fmtDate = (d: string) =>
+  new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 export function ProfileSheet({
   userId,
@@ -43,7 +44,9 @@ export function ProfileSheet({
 
   useEffect(() => {
     fetch(`/api/users/${userId}`, { cache: 'no-store' })
-      .then(async (r) => (r.ok ? setP(await r.json()) : setErr((await r.json().catch(() => ({}))).error ?? 'Not found')))
+      .then(async (r) =>
+        r.ok ? setP(await r.json()) : setErr((await r.json().catch(() => ({}))).error ?? 'Not found'),
+      )
       .catch(() => setErr('Could not load profile'));
   }, [userId]);
 
@@ -102,7 +105,7 @@ export function ProfileSheet({
       ) : (
         <>
           <div className="flex items-start gap-4">
-            <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-card bg-ink-800">
+            <div className="relative h-[150px] w-[112px] shrink-0 overflow-hidden rounded-card bg-ink-800">
               {main ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={main.url} alt="" className="h-full w-full object-cover" />
@@ -119,7 +122,9 @@ export function ProfileSheet({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="truncate text-[20px] font-semibold tracking-[-0.02em]">{p.handle ? `@${p.handle}` : 'Anonymous'}</h2>
+                <h2 className="truncate text-[20px] font-semibold tracking-[-0.02em]">
+                  {p.handle ? `@${p.handle}` : 'Anonymous'}
+                </h2>
                 {p.verified && <span className="text-[12px] font-bold text-green">✓</span>}
               </div>
               <p className="text-[12px] text-fg-3">
@@ -142,7 +147,9 @@ export function ProfileSheet({
                   aria-pressed={p.favorite}
                   aria-label={p.favorite ? 'Remove from favourites' : 'Add to favourites'}
                   className={`tap-hit flex h-10 w-10 items-center justify-center rounded-[12px] border text-[18px] transition-colors ${
-                    p.favorite ? 'border-sel-border bg-sel-fill text-green' : 'border-line-2 text-fg-3 hover:text-fg'
+                    p.favorite
+                      ? 'border-sel-border bg-sel-fill text-green'
+                      : 'border-line-2 text-fg-3 hover:text-fg'
                   }`}
                 >
                   {p.favorite ? '★' : '☆'}
@@ -156,7 +163,13 @@ export function ProfileSheet({
 
           {p.trips.length > 0 && (
             <p className="rounded-input border border-line-2 px-3 py-2 text-[12px] text-fg-2">
-              ✈️ {p.trips.map((t) => `${t.city.split(',')[0]} from ${fmtDate(t.arriveOn)} (${t.nights} night${t.nights === 1 ? '' : 's'})`).join(' · ')}
+              ✈️{' '}
+              {p.trips
+                .map(
+                  (t) =>
+                    `${t.city.split(',')[0]} from ${fmtDate(t.arriveOn)} (${t.nights} night${t.nights === 1 ? '' : 's'})`,
+                )
+                .join(' · ')}
             </p>
           )}
 
@@ -177,7 +190,12 @@ export function ProfileSheet({
                   Album · {album.length} {p.albumUnlocked ? '' : '· private'}
                 </p>
                 {p.albumRequest === 'none' || p.albumRequest === 'declined' ? (
-                  <button type="button" onClick={requestAlbum} disabled={busy === 'album'} className="tap-link text-[12px] font-semibold text-green">
+                  <button
+                    type="button"
+                    onClick={requestAlbum}
+                    disabled={busy === 'album'}
+                    className="tap-link text-[12px] font-semibold text-green"
+                  >
                     {busy === 'album' ? '…' : 'Request access'}
                   </button>
                 ) : p.albumRequest === 'pending' ? (
@@ -187,7 +205,12 @@ export function ProfileSheet({
               <div className="grid grid-cols-5 gap-1.5">
                 {album.map((x) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={x.slot} src={x.url} alt="" className="aspect-square w-full rounded-[10px] object-cover" />
+                  <img
+                    key={x.slot}
+                    src={x.url}
+                    alt=""
+                    className="aspect-square w-full rounded-[10px] object-cover"
+                  />
                 ))}
               </div>
             </div>
@@ -199,7 +222,12 @@ export function ProfileSheet({
             </p>
           )}
           {p.albumRequest !== 'self' && (
-            <button type="button" onClick={message} disabled={busy === 'message'} className="btn-primary h-12 bg-green hover:bg-green-hover">
+            <button
+              type="button"
+              onClick={message}
+              disabled={busy === 'message'}
+              className="btn-primary h-12 bg-green hover:bg-green-hover"
+            >
               {busy === 'message' ? '…' : p.conversation ? 'Open chat' : 'Message'}
             </button>
           )}

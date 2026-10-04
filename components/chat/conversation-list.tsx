@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Avatar } from '@/components/people/user-row';
 
 type Conversation = {
   id: string;
   mutual: boolean;
-  peer: { id: string; handle: string | null };
+  peer: { id: string; handle: string | null; photo: string | null };
   lastAt: string | null;
 };
 
@@ -92,11 +93,13 @@ export function ConversationList() {
                 className="glass flex items-center justify-between rounded-card px-4 py-3.5 text-[14px]"
               >
                 <span className="flex items-center gap-2 font-medium">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink-800 text-[12px] font-bold text-fg-2">
-                    {(c.peer.handle ?? '?').slice(0, 1).toUpperCase()}
-                  </span>
+                  <Avatar user={{ handle: c.peer.handle, photo: c.peer.photo }} size={36} />
                   {c.peer.handle ? `@${c.peer.handle}` : 'Anonymous'}
-                  {c.mutual && <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-green">mutual</span>}
+                  {c.mutual && (
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-green">
+                      mutual
+                    </span>
+                  )}
                 </span>
                 <span className="text-[12px] text-fg-4">{ago(c.lastAt)}</span>
               </Link>
@@ -104,7 +107,9 @@ export function ConversationList() {
           ))}
         </ul>
       )}
-      <p className="text-[12px] text-fg-4">🔒 Messages are end-to-end encrypted on this device. Sign out clears the keys.</p>
+      <p className="text-[12px] text-fg-4">
+        🔒 Messages are end-to-end encrypted on this device. Sign out clears the keys.
+      </p>
     </div>
   );
 }

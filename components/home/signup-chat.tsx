@@ -28,19 +28,16 @@ const WELCOME: Msg = {
 };
 const PICK_LABEL: Record<Pick, string> = {
   google: 'With Google',
-  apple: 'With Apple',
   email: 'With my email',
   anon: 'Stay anonymous',
 };
 const PICK_REPLY: Record<Pick, string> = {
   google: 'Perfect. Tap below to sign in securely with Google — nothing is ever posted or shared.',
-  apple: 'Great choice. Tap below to sign in with Apple — you can keep your email hidden.',
   email: "Works for me. Tap below and I'll send a one-time link — no password needed.",
   anon: 'No problem. Tap below to enter anonymously — no name, no email.',
 };
 const CONSENT_INTRO: Record<AuthProvider, string> = {
   google: 'Signed in with Google. Before you enter — πroka is adults-only, so two quick confirmations.',
-  apple: 'Signed in with Apple. Before you enter — πroka is adults-only, so two quick confirmations.',
   email: 'Link confirmed. Before you enter — πroka is adults-only, so two quick confirmations.',
   anonymous:
     "You'll stay anonymous — no name, no email. πroka is adults-only, so two quick confirmations first.",
@@ -173,7 +170,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
     const p = provider;
     if (!p) return;
     try {
-      if (p === 'google' || p === 'apple') {
+      if (p === 'google') {
         setStep('wait');
         await signInWithOAuth(p, '/');
         if (isDemoClient()) {
@@ -370,8 +367,8 @@ export function SignupChat({ gated }: { gated: boolean }) {
       setCErr(e instanceof Error ? e.message : 'Could not sign in.');
     }
   };
-  const classicOAuth = async (p: 'google' | 'apple') => {
-    setCBusy(p === 'google' ? 'Connecting to Google…' : 'Connecting to Apple…');
+  const classicOAuth = async (p: 'google') => {
+    setCBusy('Connecting to Google…');
     setCErr('');
     try {
       await signInWithOAuth(p, APP_PATH);
@@ -533,7 +530,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
 
               {idle && step === 'ask' && (
                 <div className="flex animate-[piIn_.5s_.05s_ease-out_both] flex-wrap gap-2 pl-[38px]">
-                  {(['google', 'apple', 'email', 'anon'] as Pick[]).map((p) => (
+                  {(['google', 'email', 'anon'] as Pick[]).map((p) => (
                     <button
                       key={p}
                       type="button"
@@ -551,12 +548,6 @@ export function SignupChat({ gated }: { gated: boolean }) {
                   {provider === 'google' && (
                     <ActionButton onClick={act} variant="white">
                       <span className="text-[16px] font-bold">G</span>Continue with Google
-                    </ActionButton>
-                  )}
-                  {provider === 'apple' && (
-                    <ActionButton onClick={act} variant="black">
-                      <AppleIcon />
-                      Continue with Apple
                     </ActionButton>
                   )}
                   {provider === 'email' && (
@@ -811,21 +802,13 @@ export function SignupChat({ gated }: { gated: boolean }) {
               or
               <span className="h-px flex-1 bg-line-2" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
                 onClick={() => classicOAuth('google')}
                 className="btn-secondary h-11 gap-2"
               >
                 <span className="text-[15px] font-bold">G</span>Google
-              </button>
-              <button
-                type="button"
-                onClick={() => classicOAuth('apple')}
-                className="btn-secondary h-11 gap-2"
-              >
-                <AppleIcon size={14} />
-                Apple
               </button>
             </div>
             <div className="text-center text-[12px] text-fg-3">
@@ -936,13 +919,5 @@ function PolicyLink({ href, children }: { href: string; children: React.ReactNod
     >
       {children}
     </Link>
-  );
-}
-
-function AppleIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z" />
-    </svg>
   );
 }
