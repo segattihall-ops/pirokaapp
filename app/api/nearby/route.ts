@@ -14,7 +14,7 @@ export type NearbyPerson = {
   intent: string | null;
   intentStartsAt: string | null;
   intentEndsAt: string | null;
-  lastSeenAt: string | null;
+  activity: 'active' | 'recent' | 'today';
   photo: string | null;
   verified: boolean;
   plan: string;
@@ -83,7 +83,13 @@ export async function GET(request: Request) {
         intent: r.intent ?? null,
         intentStartsAt: status?.starts_at ?? null,
         intentEndsAt: status?.ends_at ?? r.intent_ends_at ?? null,
-        lastSeenAt: r.updated_at ?? null,
+        activity: (() => {
+          const updated = new Date(r.updated_at ?? 0).getTime();
+          const age = Date.now() - updated;
+          if (Number.isFinite(updated) && age <= 15 * 60_000) return 'active' as const;
+          if (Number.isFinite(updated) && age <= 60 * 60_000) return 'recent' as const;
+          return 'today' as const;
+        })(),
         photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
         verified: Boolean(r.verified),
         plan: r.plan,
