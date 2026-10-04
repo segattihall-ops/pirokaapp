@@ -236,7 +236,9 @@ export function MapScreen({ userId }: { userId: string }) {
 
   // 1) position → publish (fuzzed server-side) → fetch nearby
   const locate = useCallback(async (ask: boolean) => {
-    const p = await getPosition({ ask });
+    // Every POST establishes a new coordinate-capture timestamp, so it must be backed by a
+    // fresh browser/IP lookup rather than the session cache.
+    const p = await getPosition({ ask, fresh: true });
     setPos(p);
     if (!p.precise) setNotice(ask ? 'Location permission denied — showing your approximate area.' : '');
     const r = await fetch('/api/me/location', {
@@ -307,8 +309,7 @@ export function MapScreen({ userId }: { userId: string }) {
     };
     const republishLocationVisible = async () => {
       if (!alive || document.visibilityState !== 'visible') return;
-      // getPosition reuses a fix for at most 10 minutes. After that, a granted browser
-      // permission yields a fresh fix; otherwise the fallback remains coarse.
+      // Publishing on resume/timer always forces a fresh lookup; it never re-stamps a cached fix.
       const p = await locate(false);
       if (!alive) return;
       currentPosition = p;
