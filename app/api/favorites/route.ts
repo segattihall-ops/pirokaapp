@@ -46,12 +46,20 @@ export async function POST(request: Request) {
   if (userId === me) return NextResponse.json({ error: 'That is you' }, { status: 400 });
   if (await isBlocked(me, userId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
-  const { count } = await supabaseAdmin!
+  const { data: existing } = await supabaseAdmin!
     .from('favorites')
-    .select('fav_id', { count: 'exact', head: true })
-    .eq('user_id', me);
-  if ((count ?? 0) >= MAX_FAVORITES)
-    return NextResponse.json({ error: `Up to ${MAX_FAVORITES} favourites` }, { status: 409 });
+    .select('fav_id', { head: true })
+    .eq('user_id', me)
+    .eq('fav_id', userId);
+
+  if (!existing?.length) {
+    const { count } = await supabaseAdmin!
+      .from('favorites')
+      .select('fav_id', { count: 'exact', head: true })
+      .eq('user_id', me);
+    if ((count ?? 0) >= MAX_FAVORITES)
+      return NextResponse.json({ error: `Up to ${MAX_FAVORITES} favourites` }, { status: 409 });
+  }
 
   const { error } = await supabaseAdmin!
     .from('favorites')

@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       query = query.eq('zip', zip);
     }
 
-    // Filter by proximity (if lat/lng provided)
+    // Filter by proximity (if lat/lng provided) — only works with latitude/longitude columns
     if (lat !== undefined && lng !== undefined) {
       // Using simple distance calculation: ~111km per degree
       const latDelta = radius / 111;
@@ -59,8 +59,7 @@ export async function GET(request: Request) {
     }
 
     const { data, error } = await query
-      .order('verified', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('verified', { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

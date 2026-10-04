@@ -45,6 +45,19 @@ export async function POST(request: Request, { params }: { params: { conversatio
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  if (!conv.mutual) {
+    const senderIds = new Set(
+      (await supabaseAdmin
+        .from('dm_messages')
+        .select('sender_id')
+        .eq('conversation_id', conv.id)
+        .then((r) => r.data ?? [])).map((m) => m.sender_id)
+    );
+    if (senderIds.size === 2) {
+      await supabaseAdmin.from('conversations').update({ mutual: true }).eq('id', conv.id);
+    }
+  }
+
   getHandle(session.userId)
     .then((handle) =>
       sendPushToUser(peerId, {
