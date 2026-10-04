@@ -22,13 +22,13 @@ function remember(p: Position) {
   } catch {}
 }
 
-function browserFix(): Promise<Position> {
+function browserFix(fresh = false): Promise<Position> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('unsupported'));
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, precise: true }),
       (err) => reject(err),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: fresh ? 0 : 300_000 },
     );
   });
 }
@@ -51,8 +51,8 @@ async function ipFix(): Promise<Position | null> {
  * Best available position: browser geolocation (asks permission), else IP lookup, else launch market.
  * `precise` tells the caller whether it is worth publishing to the server.
  */
-export async function getPosition(opts: { ask?: boolean } = {}): Promise<Position> {
-  const c = cached();
+export async function getPosition(opts: { ask?: boolean; fresh?: boolean } = {}): Promise<Position> {
+  const c = opts.fresh ? null : cached();
   if (c && (c.precise || !opts.ask)) return c;
   let granted = false;
   try {
@@ -61,7 +61,7 @@ export async function getPosition(opts: { ask?: boolean } = {}): Promise<Positio
   } catch {}
   if (granted || opts.ask) {
     try {
-      const p = await browserFix();
+      const p = await browserFix(Boolean(opts.fresh));
       remember(p);
       return p;
     } catch {}
