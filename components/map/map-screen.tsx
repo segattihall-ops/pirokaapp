@@ -386,12 +386,12 @@ export function MapScreen({ userId }: { userId: string }) {
           (!intentFilter || p.intent === intentFilter) &&
           matchesDiscoveryFilters(p, filters),
       ),
-    [people, intentFilter, filters, now],
+    [people, intentFilter, filters],
   );
 
   const attributeFilteredPeople = useMemo(
     () => people.filter((p) => matchesDiscoveryFilters(p, filters)),
-    [people, filters, now],
+    [people, filters],
   );
 
   // 3) pins + activity layer. All coordinates below come from public_geo via nearby_users.
