@@ -27,16 +27,20 @@ const Body = z.object({
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
-
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid profile' }, { status: 400 });
   const b = parsed.data;
 
   const handle = b.anonymous ? null : (b.displayName ?? '').replace(/^@/, '');
   if (!b.anonymous && !/^[\w.-]{2,24}$/.test(handle ?? '')) {
-    return NextResponse.json({ error: 'Pick a name of 2–24 letters, numbers, dots or dashes' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Pick a name of 2–24 letters, numbers, dots or dashes' },
+      { status: 400 },
+    );
   }
+  // Demo mode (no Supabase keys): nothing to persist, but the flow must complete so every screen
+  // can be exercised locally — see lib/auth/mode.ts.
+  if (!supabaseAdmin) return NextResponse.json({ ok: true, handle, demo: true });
 
   await ensureUserRow(session);
   const { error } = await supabaseAdmin
@@ -48,7 +52,11 @@ export async function POST(request: Request) {
       orientation: b.orientation,
       communities: b.communities,
       show_me: b.showMe.includes('Everyone') ? [] : b.showMe,
-      safety_prefs: { blurPhotos: b.blurPhotos, verifiedOnly: b.verifiedOnly, strangerFilter: b.strangerFilter },
+      safety_prefs: {
+        blurPhotos: b.blurPhotos,
+        verifiedOnly: b.verifiedOnly,
+        strangerFilter: b.strangerFilter,
+      },
       visibility: b.visibility,
       disguise_icon: b.disguiseIcon,
       ...(b.bio !== undefined ? { bio: b.bio } : {}),
@@ -66,9 +74,18 @@ export async function GET() {
   if (!supabaseAdmin) return NextResponse.json({ profile: null });
   const { data } = await supabaseAdmin
     .from('users')
-    .select('handle, pronouns, gender, orientation, communities, show_me, safety_prefs, visibility, disguise_icon, bio')
+    .select(
+      'handle, pronouns, gender, orientation, communities, show_me, safety_prefs, visibility, disguise_icon, bio',
+    )
     .eq('id', session.userId)
     .maybeSingle();
-  const { count } = await supabaseAdmin.from('photos').select('slot', { count: 'exact', head: true }).eq('user_id', session.userId);
-  return NextResponse.json({ profile: data ?? null, photos: count ?? 0, complete: Boolean(data && (data.handle || data.gender?.length)) });
+  const { count } = await supabaseAdmin
+    .from('photos')
+    .select('slot', { count: 'exact', head: true })
+    .eq('user_id', session.userId);
+  return NextResponse.json({
+    profile: data ?? null,
+    photos: count ?? 0,
+    complete: Boolean(data && (data.handle || data.gender?.length)),
+  });
 }

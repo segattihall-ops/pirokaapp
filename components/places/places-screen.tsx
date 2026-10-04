@@ -83,7 +83,7 @@ export function PlacesScreen() {
 
   return (
     <section className="mx-auto flex w-full max-w-[560px] animate-in flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3 pr-14 rail:pr-16">
         <div>
           <span className="eyebrow">Live places</span>
           <h1 className="text-h2 sm:text-h1">What&apos;s happening</h1>
