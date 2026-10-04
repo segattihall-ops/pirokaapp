@@ -32,7 +32,10 @@ export async function POST(request: Request) {
   return NextResponse.json({ public: { lat: pub.lat, lng: pub.lng } });
 }
 
-/** Renews map presence without reading, collecting, or changing any coordinates. */
+/**
+ * Renews map presence only. This never reads or changes coordinates and never advances
+ * the 24-hour location-retention clock (locations.updated_at).
+ */
 export async function PATCH() {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,7 +43,7 @@ export async function PATCH() {
 
   const { error } = await supabaseAdmin
     .from('locations')
-    .update({ updated_at: new Date().toISOString() })
+    .update({ presence_at: new Date().toISOString() })
     .eq('user_id', session.userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
