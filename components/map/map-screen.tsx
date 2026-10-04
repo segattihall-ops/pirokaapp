@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getPosition, INTENTS, intentMeta, type Position } from '@/lib/geo/client';
+import { LOCATION_REFRESH_MS, PRESENCE_HEARTBEAT_MS } from '@/lib/geo/presence';
 import { ringDegrees as statusRingDegrees, type Intent as StatusIntent } from '@/lib/intent';
 import type { NearbyPerson, Visitor } from '@/app/api/nearby/route';
 import { ProfileSheet } from './profile-sheet';
@@ -17,7 +18,6 @@ const ESRI_STYLE =
   'https://basemap.arcgisonline.com/arcgis/rest/services/World_Dark_Gray_Base/VectorTileServer/resources/styles/root.json';
 const RADIUS_M = 5000;
 const REFRESH_MS = 60_000;
-const PRESENCE_HEARTBEAT_MS = 5 * 60_000;
 const RING_TICK_MS = 30_000;
 
 const FILTERS: { label: string; intent: string | null }[] = [
@@ -296,6 +296,7 @@ export function MapScreen({ userId }: { userId: string }) {
     let alive = true;
     let refreshTimer: ReturnType<typeof setInterval> | undefined;
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    let locationTimer: ReturnType<typeof setInterval> | undefined;
     let currentPosition: Position | null = null;
 
     const refreshVisible = () => {
@@ -304,10 +305,17 @@ export function MapScreen({ userId }: { userId: string }) {
     const heartbeatVisible = () => {
       if (alive && document.visibilityState === 'visible') void heartbeat();
     };
+    const republishLocationVisible = async () => {
+      if (!alive || document.visibilityState !== 'visible') return;
+      // getPosition reuses a fix for at most 10 minutes. After that, a granted browser
+      // permission yields a fresh fix; otherwise the fallback remains coarse.
+      const p = await locate(false);
+      if (!alive) return;
+      currentPosition = p;
+      await refresh(p);
+    };
     const resumeVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      heartbeatVisible();
-      refreshVisible();
+      if (document.visibilityState === 'visible') void republishLocationVisible();
     };
 
     (async () => {
@@ -317,6 +325,7 @@ export function MapScreen({ userId }: { userId: string }) {
       await refresh(p);
       refreshTimer = setInterval(refreshVisible, REFRESH_MS);
       heartbeatTimer = setInterval(heartbeatVisible, PRESENCE_HEARTBEAT_MS);
+      locationTimer = setInterval(() => void republishLocationVisible(), LOCATION_REFRESH_MS);
       document.addEventListener('visibilitychange', resumeVisible);
     })();
     fetch('/api/me/status', { cache: 'no-store' })
@@ -327,6 +336,7 @@ export function MapScreen({ userId }: { userId: string }) {
       alive = false;
       if (refreshTimer) clearInterval(refreshTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (locationTimer) clearInterval(locationTimer);
       document.removeEventListener('visibilitychange', resumeVisible);
     };
   }, [heartbeat, locate, refresh]);
@@ -430,6 +440,9 @@ export function MapScreen({ userId }: { userId: string }) {
         const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([p.lon, p.lat])
           .addTo(map);
+        // MapLibre assigns its generic "Map marker" label during addTo(). Restore the
+        // person-specific accessible name after mounting, then keep mutating this node in place.
+        updatePinElement(el, p, now, layers.labels);
         markersRef.current.set(p.id, marker);
       }
     }
