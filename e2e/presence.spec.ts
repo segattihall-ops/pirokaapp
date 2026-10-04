@@ -14,6 +14,13 @@ test.describe('map presence timing', () => {
     const generated = '22'.repeat(16);
 
     expect(stableFuzzSeedHex(existing, generated)).toBe(existing);
+    expect(stableFuzzSeedHex(`\\x${existing}`, generated)).toBe(existing);
+
+    const legacyAsciiBytea = Array.from(existing)
+      .map((char) => char.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('');
+    expect(stableFuzzSeedHex(`\\x${legacyAsciiBytea}`, generated)).toBe(existing);
+
     expect(stableFuzzSeedHex(undefined, generated)).toBe(generated);
     expect(stableFuzzSeedHex('not-a-seed', generated)).toBe(generated);
   });
