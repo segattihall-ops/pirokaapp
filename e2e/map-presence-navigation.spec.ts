@@ -30,11 +30,23 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await context.grantPermissions(['geolocation'], { origin: baseURL });
   await context.setGeolocation({ latitude: 32.8109, longitude: -96.8062 });
 
+  // Seed a still-"valid" 10-minute cache with a deliberately stale/wrong coordinate. A location
+  // publication must ignore it because publishing advances the server retention timestamp.
+  await page.evaluate(() => {
+    sessionStorage.setItem(
+      'piroka_pos',
+      JSON.stringify({ lat: 40.7128, lon: -74.006, precise: true, at: Date.now() }),
+    );
+  });
+
+  const publishedPositions: Array<{ lat: number; lng: number }> = [];
   await page.route('**/api/me/location', async (route) => {
     const method = route.request().method();
     if (method === 'DELETE') return route.fulfill({ status: 200, json: { ok: true } });
     if (method === 'PATCH')
       return route.fulfill({ status: 200, json: { ok: true, locationRefreshRequired: false } });
+    const body = route.request().postDataJSON() as { lat: number; lng: number };
+    publishedPositions.push(body);
     return route.fulfill({
       status: 200,
       json: { public: { lat: 32.8118, lng: -96.8071 } },
@@ -100,6 +112,17 @@ test('map preserves marker focus and accessibility across responsive layout and 
   const pin = page.locator(`button[data-user-id="${FAKE_ID}"]`);
   await expect(pin).toBeVisible({ timeout: 20_000 });
   await expect(pin).toHaveAttribute('aria-label', '@keyboard-test');
+
+  await expect.poll(() => publishedPositions.length).toBeGreaterThan(0);
+  expect(publishedPositions[0].lat).toBeCloseTo(32.8109, 3);
+  expect(publishedPositions[0].lng).toBeCloseTo(-96.8062, 3);
+
+  const beforeResume = publishedPositions.length;
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect.poll(() => publishedPositions.length).toBeGreaterThan(beforeResume);
+  const resumed = publishedPositions.at(-1);
+  expect(resumed?.lat).toBeCloseTo(32.8109, 3);
+  expect(resumed?.lng).toBeCloseTo(-96.8062, 3);
 
   await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Filter/ })).toBeVisible();
