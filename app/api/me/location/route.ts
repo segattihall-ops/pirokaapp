@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/server';
 import { saveLocation, supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { fuzzLocation } from '@/lib/geo/fuzz';
+import { stableFuzzSeedHex } from '@/lib/geo/fuzz-session';
 import { ACTIVE_PRESENCE_MS } from '@/lib/geo/presence';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,18 @@ export async function POST(request: Request) {
   const { lat, lng, countryCode } = parsed.data;
 
   await ensureUserRow(session);
-  const seed = crypto.randomBytes(16);
+
+  // Automatic refresh/resume must not create independent public offsets that can be averaged
+  // back toward true_geo. Reuse the existing publication seed until that location row is deleted.
+  const { data: existing, error: seedReadError } = await supabaseAdmin
+    .from('locations')
+    .select('fuzz_seed')
+    .eq('user_id', session.userId)
+    .maybeSingle();
+  if (seedReadError) return NextResponse.json({ error: seedReadError.message }, { status: 500 });
+
+  const seedHex = stableFuzzSeedHex(existing?.fuzz_seed, crypto.randomBytes(16).toString('hex'));
+  const seed = Buffer.from(seedHex, 'hex');
   const pub = fuzzLocation(lat, lng, seed);
   const { error } = await saveLocation(session.userId, lat, lng, seed, pub.lat, pub.lng, countryCode);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
