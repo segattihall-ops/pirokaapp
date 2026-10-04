@@ -6,7 +6,7 @@ import { demoSignIn, signOutServer } from '@/lib/auth/server';
 export const dynamic = 'force-dynamic';
 
 const Body = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('signin'), provider: z.enum(['google', 'apple', 'anonymous']) }),
+  z.object({ action: z.literal('signin'), provider: z.enum(['google', 'anonymous']) }),
   z.object({ action: z.literal('magic'), email: z.string().email() }),
   z.object({ action: z.literal('password'), email: z.string().email(), password: z.string().min(6) }),
   z.object({ action: z.literal('signout') }),

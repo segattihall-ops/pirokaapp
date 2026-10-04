@@ -40,8 +40,6 @@ PERSONA_API_KEY=your_api_key
 # OAuth providers (optional for demo)
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
-APPLE_ID=your_apple_id
-APPLE_SECRET=your_apple_secret
 
 # Email magic links
 EMAIL_SERVER=smtp://user:pass@smtp.gmail.com:587
@@ -144,7 +142,7 @@ Test at **390px width** (iPhone SE) for mobile-first design:
 5. Location (fuzzy coords saved, true coords server-only)
 
 ### Providers
-- **Google** / **Apple**: OAuth 2.0
+- **Google**: OAuth 2.0
 - **Email**: Magic link via SMTP
 - **Anonymous**: Demo-only temporary session
 
@@ -270,7 +268,7 @@ All actions logged to `audit_log` table with moderator ID and reason.
 ## ✅ Pre-Launch Checklist
 
 - [ ] Supabase project created + schema applied
-- [ ] OAuth keys configured (Google + Apple)
+- [ ] OAuth keys configured (Google)
 - [ ] PayPal keys + plan IDs + webhook ID added
 - [ ] VAPID keys added (push)
 - [ ] ADMIN_EMAILS set

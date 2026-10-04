@@ -1,6 +1,5 @@
 import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import AppleProvider from 'next-auth/providers/apple';
 import EmailProvider from 'next-auth/providers/email';
 
 export const authConfig: NextAuthOptions = {
@@ -13,10 +12,6 @@ export const authConfig: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
       allowDangerousEmailAccountLinking: true,
-    }),
-    AppleProvider({
-      clientId: process.env.APPLE_ID || '',
-      clientSecret: process.env.APPLE_SECRET || '',
     }),
     EmailProvider({
       server: process.env.EMAIL_SERVER,

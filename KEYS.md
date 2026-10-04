@@ -34,7 +34,7 @@ Auth providers (Supabase → Authentication → Sign In / Providers):
    (same page, under *User Signups*). Until it is, the button says the option isn't available yet and the
    Supabase log shows `Anonymous sign-ins are disabled`. Supabase recommends enabling **CAPTCHA**
    (Authentication → Attack Protection → Bot and abuse protection) once anonymous sign-ins are on.
-3. **Google** / **Apple** — optional, with the IDs below.
+3. **Google** — optional, with the IDs below. (Sign in with Apple is intentionally not offered: it needs a paid Apple Developer account.)
 
 Then add `https://<your-domain>/auth/callback` (and your Vercel preview URL) to Authentication → URL Configuration → Redirect URLs.
 
@@ -63,12 +63,11 @@ the app **first**, then flip the Supabase switch.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Vercel (public) |
 | Turnstile Secret Key | Supabase dashboard only — never in the app |
 
-OAuth (Google/Apple) sign-ins don't go through the captcha; Supabase only checks it for email/password/anonymous.
+OAuth (Google) sign-ins don't go through the captcha; Supabase only checks it for email/password/anonymous.
 
 | Variable | Where to get it |
 |---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client (Web) |
-| `APPLE_ID` / `APPLE_SECRET` | Apple Developer → Certificates, IDs & Profiles → Services ID |
 
 Finally remove `NEXT_PUBLIC_AUTH_DEMO` from Production so the demo cookie can't be used.
 

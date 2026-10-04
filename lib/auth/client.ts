@@ -32,7 +32,7 @@ export async function fetchSession(): Promise<Session | null> {
 const origin = () => (typeof window === 'undefined' ? '' : window.location.origin);
 const callback = (next: string) => `${origin()}/auth/callback?next=${encodeURIComponent(next)}`;
 
-export async function signInWithOAuth(provider: 'google' | 'apple', next = '/'): Promise<void> {
+export async function signInWithOAuth(provider: 'google', next = '/'): Promise<void> {
   if (isDemoClient()) {
     await demo({ action: 'signin', provider });
     return;
@@ -42,7 +42,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple', next = '/'):
     provider,
     options: {
       redirectTo: callback(next),
-      ...(provider === 'google' ? { queryParams: { prompt: 'select_account' } } : {}),
+      queryParams: { prompt: 'select_account' },
     },
   });
   if (error) throw error;
@@ -73,7 +73,7 @@ export async function signInAnonymously(): Promise<void> {
   if (error) {
     // Supabase → Authentication → Sign In / Providers → "Allow anonymous sign-ins" is off.
     if (/anonymous sign-ins are disabled/i.test(error.message)) {
-      throw new Error('Anonymous sign-in isn’t available yet — use Google, Apple or your email instead.');
+      throw new Error('Anonymous sign-in isn’t available yet — use Google or your email instead.');
     }
     throw error;
   }
@@ -94,7 +94,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
   if (isDemoClient()) return;
   const sb = createClient()!;
   const captchaToken = await getCaptchaToken('reset');
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: callback('/account/reset'), captchaToken });
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: callback('/account/reset'),
+    captchaToken,
+  });
   if (error) throw error;
 }
 

@@ -34,14 +34,14 @@ App shell: 80px left rail at ≥820px (`rail:` breakpoint), 66px bottom tab bar 
 
 ## Auth and the 18+ gate (Phase 1)
 
-Auth is Supabase Auth (Google, Apple, email magic link, anonymous, password). Without `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` the app runs in **demo auth** (a signed cookie, no real identity) so the whole flow can be walked locally; production builds refuse demo mode unless `NEXT_PUBLIC_AUTH_DEMO=1`.
+Auth is Supabase Auth (Google, email magic link, anonymous, password). Without `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` the app runs in **demo auth** (a signed cookie, no real identity) so the whole flow can be walked locally; production builds refuse demo mode unless `NEXT_PUBLIC_AUTH_DEMO=1`.
 
 Every new account passes the gate before `/onboarding` and `/app/*` (enforced in `middleware.ts`):
 
 1. Two confirmations (18+, Terms/Privacy/Guidelines) → `POST /api/consent`.
 2. Age check → `POST /api/age/verify`. Providers in `lib/age`: `yoti`, `persona` (stubs to wire) or `local` (the on-device UI only, dev). Only `age_verified = true` is stored, in Supabase `app_metadata` via the service role.
 
-To go live on Supabase: set the keys plus `SUPABASE_SERVICE_ROLE_KEY`, enable Anonymous sign-ins, configure Google and Apple providers, add `<origin>/auth/callback` to the redirect allow list, and pick an age provider.
+To go live on Supabase: set the keys plus `SUPABASE_SERVICE_ROLE_KEY`, enable Anonymous sign-ins, configure the Google provider, add `<origin>/auth/callback` to the redirect allow list, and pick an age provider.
 
 ## Layout
 
