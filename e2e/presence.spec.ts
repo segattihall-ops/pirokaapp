@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { stableFuzzSeedHex } from '../lib/geo/fuzz-session';
 import {
   ACTIVE_PRESENCE_MS,
   LOCATION_REFRESH_MS,
@@ -8,6 +9,15 @@ import {
 } from '../lib/geo/presence';
 
 test.describe('map presence timing', () => {
+  test('automatic recaptures preserve the existing fuzz publication seed', () => {
+    const existing = '11'.repeat(16);
+    const generated = '22'.repeat(16);
+
+    expect(stableFuzzSeedHex(existing, generated)).toBe(existing);
+    expect(stableFuzzSeedHex(undefined, generated)).toBe(generated);
+    expect(stableFuzzSeedHex('not-a-seed', generated)).toBe(generated);
+  });
+
   test('a long-lived visible session remains active with bounded coordinate age', () => {
     expect(PRESENCE_HEARTBEAT_MS).toBeLessThan(ACTIVE_PRESENCE_MS);
     expect(LOCATION_REFRESH_MS).toBeLessThan(ACTIVE_PRESENCE_MS);
