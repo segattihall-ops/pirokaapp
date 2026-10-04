@@ -84,7 +84,8 @@ export async function saveLocation(
         user_id: userId,
         true_geo: `POINT(${trueLng} ${trueLat})`,
         public_geo: `POINT(${publicLng} ${publicLat})`,
-        fuzz_seed: fuzzSeed.toString('hex'),
+        // PostgREST bytea input uses PostgreSQL hex format; store the actual 16 bytes.
+        fuzz_seed: `\\x${fuzzSeed.toString('hex')}`,
         country_code: countryCode,
         // updated_at is strictly the coordinate capture/24h-retention clock.
         updated_at: capturedAt,
