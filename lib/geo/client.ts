@@ -52,14 +52,20 @@ async function ipFix(): Promise<Position | null> {
  * `precise` tells the caller whether it is worth publishing to the server.
  */
 export async function getPosition(opts: { ask?: boolean; fresh?: boolean } = {}): Promise<Position> {
-  const c = opts.fresh ? null : cached();
-  if (c && (c.precise || !opts.ask)) return c;
+  // Keep the cached fix as evidence that this browser session previously obtained device
+  // geolocation, even when a fresh publication must not reuse its coordinates.
+  const c = cached();
+  if (!opts.fresh && c && (c.precise || !opts.ask)) return c;
   let granted = false;
   try {
     if (navigator.permissions)
       granted = (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted';
   } catch {}
-  if (granted || opts.ask) {
+  // Safari/iOS may report "prompt" through Permissions.query even after a prior grant.
+  // A precise cached fix is therefore enough evidence to *attempt* a fresh device lookup;
+  // the cached coordinates themselves are never republished when fresh=true.
+  const shouldTryBrowser = granted || Boolean(opts.ask) || Boolean(opts.fresh && c?.precise);
+  if (shouldTryBrowser) {
     try {
       const p = await browserFix(Boolean(opts.fresh));
       remember(p);
