@@ -1,3 +1,6 @@
+import sentry from '@sentry/nextjs';
+const { withSentryConfig } = sentry;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -22,4 +25,8 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: 'piroka',
+  project: 'pirokaapp',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+});
