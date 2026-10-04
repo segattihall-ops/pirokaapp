@@ -32,6 +32,21 @@ export async function POST(request: Request) {
   return NextResponse.json({ public: { lat: pub.lat, lng: pub.lng } });
 }
 
+/** Renews map presence without reading, collecting, or changing any coordinates. */
+export async function PATCH() {
+  const session = await getSession();
+  if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+
+  const { error } = await supabaseAdmin
+    .from('locations')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('user_id', session.userId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE() {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
