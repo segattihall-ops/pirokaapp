@@ -30,6 +30,23 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await context.grantPermissions(['geolocation'], { origin: baseURL });
   await context.setGeolocation({ latitude: 32.8109, longitude: -96.8062 });
 
+  // Emulate Safari/iOS permission ambiguity: Permissions.query may say "prompt" even though
+  // this browser session already obtained a precise fix. Fresh recaptures must still try the
+  // device geolocation rather than silently falling back to IP/city coordinates.
+  await page.addInitScript(() => {
+    if (!navigator.permissions) return;
+    const permissions = navigator.permissions;
+    const originalQuery = permissions.query.bind(permissions);
+    Object.defineProperty(permissions, 'query', {
+      configurable: true,
+      value: (descriptor: PermissionDescriptor) => {
+        if (descriptor.name === 'geolocation')
+          return Promise.resolve({ state: 'prompt' } as PermissionStatus);
+        return originalQuery(descriptor);
+      },
+    });
+  });
+
   // Seed a still-"valid" 10-minute cache with a deliberately stale/wrong coordinate. A location
   // publication must ignore it because publishing advances the server retention timestamp.
   await page.evaluate(() => {
