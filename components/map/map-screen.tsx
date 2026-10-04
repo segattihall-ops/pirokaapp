@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getPosition, INTENTS, intentMeta, type Position } from '@/lib/geo/client';
+import { ringDegrees as statusRingDegrees, type Intent as StatusIntent } from '@/lib/intent';
 import type { NearbyPerson, Visitor } from '@/app/api/nearby/route';
 import { ProfileSheet } from './profile-sheet';
 import { StatusSheet, type MyStatus } from './status-sheet';
@@ -56,13 +57,16 @@ function escapeUrl(url: string): string {
   return url.replace(/[()'"]/g, '');
 }
 
-function ringDegrees(p: NearbyPerson, now: number): number {
+function pinRingDegrees(p: NearbyPerson, now: number): number {
   if (!p.intent || !p.intentEndsAt) return 360;
   const end = new Date(p.intentEndsAt).getTime();
   if (!Number.isFinite(end) || end <= now) return 8;
-  const start = p.intentStartsAt ? new Date(p.intentStartsAt).getTime() : end - 2 * 60 * 60_000;
-  const total = Math.max(30 * 60_000, end - (Number.isFinite(start) ? start : now));
-  return Math.max(8, Math.min(360, (360 * (end - now)) / total));
+  const parsedStart = p.intentStartsAt ? new Date(p.intentStartsAt).getTime() : Number.NaN;
+  const start = Number.isFinite(parsedStart) ? parsedStart : end - 2 * 60 * 60_000;
+  return statusRingDegrees(
+    { intent: p.intent as StatusIntent, startsAt: start, endsAt: end },
+    now,
+  );
 }
 
 function timeLeftLabel(iso: string | null | undefined, now: number): string {
@@ -95,7 +99,7 @@ function matchesDiscoveryFilters(p: NearbyPerson, filters: DiscoveryFilters): bo
 function pinElement(p: NearbyPerson, now: number, showLabels: boolean): HTMLElement {
   const meta = intentMeta(p.intent);
   const color = meta?.color ?? 'rgba(255,255,255,0.38)';
-  const degrees = ringDegrees(p, now);
+  const degrees = pinRingDegrees(p, now);
   const left = timeLeftLabel(p.intentEndsAt, now);
   const recent = isRecent(p);
 
