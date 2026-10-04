@@ -24,6 +24,7 @@ Then run, in order, in **SQL Editor**:
 4. `lib/db/migrations/010_signal_push_admin.sql` ← creates the `auth.users → public.users` trigger, Signal pre-key tables, push subscriptions, and turns on realtime for `dm_messages`
 5. `lib/db/migrations/011_discovery.sql`, `012_places.sql`, `013_social.sql`, `014_profile_edit.sql` ← map, places, notifications/favourites/album/trips, unique handles
 6. `lib/db/rls-policies-v2.sql`
+7. `lib/db/migrations/028_anonymous_signup_user_profiles.sql` ← lets anonymous users (no email) through the shared business-os `user_profiles` trigger; without it "Stay anonymous" fails with `Database error saving new user`
 
 (The PIROKA project already has all of these applied.)
 
@@ -36,7 +37,21 @@ Auth providers (Supabase → Authentication → Sign In / Providers):
    (Authentication → Attack Protection → Bot and abuse protection) once anonymous sign-ins are on.
 3. **Google** — optional, with the IDs below. (Sign in with Apple is intentionally not offered: it needs a paid Apple Developer account.)
 
-Then add `https://<your-domain>/auth/callback` (and your Vercel preview URL) to Authentication → URL Configuration → Redirect URLs.
+Then, under Authentication → URL Configuration:
+
+- **Site URL**: the canonical production origin, e.g. `https://www.pirokaapp.com` (the `www` host — the apex
+  `pirokaapp.com` is a 308 redirect on Vercel).
+- **Redirect URLs**: one entry per host the app runs on, each ending in `**` so the `?next=` query the app
+  appends still matches:
+  - `https://www.pirokaapp.com/auth/callback**`
+  - `https://pirokaapp.com/auth/callback**`
+  - `https://pirokaapp.vercel.app/auth/callback**`
+  - `https://*-mm-website.vercel.app/auth/callback**` (branch previews)
+  - `http://localhost:3000/auth/callback**`
+
+If a redirect URL is missing from that list, Supabase silently ignores the app's `redirectTo` and sends the
+browser back to the Site URL with `?code=…`. The middleware forwards that code to `/auth/callback` so sign-in
+still completes, but keep the list current so the flow doesn't depend on the fallback.
 
 ### CAPTCHA (bot protection) — do it in this order or sign-ins break
 

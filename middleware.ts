@@ -11,7 +11,20 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/];
 
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
+
+  // Supabase ignores a `redirectTo` that isn't on its Redirect URL allow-list and sends the
+  // browser to the Site URL (the homepage) instead, so the OAuth/PKCE `code` lands on `/`
+  // where nothing exchanges it and the visitor just sees the welcome screen again.
+  // Hand that code to the callback route, which exchanges it and resumes the gate.
+  const code = searchParams.get('code');
+  if (pathname === '/' && code) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/auth/callback';
+    url.search = `?code=${encodeURIComponent(code)}&next=%2F`;
+    return NextResponse.redirect(url);
+  }
+
   const gated = GATED.some((r) => r.test(pathname));
   let res = NextResponse.next({ request: req });
 

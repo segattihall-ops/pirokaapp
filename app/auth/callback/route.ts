@@ -17,6 +17,13 @@ export async function GET(req: Request) {
   const type = url.searchParams.get('type') as EmailOtpType | null;
   const nextRaw = url.searchParams.get('next') ?? '/';
   const next = nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/';
+  const fail = (message: string) =>
+    NextResponse.redirect(new URL(`/?auth_error=${encodeURIComponent(message)}`, url.origin));
+
+  // The provider (or Supabase) declined: `?error=access_denied&error_description=...`.
+  const providerError = url.searchParams.get('error_description') ?? url.searchParams.get('error');
+  if (providerError) return fail(providerError);
+
   const sb = createClient();
 
   if (sb) {
@@ -24,8 +31,8 @@ export async function GET(req: Request) {
     if (code) ({ error } = await sb.auth.exchangeCodeForSession(code));
     else if (tokenHash && type && OTP_TYPES.includes(type)) {
       ({ error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type }));
-    }
-    if (error) return NextResponse.redirect(new URL(`/?auth_error=${encodeURIComponent(error.message)}`, url.origin));
+    } else return fail('Sign-in link is missing its code. Please try again.');
+    if (error) return fail(error.message);
   }
   return NextResponse.redirect(new URL(next, url.origin));
 }

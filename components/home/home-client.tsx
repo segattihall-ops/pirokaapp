@@ -16,7 +16,15 @@ const FOOTER = [
   ['18 U.S.C. § 2257', '/help/2257'],
 ] as const;
 
-export function HomeClient({ gated, demo }: { gated: boolean; demo: boolean }) {
+export function HomeClient({
+  gated,
+  demo,
+  authError = null,
+}: {
+  gated: boolean;
+  demo: boolean;
+  authError?: string | null;
+}) {
   const { geo, label, precise, requestPrecise } = useGeo();
   // Intro plays once per session, never under reduced motion, and never on a gate redirect.
   const [intro, setIntro] = useState(false);
@@ -111,9 +119,9 @@ export function HomeClient({ gated, demo }: { gated: boolean; demo: boolean }) {
           </div>
         </header>
 
-        {/* Mobile: the card hugs the bottom so the map stays in view and nothing scrolls. */}
-        <main className="flex min-h-0 flex-1 flex-col justify-end px-[clamp(16px,5vw,64px)] pb-2 pt-1 lg:justify-center lg:pb-8 lg:pt-2">
-          <SignupChat gated={gated} />
+        <main className="flex flex-1 flex-col justify-center px-[clamp(16px,5vw,64px)] pb-8 pt-2">
+          <div className="h-[30vh] min-h-[200px] lg:hidden" />
+          <SignupChat gated={gated} authError={authError} />
         </main>
 
         <footer className="flex shrink-0 flex-col gap-1 px-[clamp(20px,5vw,64px)] pb-[calc(8px+var(--safe-bottom))] pt-1 text-[11px] text-fg-3 lg:gap-3 lg:pb-[calc(24px+var(--safe-bottom))] lg:pt-2 lg:text-[12px]">
