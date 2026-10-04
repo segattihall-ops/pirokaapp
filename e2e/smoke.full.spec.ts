@@ -105,11 +105,9 @@ test('full app smoke as a new anonymous member', async ({ page, baseURL }) => {
           .getByRole('button', { name: /^Anonymous/ })
           .first()
           .click();
-      if (await visible(page.getByRole('button', { name: /^Everyone/ })))
-        await page
-          .getByRole('button', { name: /^Everyone/ })
-          .first()
-          .click();
+      const everyone = page.getByRole('button', { name: /^Everyone/ }).first();
+      if ((await visible(everyone)) && (await everyone.getAttribute('aria-pressed')) !== 'true')
+        await everyone.click();
       await shot(page, `04-onboarding-${i}`);
       if (await visible(page.getByRole('button', { name: /Stay faceless/ }))) {
         await page.getByRole('button', { name: /Stay faceless/ }).click();

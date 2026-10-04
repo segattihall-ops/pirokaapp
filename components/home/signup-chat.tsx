@@ -505,7 +505,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
           <>
             <div
               ref={scrollRef}
-              className="flex max-h-[380px] min-h-[300px] flex-col gap-3.5 overflow-y-auto p-5"
+              className="flex max-h-[min(380px,42dvh)] min-h-[200px] flex-col gap-3.5 overflow-y-auto p-5 lg:min-h-[300px]"
             >
               {messages.map((m) =>
                 m.isBot ? (
@@ -828,7 +828,7 @@ export function SignupChat({ gated }: { gated: boolean }) {
       <button
         type="button"
         onClick={() => (step === 'action' ? act() : inputRef.current?.focus())}
-        className="h-12 rounded-btn border border-line-2 bg-white/[0.04] text-[14px] font-semibold text-fg transition-colors hover:border-[rgba(52,211,153,0.5)]"
+        className="hidden h-12 rounded-btn border border-line-2 bg-white/[0.04] text-[14px] font-semibold text-fg transition-colors hover:border-[rgba(52,211,153,0.5)] lg:block"
       >
         Start chatting
       </button>

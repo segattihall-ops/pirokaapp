@@ -12,20 +12,20 @@ export function OnboardingClient() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [mode, setMode] = useState<'named' | 'anon'>('named');
+  // Signed in anonymously: one quick-setup screen, like the anonymous flow people know from Sniffies.
+  const [quick, setQuick] = useState(false);
   const [name, setName] = useState('');
   const [pronouns, setPronouns] = useState<string[]>([]);
   const [customPronoun, setCustomPronoun] = useState('');
   const [gender, setGender] = useState<string[]>([]);
   const [orientation, setOrientation] = useState<string[]>([]);
   const [community, setCommunity] = useState<string[]>([]);
-  const [idQ, setIdQ] = useState('');
   const [showMe, setShowMe] = useState<string[]>([]);
   const [safety, setSafety] = useState({ blurPhotos: true, verifiedOnly: false, strangerFilter: true });
   const [photos, setPhotos] = useState<string[]>([]);
   const [location, setLocation] = useState<'idle' | 'asking' | 'ok' | 'denied'>('idle');
   const [visibility, setVisibility] = useState('Neighborhood');
   const [icon, setIcon] = useState('πroka');
-  const [idQ_val, setIdQ_val] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState('');
@@ -33,13 +33,19 @@ export function OnboardingClient() {
 
   // Anonymous members skip the identity and photo steps: show-up → who to see → location & privacy.
   // Everything skipped can be filled in later from ME → Edit profile.
-  const STEPS: Step[] = mode === 'anon' ? [1, 3, 5] : [1, 2, 3, 4, 5];
+  const STEPS: Step[] = quick ? [3] : mode === 'anon' ? [1, 3] : [1, 2, 3, 4, 5];
   const stepIndex = Math.max(0, STEPS.indexOf(step));
   const isLast = stepIndex === STEPS.length - 1;
 
   useEffect(() => {
     fetchSession().then((s) => {
-      if (!s?.ageVerified) router.push('/?gate=1');
+      if (!s?.ageVerified) return router.push('/?gate=1');
+      if (s.provider === 'anonymous') {
+        setQuick(true);
+        setMode('anon');
+        setShowMe((prev) => (prev.length ? prev : ['Everyone']));
+        setStep(3);
+      }
     });
   }, [router]);
 
@@ -55,10 +61,6 @@ export function OnboardingClient() {
       );
     }
   };
-
-  const filteredGender = GENDER.filter((g) => !idQ_val || g.toLowerCase().includes(idQ_val.toLowerCase()));
-  const filteredOrient = ORIENT.filter((o) => !idQ_val || o.toLowerCase().includes(idQ_val.toLowerCase()));
-  const filteredComm = COMM.filter((c) => !idQ_val || c.toLowerCase().includes(idQ_val.toLowerCase()));
 
   const isStep1Ready = mode === 'anon' || name.trim().length >= 2;
   const isStep3Ready = showMe.length > 0;
@@ -149,23 +151,46 @@ export function OnboardingClient() {
     1: [
       'How do you want to show up?',
       mode === 'anon'
-        ? 'Anonymous keeps it to three quick steps. Add a name, identities or photos later in ME.'
+        ? 'Anonymous is two quick steps. Add a name, identities or photos later in ME.'
         : 'Stay anonymous or pick a name. You can switch any time.',
     ],
-    2: [
-      'Who are you?',
-      'Gender, orientation and communities. Pick everything that fits — or nothing at all.',
-    ],
-    3: [
-      'Who do you want to see?',
-      'This shapes your map and your Pulse. Safety defaults apply from day one.',
-    ],
+    2: ['Who are you?', 'Add gender, orientation and communities from the lists — as many as fit, or none.'],
+    3:
+      mode === 'anon'
+        ? [
+            'Quick setup',
+            'Pick who you want to see, allow location, and you’re in. Name, photos and identities are optional — add them later in ME.',
+          ]
+        : [
+            'Who do you want to see?',
+            'This shapes your map and your Pulse. Safety defaults apply from day one.',
+          ],
     4: ['Add photos', 'One main photo and up to two in your private album.'],
     5: [
       'Location & privacy',
       "We use your location to show who's nearby. Others only ever see an approximate area.",
     ],
   };
+
+  const locationRow = (
+    <div className="border-white/8 bg-white/3 flex items-center justify-between gap-3 rounded-[16px] border px-3.5 py-3.5">
+      <div className="space-y-0.5">
+        <span className="text-sm font-semibold">Location</span>
+        <span className="text-xs text-fg-3">
+          {location === 'idle' && 'Needed to show people and places near you.'}
+          {location === 'asking' && 'Waiting for permission…'}
+          {location === 'ok' && 'Using your approximate location.'}
+          {location === 'denied' && "Blocked — we'll use your city from your network instead."}
+        </span>
+      </div>
+      {location === 'idle' && (
+        <button onClick={askLocation} className="btn-secondary shrink-0 px-3.5 py-1.5 text-xs">
+          Allow
+        </button>
+      )}
+      {location === 'ok' && <span className="shrink-0 text-xs font-semibold text-green">On ✓</span>}
+    </div>
+  );
 
   const [title, subtitle] = stepTitles[step];
 
@@ -212,7 +237,10 @@ export function OnboardingClient() {
               ].map((opt) => (
                 <button
                   key={opt.k}
-                  onClick={() => setMode(opt.k as 'named' | 'anon')}
+                  onClick={() => {
+                    setMode(opt.k as 'named' | 'anon');
+                    if (opt.k === 'anon' && showMe.length === 0) setShowMe(['Everyone']);
+                  }}
                   className={`relative space-y-1 rounded-[16px] border p-3.5 text-left text-sm transition-all ${
                     mode === opt.k
                       ? 'border-green/75 bg-green/10'
@@ -272,89 +300,14 @@ export function OnboardingClient() {
           </div>
         )}
 
-        {/* Step 2: Identities */}
+        {/* Step 2: Identities — list pickers instead of 66 chips */}
         {step === 2 && (
           <div className="space-y-4">
-            <input
-              type="text"
-              value={idQ_val}
-              onChange={(e) => setIdQ_val(e.target.value)}
-              placeholder={`Search ${GENDER.length + ORIENT.length + COMM.length} identities…`}
-              className="input"
-            />
-
-            {filteredGender.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>Gender identity</span>
-                  {gender.length > 0 && <span className="text-fg-3">{gender.length} selected</span>}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {filteredGender.map((g) => (
-                    <button
-                      key={g}
-                      onClick={() => setGender(toggleArray(gender, g))}
-                      className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
-                        gender.includes(g) ? 'bg-green/14 border-green/75' : 'hover:border-line border-line-2'
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {filteredOrient.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>Orientation</span>
-                  {orientation.length > 0 && <span className="text-fg-3">{orientation.length} selected</span>}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {filteredOrient.map((o) => (
-                    <button
-                      key={o}
-                      onClick={() => setOrientation(toggleArray(orientation, o))}
-                      className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
-                        orientation.includes(o)
-                          ? 'bg-green/14 border-green/75'
-                          : 'hover:border-line border-line-2'
-                      }`}
-                    >
-                      {o}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {filteredComm.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>Communities</span>
-                  {community.length > 0 && <span className="text-fg-3">{community.length} selected</span>}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {filteredComm.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCommunity(toggleArray(community, c))}
-                      className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
-                        community.includes(c)
-                          ? 'bg-green/14 border-green/75'
-                          : 'hover:border-line border-line-2'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
+            <ListPick label="Gender identity" options={GENDER} value={gender} onChange={setGender} />
+            <ListPick label="Orientation" options={ORIENT} value={orientation} onChange={setOrientation} />
+            <ListPick label="Communities" options={COMM} value={community} onChange={setCommunity} />
             <p className="text-xs text-fg-3">
-              Choose as many as fit. You can hide any of them from your public profile later.
+              Pick as many as fit, or none. You can hide any of them from your public profile later.
             </p>
           </div>
         )}
@@ -369,6 +322,7 @@ export function OnboardingClient() {
                   <button
                     key={l}
                     onClick={() => toggleShowMe(l)}
+                    aria-pressed={showMe.includes(l)}
                     className={`space-y-1 rounded-[16px] border p-3 text-left text-xs transition-all ${
                       showMe.includes(l) ? 'border-green/75 bg-green/10' : 'border-line-2'
                     }`}
@@ -380,40 +334,54 @@ export function OnboardingClient() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <span className="text-sm font-semibold">Safety defaults</span>
+            {mode === 'anon' ? (
+              <>
+                {locationRow}
+                <p className="text-xs text-fg-3">
+                  Safety defaults are on: photos stay blurred until it&apos;s mutual and explicit first
+                  messages are filtered. Change anything later in ME.
+                </p>
+              </>
+            ) : (
               <div className="space-y-2">
-                {[
-                  { k: 'blurPhotos', l: 'Blur photos until mutual', s: 'Yours and theirs' },
-                  {
-                    k: 'verifiedOnly',
-                    l: 'Only verified humans can message me',
-                    s: 'Cuts spam and fake accounts',
-                  },
-                  { k: 'strangerFilter', l: 'Filter explicit first messages', s: 'You can still open them' },
-                ].map(({ k, l, s }) => (
-                  <button
-                    key={k}
-                    onClick={() => setSafety((prev) => ({ ...prev, [k]: !prev[k as keyof typeof prev] }))}
-                    className="border-white/8 bg-white/2 hover:border-white/12 flex items-center justify-between gap-3 rounded-[14px] border px-3.5 py-3 transition-colors"
-                  >
-                    <div className="space-y-0.5 text-left">
-                      <div className="text-xs font-semibold">{l}</div>
-                      <div className="text-xs text-fg-3">{s}</div>
-                    </div>
-                    <div
-                      className={`h-6 w-10 flex-shrink-0 rounded-full p-1 transition-all ${
-                        safety[k as keyof typeof safety]
-                          ? 'justify-end bg-green'
-                          : 'bg-white/14 justify-start'
-                      } flex`}
+                <span className="text-sm font-semibold">Safety defaults</span>
+                <div className="space-y-2">
+                  {[
+                    { k: 'blurPhotos', l: 'Blur photos until mutual', s: 'Yours and theirs' },
+                    {
+                      k: 'verifiedOnly',
+                      l: 'Only verified humans can message me',
+                      s: 'Cuts spam and fake accounts',
+                    },
+                    {
+                      k: 'strangerFilter',
+                      l: 'Filter explicit first messages',
+                      s: 'You can still open them',
+                    },
+                  ].map(({ k, l, s }) => (
+                    <button
+                      key={k}
+                      onClick={() => setSafety((prev) => ({ ...prev, [k]: !prev[k as keyof typeof prev] }))}
+                      className="border-white/8 bg-white/2 hover:border-white/12 flex items-center justify-between gap-3 rounded-[14px] border px-3.5 py-3 transition-colors"
                     >
-                      <div className="h-4 w-4 rounded-full bg-fg" />
-                    </div>
-                  </button>
-                ))}
+                      <div className="space-y-0.5 text-left">
+                        <div className="text-xs font-semibold">{l}</div>
+                        <div className="text-xs text-fg-3">{s}</div>
+                      </div>
+                      <div
+                        className={`h-6 w-10 flex-shrink-0 rounded-full p-1 transition-all ${
+                          safety[k as keyof typeof safety]
+                            ? 'justify-end bg-green'
+                            : 'bg-white/14 justify-start'
+                        } flex`}
+                      >
+                        <div className="h-4 w-4 rounded-full bg-fg" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -469,23 +437,7 @@ export function OnboardingClient() {
         {/* Step 5: Location & Privacy */}
         {step === 5 && (
           <div className="space-y-4">
-            <div className="border-white/8 bg-white/3 flex items-center justify-between gap-3 rounded-[16px] border px-3.5 py-3.5">
-              <div className="space-y-0.5">
-                <span className="text-sm font-semibold">Location</span>
-                <span className="text-xs text-fg-3">
-                  {location === 'idle' && 'Needed to show people and places near you.'}
-                  {location === 'asking' && 'Waiting for permission…'}
-                  {location === 'ok' && 'Using your approximate location.'}
-                  {location === 'denied' && "Blocked — we'll use your city from your network instead."}
-                </span>
-              </div>
-              {location === 'idle' && (
-                <button onClick={askLocation} className="btn-secondary shrink-0 px-3.5 py-1.5 text-xs">
-                  Allow
-                </button>
-              )}
-              {location === 'ok' && <span className="shrink-0 text-xs font-semibold text-green">On ✓</span>}
-            </div>
+            {locationRow}
 
             <div className="space-y-2">
               <span className="text-sm font-semibold">Others see you as</span>
@@ -555,6 +507,61 @@ export function OnboardingClient() {
       )}
 
       <p className="text-center text-xs text-fg-4">Everything here can be changed later in ME.</p>
+    </div>
+  );
+}
+
+/** Compact multi-select: chosen items as removable chips plus a native list to add more. */
+function ListPick({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly string[];
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const remaining = options.filter((o) => !value.includes(o));
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-xs font-semibold">
+        <span>{label}</span>
+        {value.length > 0 && <span className="text-fg-3">{value.length} selected</span>}
+      </div>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => onChange(value.filter((x) => x !== v))}
+              aria-label={`Remove ${v}`}
+              className="bg-green/14 flex items-center gap-1.5 rounded-full border border-green/75 px-3 py-1.5 text-xs font-medium"
+            >
+              {v}
+              <span aria-hidden className="text-fg-3">
+                ×
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <select
+        value=""
+        aria-label={`Add ${label.toLowerCase()}`}
+        onChange={(e) => e.target.value && onChange([...value, e.target.value])}
+        className="input h-11"
+        disabled={remaining.length === 0}
+      >
+        <option value="">{remaining.length ? `Add ${label.toLowerCase()}…` : 'All added'}</option>
+        {remaining.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
