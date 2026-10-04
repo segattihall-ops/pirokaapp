@@ -131,11 +131,50 @@ test('full app smoke as a new anonymous member', async ({ page, baseURL }) => {
     return `${i} screen(s)`;
   });
 
-  await step(page, '06 map', async () => {
+  await step(page, '06 map: pins, layers, filters, responsive', async () => {
     await page.waitForTimeout(5000);
-    await shot(page, '05-map');
+    await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^Filter/ })).toBeVisible({ timeout: 15_000 });
+    await shot(page, '05-map-mobile');
+
+    const layers = page.getByRole('button', { name: /^Layers/ });
+    await layers.click();
+    const peopleLayer = page.getByRole('menuitemcheckbox', { name: 'People pins' });
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'true');
+    await peopleLayer.click();
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'false');
+    await peopleLayer.click();
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'true');
+
+    await page.getByRole('button', { name: /^Filter/ }).click();
+    const photosOnly = page.getByRole('button', { name: /Has a photo/ });
+    await photosOnly.click();
+    await expect(photosOnly).toHaveAttribute('aria-pressed', 'true');
+    const recentOnly = page.getByRole('button', { name: /Recent on map/ });
+    await recentOnly.click();
+    await expect(recentOnly).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(photosOnly).toHaveAttribute('aria-pressed', 'false');
+    await expect(recentOnly).toHaveAttribute('aria-pressed', 'false');
+    await page.getByRole('button', { name: /^Filter/ }).click();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.getByText('Approximate locations')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Filter/ })).toBeVisible();
+    await shot(page, '05-map-desktop');
+    await page.setViewportSize({ width: 430, height: 932 });
+    await shot(page, '05-map-mobile-restored');
+
     if (await visible(page.getByText(/needs Supabase/)))
-      return 'demo mode: no Supabase keys, discovery/places/chat data unavailable';
+      return 'controls responsive; demo mode: no Supabase keys, discovery/places/chat data unavailable';
+
+    const pin = page.locator('button[data-user-id]').first();
+    if (await visible(pin, 3000)) {
+      await expect(pin).toHaveAttribute('data-activity', /active|recent|today/);
+      return 'controls responsive; person pin exposes coarse activity state only';
+    }
+    return 'controls responsive; no people nearby on this deployment';
   });
 
   await step(page, '07 status: go live (PIROKA Mode)', async () => {
