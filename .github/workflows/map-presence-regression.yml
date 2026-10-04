@@ -1,9 +1,6 @@
 name: Map presence regression
 
 on:
-  push:
-    branches:
-      - feat/map-people-pins-layers-filters
   pull_request:
     paths:
       - 'app/api/me/location/route.ts'
