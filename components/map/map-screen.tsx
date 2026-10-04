@@ -17,7 +17,6 @@ const ESRI_STYLE =
 const RADIUS_M = 5000;
 const REFRESH_MS = 60_000;
 const RING_TICK_MS = 30_000;
-const RECENT_MS = 60 * 60_000;
 
 const FILTERS: { label: string; intent: string | null }[] = [
   { label: 'Everyone', intent: null },
@@ -76,26 +75,20 @@ function timeLeftLabel(iso: string | null | undefined, now: number): string {
   return `${hours}h`;
 }
 
-function activityLabel(iso: string | null | undefined, now: number): string {
-  if (!iso) return '';
-  const ms = Math.max(0, now - new Date(iso).getTime());
-  if (!Number.isFinite(ms)) return '';
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 2) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  return `${Math.min(23, Math.floor(minutes / 60))}h ago`;
+function activityLabel(activity: NearbyPerson['activity']): string {
+  if (activity === 'active') return 'active now';
+  if (activity === 'recent') return 'recent';
+  return 'today';
 }
 
-function isRecent(p: NearbyPerson, now: number): boolean {
-  if (!p.lastSeenAt) return false;
-  const at = new Date(p.lastSeenAt).getTime();
-  return Number.isFinite(at) && now - at <= RECENT_MS;
+function isRecent(p: NearbyPerson): boolean {
+  return p.activity === 'active' || p.activity === 'recent';
 }
 
 function matchesDiscoveryFilters(p: NearbyPerson, filters: DiscoveryFilters, now: number): boolean {
   if (filters.photosOnly && !p.photo) return false;
   if (filters.verifiedOnly && !p.verified) return false;
-  if (filters.recentOnly && !isRecent(p, now)) return false;
+  if (filters.recentOnly && !isRecent(p)) return false;
   return p.distanceM <= filters.maxDistanceM;
 }
 
@@ -104,14 +97,14 @@ function pinElement(p: NearbyPerson, now: number, showLabels: boolean): HTMLElem
   const color = meta?.color ?? 'rgba(255,255,255,0.38)';
   const degrees = ringDegrees(p, now);
   const left = timeLeftLabel(p.intentEndsAt, now);
-  const recent = isRecent(p, now);
+  const recent = isRecent(p);
 
   const el = document.createElement('button');
   el.type = 'button';
   el.setAttribute('aria-label', p.handle ? `@${p.handle}` : 'Member');
   el.dataset.userId = p.id;
   el.dataset.intent = p.intent ?? 'none';
-  el.dataset.recent = recent ? 'true' : 'false';
+  el.dataset.activity = p.activity;
   el.className = 'tap';
   el.style.cssText =
     'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px';
@@ -153,9 +146,9 @@ function pinElement(p: NearbyPerson, now: number, showLabels: boolean): HTMLElem
 
   el.appendChild(shell);
 
-  if (showLabels && (meta || p.lastSeenAt)) {
+  if (showLabels) {
     const label = document.createElement('span');
-    const activity = activityLabel(p.lastSeenAt, now);
+    const activity = activityLabel(p.activity);
     label.textContent = [meta?.label, activity].filter(Boolean).join(' · ');
     label.style.cssText =
       `max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:rgba(7,7,7,.82);padding:3px 7px;font:700 9px/1.15 Geist,ui-sans-serif,sans-serif;color:${meta?.color ?? '#aaa'};text-shadow:0 1px 2px #000`;
