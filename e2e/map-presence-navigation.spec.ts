@@ -134,9 +134,25 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await page.setViewportSize({ width: 430, height: 932 });
   await expect(pin).toBeVisible();
 
-  await page.getByRole('button', { name: /^Layers/ }).click();
+  const layersTrigger = page.getByRole('button', { name: /^Layers/ });
+  await layersTrigger.focus();
+  await page.keyboard.press('Enter');
+
+  const peopleItem = page.getByRole('menuitemcheckbox', { name: 'People pins' });
+  const activityItem = page.getByRole('menuitemcheckbox', { name: 'Activity glow' });
   const labels = page.getByRole('menuitemcheckbox', { name: 'Pin labels' });
-  await expect(labels).toBeVisible();
+  await expect(peopleItem).toBeFocused();
+
+  await page.keyboard.press('ArrowDown');
+  await expect(activityItem).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(labels).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu', { name: 'Map layers' })).toBeHidden();
+  await expect(layersTrigger).toBeFocused();
+
+  await layersTrigger.click();
+  await expect(peopleItem).toBeFocused();
 
   await pin.focus();
   await expect(pin).toBeFocused();
