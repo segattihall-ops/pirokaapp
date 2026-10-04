@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/server';
 import { saveLocation, supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { fuzzLocation } from '@/lib/geo/fuzz';
+import { ACTIVE_PRESENCE_MS } from '@/lib/geo/presence';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,13 +42,22 @@ export async function PATCH() {
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
-  const { error } = await supabaseAdmin
+  const now = new Date();
+  const captureMustBeNewerThan = new Date(now.getTime() - ACTIVE_PRESENCE_MS).toISOString();
+  const { data, error } = await supabaseAdmin
     .from('locations')
-    .update({ presence_at: new Date().toISOString() })
-    .eq('user_id', session.userId);
+    .update({ presence_at: now.toISOString() })
+    .eq('user_id', session.userId)
+    // A heartbeat may never make a coordinate older than the "active" window look active.
+    .gte('updated_at', captureMustBeNewerThan)
+    .select('user_id')
+    .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: Boolean(data),
+    locationRefreshRequired: !data,
+  });
 }
 
 export async function DELETE() {
