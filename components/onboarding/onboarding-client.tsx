@@ -396,6 +396,7 @@ export function OnboardingClient() {
                 >
                   {photos[i] ? (
                     <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={photos[i]} alt="uploaded" className="h-full w-full object-cover" />
                       <button
                         onClick={() => setPhotos(photos.filter((_, j) => j !== i))}

@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request, { params }: { params: { conversationId: string } }) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const url = new URL(request.url);
   const messageId = url.searchParams.get('messageId');

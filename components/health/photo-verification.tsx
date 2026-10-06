@@ -86,6 +86,7 @@ export function PhotoVerification({ onPhotoCapture }: PhotoVerificationProps) {
         </>
       ) : (
         <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={capturedPhoto}
             alt="Captured selfie"
