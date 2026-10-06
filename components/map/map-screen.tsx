@@ -12,6 +12,7 @@ import { ProfileSheet } from './profile-sheet';
 import { StatusSheet, type MyStatus } from './status-sheet';
 import { TravelSheet, type TravelView } from './travel-sheet';
 import { VisitorsSheet } from './visitors-sheet';
+import { PirokaModeSheet } from './piroka-mode-sheet';
 
 const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const ESRI_STYLE =
@@ -223,6 +224,7 @@ export function MapScreen({ userId }: { userId: string }) {
   const [showTravel, setShowTravel] = useState(false);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [showVisitors, setShowVisitors] = useState(false);
+  const [showPiroka, setShowPiroka] = useState(false);
   const params = useSearchParams();
 
   useEffect(() => {
@@ -565,6 +567,14 @@ export function MapScreen({ userId }: { userId: string }) {
           >
             ✈️ <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setShowPiroka(true)}
+            aria-label="PIROKA mode"
+            className="tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md"
+          >
+            🔴 PIROKA
+          </button>
           {pos && !pos.precise && !view && (
             <button
               type="button"
@@ -829,6 +839,7 @@ export function MapScreen({ userId }: { userId: string }) {
         />
       )}
       {showTravel && <TravelSheet view={view} onView={travelTo} onClose={() => setShowTravel(false)} />}
+      {showPiroka && <PirokaModeSheet onClose={() => setShowPiroka(false)} />}
       {showVisitors && (
         <VisitorsSheet
           visitors={visitors}
