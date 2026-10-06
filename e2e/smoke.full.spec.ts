@@ -131,11 +131,99 @@ test('full app smoke as a new anonymous member', async ({ page, baseURL }) => {
     return `${i} screen(s)`;
   });
 
-  await step(page, '06 map', async () => {
+<<<<<<< HEAD
+  await step(page, '06 map: pins, layers, filters, responsive', async () => {
     await page.waitForTimeout(5000);
-    await shot(page, '05-map');
+    await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^Filter/ })).toBeVisible({ timeout: 15_000 });
+    await shot(page, '05-map-mobile');
+
+    const layers = page.getByRole('button', { name: /^Layers/ });
+    await layers.click();
+    const peopleLayer = page.getByRole('menuitemcheckbox', { name: 'People pins' });
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'true');
+    await peopleLayer.click();
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'false');
+    await peopleLayer.click();
+    await expect(peopleLayer).toHaveAttribute('aria-checked', 'true');
+
+    await page.getByRole('button', { name: /^Filter/ }).click();
+    const photosOnly = page.getByRole('button', { name: /Has a photo/ });
+    await photosOnly.click();
+    await expect(photosOnly).toHaveAttribute('aria-pressed', 'true');
+    const recentOnly = page.getByRole('button', { name: /Recent on map/ });
+    await recentOnly.click();
+    await expect(recentOnly).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(photosOnly).toHaveAttribute('aria-pressed', 'false');
+    await expect(recentOnly).toHaveAttribute('aria-pressed', 'false');
+    await page.getByRole('button', { name: /^Filter/ }).click();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.getByText('Approximate locations')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Filter/ })).toBeVisible();
+    await shot(page, '05-map-desktop');
+    await page.setViewportSize({ width: 430, height: 932 });
+    await shot(page, '05-map-mobile-restored');
+
+    const heartbeatStatus = await page.evaluate(async () => {
+      const response = await fetch('/api/me/location', { method: 'PATCH', cache: 'no-store' });
+      return response.status;
+    });
+    if (heartbeatStatus !== 503 && heartbeatStatus >= 400)
+      throw new Error(`presence heartbeat → ${heartbeatStatus}`);
+
+    // Returning to a visible map must republish a bounded/fuzzed location capture rather than
+    // merely making an old coordinate look freshly active.
+    const resumeLocationResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/me/location') && r.request().method() === 'POST',
+      { timeout: 15_000 },
+    );
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    const resumedLocation = await resumeLocationResponse;
+    if (resumedLocation.status() !== 503 && resumedLocation.status() >= 400)
+      throw new Error(`resume location refresh → ${resumedLocation.status()}`);
+
     if (await visible(page.getByText(/needs Supabase/)))
-      return 'demo mode: no Supabase keys, discovery/places/chat data unavailable';
+      return 'controls responsive; demo mode: no Supabase keys, discovery/places/chat data unavailable';
+
+    const pin = page.locator('button[data-user-id]').first();
+    if (await visible(pin, 3000)) {
+      await expect(pin).toHaveAttribute('data-activity', /active|recent|today/);
+      await expect(pin).toHaveAttribute('aria-label', /^(?:@.+|Member)$/);
+      const pinId = await pin.getAttribute('data-user-id');
+      if (!pinId) throw new Error('person pin missing data-user-id');
+
+      await page.getByRole('button', { name: /^Layers/ }).evaluate((el) => (el as HTMLButtonElement).click());
+      const pinLabels = page.getByRole('menuitemcheckbox', { name: 'Pin labels' });
+      await expect(pinLabels).toBeVisible();
+
+      await pin.focus();
+      await expect(pin).toBeFocused();
+
+      await pinLabels.evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(pinLabels).toHaveAttribute('aria-checked', 'false');
+      const stablePin = page.locator(`button[data-user-id="${pinId}"]`).first();
+      await expect(stablePin).toBeFocused();
+
+      await pinLabels.evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(pinLabels).toHaveAttribute('aria-checked', 'true');
+      await expect(stablePin).toBeFocused();
+
+      // Cross an actual 30-second ring tick. The exact same marker button must retain focus.
+      await page.waitForTimeout(31_000);
+      await expect(stablePin).toBeFocused();
+      await expect(stablePin).toHaveAttribute('aria-label', /^(?:@.+|Member)$/);
+
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog')).toBeHidden({ timeout: 10_000 });
+
+      return 'controls responsive; heartbeat + resume location refresh verified; pin focus survives a real 30s ring tick and keyboard activation works';
+    }
+    return 'controls responsive; heartbeat + resume location refresh verified; no people nearby for keyboard pin check';
   });
 
   await step(page, '07 status: go live (PIROKA Mode)', async () => {

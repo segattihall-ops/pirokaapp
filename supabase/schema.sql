@@ -72,7 +72,8 @@ create table locations (
   fuzz_seed    bytea not null,                                         -- rotated per session
   country_code char(2),
   risk_region  boolean not null default false,
-  updated_at   timestamptz not null default now()
+  updated_at   timestamptz not null default now(),                    -- coordinate capture; 24h retention clock
+  presence_at  timestamptz not null default now()                     -- app heartbeat; never extends retention
 );
 create index on locations using gist (public_geo);
 
