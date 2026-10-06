@@ -5,10 +5,13 @@ import { useEffect, useState } from 'react';
 import { distanceLabel, getPosition, INTENTS, intentMeta } from '@/lib/geo/client';
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { ProfileSheet } from '@/components/map/profile-sheet';
+import { useFeatures } from '@/lib/billing/use-features';
+import { FeaturePaywall } from '@/components/billing/feature-paywall';
 import { ActivityHeatmap } from './activity-heatmap';
 import { ActivityTrends } from './activity-trends';
 
 export function PulseScreen() {
+  const { isPremium, loading: planLoading } = useFeatures();
   const [people, setPeople] = useState<NearbyPerson[] | null>(null);
   const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number }[]>([]);
   const [configured, setConfigured] = useState(true);
@@ -29,6 +32,18 @@ export function PulseScreen() {
       setHotspots(j.hotspots);
     })();
   }, []);
+
+  // Show paywall if not premium
+  if (!planLoading && !isPremium) {
+    return (
+      <FeaturePaywall
+        featureName="πroka Pulse"
+        requiredPlan="premium"
+        description="Advanced activity analytics and intelligence — available on πroka Premium"
+        fullScreen
+      />
+    );
+  }
 
   const count = (intent: string) => (people ?? []).filter((p) => p.intent === intent).length;
   const live = (people ?? []).filter((p) => p.intent);
