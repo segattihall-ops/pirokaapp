@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useMutation } from '@tanstack/react-query';
 import { CATEGORY_LABEL, type Event, type RSVPStatus } from '@/lib/events/types';
 
@@ -41,7 +42,11 @@ export default function EventCard({ event, onRsvp }: EventCardProps) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
-      {event.photo && <img src={event.photo} alt={event.title} className="aspect-video w-full object-cover" />}
+      {event.photo && (
+        <div className="relative aspect-video w-full overflow-hidden">
+          <Image src={event.photo} alt={event.title} fill className="object-cover" />
+        </div>
+      )}
 
       <div className="p-4">
         <div className="mb-2 flex items-start justify-between">

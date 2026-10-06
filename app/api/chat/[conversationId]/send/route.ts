@@ -20,9 +20,10 @@ export async function POST(request: Request, { params }: { params: { conversatio
   const peerId = peerOf(conv, session.userId);
   if (await isBlocked(session.userId, peerId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
-  const { ciphertext, kind = 'text' } = (await request.json().catch(() => ({}))) as {
+  const { ciphertext, kind = 'text', parentMessageId } = (await request.json().catch(() => ({}))) as {
     ciphertext?: string;
     kind?: string;
+    parentMessageId?: number;
   };
   if (!ciphertext || typeof ciphertext !== 'string' || !/^\\x[0-9a-f]+$/i.test(ciphertext)) {
     return NextResponse.json({ error: 'ciphertext must be hex bytea' }, { status: 400 });
@@ -40,7 +41,7 @@ export async function POST(request: Request, { params }: { params: { conversatio
 
   const { data, error } = await supabaseAdmin
     .from('dm_messages')
-    .insert({ conversation_id: conv.id, sender_id: session.userId, ciphertext, kind })
+    .insert({ conversation_id: conv.id, sender_id: session.userId, ciphertext, kind, parent_message_id: parentMessageId ?? null })
     .select('id, created_at')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

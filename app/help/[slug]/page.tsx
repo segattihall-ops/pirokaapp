@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { LogoTile, Wordmark } from '@/components/logo';
 import { HELP_SECTIONS, HELP_SLUGS, isHelpSlug } from '@/lib/help';
+import { HELP_CONTENT } from '@/lib/help-content';
 
 type Props = { params: { slug: string } };
 
@@ -69,13 +70,17 @@ export default function HelpPage({ params }: Props) {
           )}
           <h1 className="text-h2 sm:text-h1">{current.title}</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-fg-2">{current.blurb}</p>
-          <p className="mt-6 text-[13px] text-fg-3">
-            Content is ported from{' '}
-            <code className="rounded-[6px] bg-ink-850 px-1.5 py-0.5 text-[12px] text-fg-2">
-              Piroka Help.dc.html
-            </code>{' '}
-            in Phase 7.
-          </p>
+
+          {params.slug in HELP_CONTENT && (
+            <div className="mt-8 space-y-6">
+              {HELP_CONTENT[params.slug as keyof typeof HELP_CONTENT].sections.map((section, i) => (
+                <div key={i}>
+                  <h2 className="text-[16px] font-semibold text-fg">{section.heading}</h2>
+                  <p className="mt-2 text-[14px] leading-relaxed text-fg-2">{section.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </div>
       <div className="h-[calc(24px+var(--safe-bottom))]" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface Group {
@@ -58,7 +59,9 @@ export function GroupsList({ lat, lng, radius = 50 }: GroupsListProps) {
         >
           <div className="flex gap-3">
             {group.photo && (
-              <img src={group.photo} alt={group.name} className="w-12 h-12 rounded-lg object-cover" />
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                <Image src={group.photo} alt={group.name} fill className="object-cover" />
+              </div>
             )}
             <div className="flex-1">
               <h3 className="font-semibold text-fg-1">{group.name}</h3>
