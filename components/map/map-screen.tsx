@@ -12,7 +12,7 @@ import { ProfileSheet } from './profile-sheet';
 import { StatusSheet, type MyStatus } from './status-sheet';
 import { TravelSheet, type TravelView } from './travel-sheet';
 import { VisitorsSheet } from './visitors-sheet';
-import { PirokaModeSheet } from './piroka-mode-sheet';
+import { PirokaModeSheet } from '../meet/piroka-mode-sheet';
 
 const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const ESRI_STYLE =

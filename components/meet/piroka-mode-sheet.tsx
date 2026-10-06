@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '@/lib/auth/client';
 
 interface PirokaModeState {
   isActive: boolean;
@@ -11,7 +10,6 @@ interface PirokaModeState {
 }
 
 export function PirokaModeSheet({ onClose }: { onClose: () => void }) {
-  const { user } = useAuth();
   const [mode, setMode] = useState<PirokaModeState>({
     isActive: false,
     destinationCity: '',
@@ -22,7 +20,6 @@ export function PirokaModeSheet({ onClose }: { onClose: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
     (async () => {
       const res = await fetch('/api/piroka/status', { cache: 'no-store' });
       if (res.ok) {
@@ -31,7 +28,7 @@ export function PirokaModeSheet({ onClose }: { onClose: () => void }) {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
