@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
+import { presenceActivity } from '@/lib/geo/presence';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +13,18 @@ export type NearbyPerson = {
   lon: number;
   distanceM: number;
   intent: string | null;
+  intentStartsAt: string | null;
   intentEndsAt: string | null;
+  activity: 'active' | 'recent' | 'today';
   photo: string | null;
   verified: boolean;
   plan: string;
 };
 
-/** People with a fresh (24h) fuzzed position within `radius` metres of the given point. */
+/**
+ * People with a fresh (24h) privacy-fuzzed position within `radius` metres of the given point.
+ * The API never reads or returns locations.true_geo.
+ */
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,26 +48,54 @@ export async function GET(request: Request) {
       limit_count: 200,
     }),
     supabaseAdmin.rpc('nearby_hotspots', { center_lat: lat, center_lon: lon, radius_m: 25000 }),
-    supabaseAdmin.rpc('trips_near', { center_lat: lat, center_lon: lon, radius_m: 50000, requester_id: session.userId }),
+    supabaseAdmin.rpc('trips_near', {
+      center_lat: lat,
+      center_lon: lon,
+      radius_m: 50000,
+      requester_id: session.userId,
+    }),
   ]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // nearby_users intentionally exposes only public_geo. Fetch status start times separately so
+  // the client can draw a truthful remaining-time ring without widening the location RPC.
+  const ids = (rows ?? []).map((r: any) => r.id).filter(Boolean);
+  let activeStatuses: any[] = [];
+  if (ids.length > 0) {
+    const { data } = await supabaseAdmin
+      .from('statuses')
+      .select('user_id, starts_at, ends_at')
+      .in('user_id', ids)
+      .gt('ends_at', new Date().toISOString());
+    activeStatuses = data ?? [];
+  }
+  const statusOf = new Map(activeStatuses.map((s) => [s.user_id, s]));
+
   const people: NearbyPerson[] = (rows ?? [])
     .filter((r: any) => !intent || r.intent === intent)
-    .map((r: any) => ({
-      id: r.id,
-      handle: r.handle,
-      lat: r.lat,
-      lon: r.lon,
-      distanceM: Math.round(r.distance_m),
-      intent: r.intent ?? null,
-      intentEndsAt: r.intent_ends_at ?? null,
-      photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
-      verified: Boolean(r.verified),
-      plan: r.plan,
-    }));
+    .map((r: any) => {
+      const status = statusOf.get(r.id);
+      return {
+        id: r.id,
+        handle: r.handle,
+        lat: r.lat,
+        lon: r.lon,
+        distanceM: Math.round(r.distance_m),
+        intent: r.intent ?? null,
+        intentStartsAt: status?.starts_at ?? null,
+        intentEndsAt: status?.ends_at ?? r.intent_ends_at ?? null,
+        activity: presenceActivity(r.presence_at),
+        photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
+        verified: Boolean(r.verified),
+        plan: r.plan,
+      };
+    });
 
-  const hotspots = (spots ?? []).map((s: any) => ({ lat: s.lat, lon: s.lon, count: Number(s.count) }));
+  const hotspots = (spots ?? []).map((s: any) => ({
+    lat: s.lat,
+    lon: s.lon,
+    count: Number(s.count),
+  }));
   const visitors: Visitor[] = (tripRows ?? []).map((t: any) => ({
     id: t.user_id,
     handle: t.handle ?? null,
@@ -73,4 +107,11 @@ export async function GET(request: Request) {
   return NextResponse.json({ configured: true, people, hotspots, visitors });
 }
 
-export type Visitor = { id: string; handle: string | null; city: string; arriveOn: string; nights: number; photo: string | null };
+export type Visitor = {
+  id: string;
+  handle: string | null;
+  city: string;
+  arriveOn: string;
+  nights: number;
+  photo: string | null;
+};

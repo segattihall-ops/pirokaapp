@@ -22,13 +22,13 @@ function remember(p: Position) {
   } catch {}
 }
 
-function browserFix(): Promise<Position> {
+function browserFix(fresh = false): Promise<Position> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('unsupported'));
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, precise: true }),
       (err) => reject(err),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: fresh ? 0 : 300_000 },
     );
   });
 }
@@ -51,17 +51,23 @@ async function ipFix(): Promise<Position | null> {
  * Best available position: browser geolocation (asks permission), else IP lookup, else launch market.
  * `precise` tells the caller whether it is worth publishing to the server.
  */
-export async function getPosition(opts: { ask?: boolean } = {}): Promise<Position> {
+export async function getPosition(opts: { ask?: boolean; fresh?: boolean } = {}): Promise<Position> {
+  // Keep the cached fix as evidence that this browser session previously obtained device
+  // geolocation, even when a fresh publication must not reuse its coordinates.
   const c = cached();
-  if (c && (c.precise || !opts.ask)) return c;
+  if (!opts.fresh && c && (c.precise || !opts.ask)) return c;
   let granted = false;
   try {
     if (navigator.permissions)
       granted = (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted';
   } catch {}
-  if (granted || opts.ask) {
+  // Safari/iOS may report "prompt" through Permissions.query even after a prior grant.
+  // A precise cached fix is therefore enough evidence to *attempt* a fresh device lookup;
+  // the cached coordinates themselves are never republished when fresh=true.
+  const shouldTryBrowser = granted || Boolean(opts.ask) || Boolean(opts.fresh && c?.precise);
+  if (shouldTryBrowser) {
     try {
-      const p = await browserFix();
+      const p = await browserFix(Boolean(opts.fresh));
       remember(p);
       return p;
     } catch {}
