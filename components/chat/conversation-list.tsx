@@ -52,6 +52,12 @@ export function ConversationList() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.12em] text-fg-3">Direct Messages</h2>
+        <a href="/app/chats/area" className="tap text-[12px] font-medium text-green hover:text-green/80">
+          Area Board
+        </a>
+      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
