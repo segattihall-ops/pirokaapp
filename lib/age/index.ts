@@ -47,10 +47,25 @@ async function verifyYoti(sessionId: string, method: AgeMethod): Promise<AgeResu
   return { ok: false, reason: 'Yoti verification not wired yet (BUILD_PLAN Phase 1)' };
 }
 
+/**
+ * Asks Persona for the inquiry's status. Accepts only an approved inquiry created from our own
+ * template, so an inquiry from another app or template can't be replayed here. The birthdate and
+ * documents stay on Persona's side; nothing from the response is stored except the pass/fail.
+ */
 async function verifyPersona(inquiryId: string, method: AgeMethod): Promise<AgeResult> {
-  // Phase 1 stub. Production: GET /api/v1/inquiries/{id} with PERSONA_API_KEY and accept when
-  // status == 'approved' and the age-over-18 verification passed. Never store the birthdate.
-  void inquiryId;
-  void method;
-  return { ok: false, reason: 'Persona verification not wired yet (BUILD_PLAN Phase 1)' };
+  const apiKey = process.env.PERSONA_API_KEY;
+  const templateId = process.env.PERSONA_TEMPLATE_ID;
+  if (!apiKey || !templateId) return { ok: false, reason: 'Persona is not configured' };
+  if (!/^[A-Za-z0-9_-]{4,128}$/.test(inquiryId)) return { ok: false, reason: 'Invalid token' };
+
+  const res = await fetch(`https://api.withpersona.com/api/v1/inquiries/${encodeURIComponent(inquiryId)}`, {
+    headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!res.ok) return { ok: false, reason: 'Could not confirm the age check' };
+
+  const attributes = (await res.json())?.data?.attributes;
+  if (attributes?.inquiry_template_id !== templateId) return { ok: false, reason: 'Age check does not match this app' };
+  if (attributes?.status !== 'approved') return { ok: false, reason: 'Age check not approved' };
+  return { ok: true, method };
 }
