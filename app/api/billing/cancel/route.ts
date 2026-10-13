@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { cancelPayPalSubscription, paypalConfigured } from '@/lib/billing/paypal';
+import { sendEmail } from '@/lib/email';
+import { templates } from '@/lib/email/templates';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
+import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export const POST = withApi('/api/billing/cancel', async () => {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!paypalConfigured() || !supabaseAdmin) {
@@ -14,7 +19,7 @@ export async function POST() {
 
   const { data: user } = await supabaseAdmin
     .from('users')
-    .select('paypal_subscription_id')
+    .select('paypal_subscription_id, plan, email')
     .eq('id', session.userId)
     .maybeSingle();
   const subscriptionId = user?.paypal_subscription_id as string | null | undefined;
@@ -29,7 +34,7 @@ export async function POST() {
 
   await supabaseAdmin
     .from('users')
-    .update({ plan: 'free', subscription_status: 'CANCELLED' })
+    .update({ plan: 'free', subscription_status: 'CANCELLED', cancelled_at: new Date().toISOString() })
     .eq('id', session.userId);
   await supabaseAdmin.from('audit_log').insert({
     actor_id: session.userId,
@@ -37,6 +42,9 @@ export async function POST() {
     target: subscriptionId,
     details: null,
   });
+  await track({ userId: session.userId, event: EVENTS.subscription_cancelled, props: { from: String(user?.plan ?? ''), source: 'user' } });
+  const to = session.email ?? (user?.email as string | null);
+  if (to) void sendEmail({ to, userId: session.userId, template: 'cancelled', ...templates.cancelled() });
 
   return NextResponse.json({ plan: 'free', status: 'CANCELLED' });
-}
+});

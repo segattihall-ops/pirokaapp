@@ -5,6 +5,8 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { notifyMany } from '@/lib/notify/server';
 import { displayName, userCards } from '@/lib/users/cards';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
   };
   const { error } = await supabaseAdmin.from('statuses').upsert(row, { onConflict: 'user_id' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  void track({ userId: session.userId, event: EVENTS.status_set, props: { intent, hours, fromNothing: !before } });
 
   // Go-live alert to favouriters — only when going live from nothing, or switching to "Now", so extending never spams.
   if (!before || (intent === 'now' && before.intent !== 'now')) {

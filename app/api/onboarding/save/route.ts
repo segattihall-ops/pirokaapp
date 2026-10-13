@@ -3,8 +3,20 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { alreadySent, sendEmail } from '@/lib/email';
+import { templates } from '@/lib/email/templates';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export const dynamic = 'force-dynamic';
+
+/** Welcome email, once per account; analytics for the funnel. Never blocks the response. */
+async function afterOnboarding(userId: string, email: string | null, handle: string | null, anonymous: boolean) {
+  await track({ userId, event: EVENTS.onboarding_completed, props: { anonymous, hasHandle: Boolean(handle) } });
+  if (!email || anonymous) return;
+  if (await alreadySent(userId, 'welcome')) return;
+  await sendEmail({ to: email, userId, template: 'welcome', ...templates.welcome(handle) });
+}
 
 const tag = z.string().trim().min(1).max(40);
 const Body = z.object({
@@ -65,6 +77,7 @@ export async function POST(request: Request) {
     .eq('id', session.userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  afterOnboarding(session.userId, session.email, handle, b.anonymous).catch((e) => console.error('afterOnboarding', e));
   return NextResponse.json({ ok: true, handle });
 }
 

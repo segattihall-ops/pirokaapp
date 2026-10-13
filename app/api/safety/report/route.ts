@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
+import { opsAlert } from '@/lib/alerts/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,5 +59,7 @@ export async function POST(request: Request) {
     target_user_id: targetId,
     details: { reason },
   });
+  void track({ userId: session.userId, event: EVENTS.report_filed, props: { reason } });
+  void opsAlert('report', `New ${reason} report ${data.id} — review at /admin`);
   return NextResponse.json({ id: data.id });
 }

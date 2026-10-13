@@ -81,6 +81,8 @@ export function AccountFlow({ initial }: { initial: AccountView }) {
     setErr('');
     try {
       await updatePassword(pw);
+      // Security notice ("was this you?") + audit; best-effort, never blocks the flow.
+      fetch('/api/me/security/password-changed', { method: 'POST' }).catch(() => {});
       setSentMode('reset');
       setView('done');
     } catch (e) {

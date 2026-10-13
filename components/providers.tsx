@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Telemetry } from '@/components/telemetry';
 
 /** Auth is Supabase (cookie session read server-side); no next-auth client provider is needed. */
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -13,5 +14,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }),
   );
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <Telemetry />
+      {children}
+    </QueryClientProvider>
+  );
 }

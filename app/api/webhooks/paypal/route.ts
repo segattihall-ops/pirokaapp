@@ -6,6 +6,12 @@ import {
   verifyPayPalWebhook,
   webhookHeadersFrom,
 } from '@/lib/billing/paypal';
+import { emailOfUser, sendEmail } from '@/lib/email';
+import { templates } from '@/lib/email/templates';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
+import { opsAlert } from '@/lib/alerts/server';
+import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +26,20 @@ async function audit(action: string, target: string | null, details: unknown) {
   await supabaseAdmin.from('audit_log').insert({ actor_id: null, action, target, details });
 }
 
-export async function POST(request: Request) {
+async function userIdForSubscription(subscriptionId: string): Promise<string | null> {
+  if (!supabaseAdmin) return null;
+  const { data } = await supabaseAdmin.from('users').select('id').eq('paypal_subscription_id', subscriptionId).maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}
+
+async function mail(userId: string | null, template: keyof typeof templates, content: ReturnType<(typeof templates)[keyof typeof templates]>) {
+  if (!userId) return;
+  const who = await emailOfUser(userId);
+  if (!who) return;
+  await sendEmail({ to: who.email, userId, template, ...content });
+}
+
+export const POST = withApi('/api/webhooks/paypal', async (request: Request) => {
   if (!paypalConfigured() || !supabaseAdmin) {
     return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });
   }
@@ -52,13 +71,13 @@ export async function POST(request: Request) {
       case 'BILLING.SUBSCRIPTION.ACTIVATED':
       case 'BILLING.SUBSCRIPTION.UPDATED':
       case 'BILLING.SUBSCRIPTION.RE-ACTIVATED': {
-        const userId = res.custom_id as string | undefined;
+        const userId = (res.custom_id as string | undefined) ?? (await userIdForSubscription(res.id));
         const active = res.status === 'ACTIVE';
         const plan = active ? planFromPayPalPlanId(res.plan_id) : undefined;
         const patch = {
           paypal_subscription_id: res.id,
           subscription_status: res.status,
-          ...(plan ? { plan } : {}),
+          ...(plan ? { plan, cancelled_at: null, payment_failed_at: null } : {}),
         };
         const q = userId
           ? db.from('users').update(patch).eq('id', userId)
@@ -66,31 +85,39 @@ export async function POST(request: Request) {
         const { error } = await q;
         if (error) throw error;
         await audit(`paypal.${event.event_type}`, userId ?? res.id, { subscription: res.id, plan: res.plan_id });
+        if (active && plan && plan !== 'free' && event.event_type !== 'BILLING.SUBSCRIPTION.UPDATED') {
+          await track({ userId, event: EVENTS.subscribed, props: { plan, source: 'webhook' } });
+        }
         break;
       }
 
       case 'BILLING.SUBSCRIPTION.CANCELLED':
       case 'BILLING.SUBSCRIPTION.EXPIRED':
       case 'BILLING.SUBSCRIPTION.SUSPENDED': {
+        const userId = (res.custom_id as string | undefined) ?? (await userIdForSubscription(res.id));
+        const status = res.status ?? event.event_type.split('.').pop();
         const { error } = await db
           .from('users')
-          .update({ plan: 'free', subscription_status: res.status ?? event.event_type.split('.').pop() })
+          .update({ plan: 'free', subscription_status: status, cancelled_at: new Date().toISOString() })
           .eq('paypal_subscription_id', res.id);
         if (error) throw error;
-        await audit(`paypal.${event.event_type}`, res.custom_id ?? res.id, { subscription: res.id });
+        await audit(`paypal.${event.event_type}`, userId ?? res.id, { subscription: res.id });
+        await track({ userId, event: EVENTS.subscription_cancelled, props: { status, source: 'webhook' } });
+        if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') await mail(userId, 'cancelled', templates.cancelled());
         break;
       }
 
       case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED': {
+        const userId = (res.custom_id as string | undefined) ?? (await userIdForSubscription(res.id));
         const { error } = await db
           .from('users')
-          .update({ subscription_status: 'PAYMENT_FAILED' })
+          .update({ subscription_status: 'PAYMENT_FAILED', payment_failed_at: new Date().toISOString() })
           .eq('paypal_subscription_id', res.id);
         if (error) throw error;
         await db.from('payments').upsert(
           {
             payment_id: `${res.id}:${event.id}`,
-            user_id: res.custom_id ?? null,
+            user_id: userId,
             amount: 0,
             currency: 'USD',
             status: 'FAILED',
@@ -99,6 +126,9 @@ export async function POST(request: Request) {
           },
           { onConflict: 'payment_id' },
         );
+        await track({ userId, event: EVENTS.payment_failed, props: { subscription: res.id } });
+        await mail(userId, 'paymentFailed', templates.paymentFailed(0));
+        await opsAlert('payment', `Payment failed for subscription ${res.id}${userId ? ` (user ${userId.slice(0, 8)}…)` : ''}`);
         break;
       }
 
@@ -107,22 +137,34 @@ export async function POST(request: Request) {
         if (!subscriptionId) break;
         const { data: user } = await db
           .from('users')
-          .select('id')
+          .select('id, plan')
           .eq('paypal_subscription_id', subscriptionId)
           .maybeSingle();
-        await db.from('payments').upsert(
-          {
-            payment_id: res.id,
-            user_id: user?.id ?? null,
-            amount: Number(res.amount?.total ?? 0),
-            currency: res.amount?.currency ?? 'USD',
-            status: 'COMPLETED',
-            provider: 'paypal',
-            description: 'Subscription payment',
-          },
-          { onConflict: 'payment_id' },
-        );
-        if (user) await db.from('users').update({ subscription_status: 'ACTIVE' }).eq('id', user.id);
+        const amount = Number(res.amount?.total ?? 0);
+        const currency = (res.amount?.currency as string | undefined) ?? 'USD';
+        const { data: inserted } = await db
+          .from('payments')
+          .upsert(
+            {
+              payment_id: res.id,
+              user_id: user?.id ?? null,
+              amount,
+              currency,
+              status: 'COMPLETED',
+              provider: 'paypal',
+              description: 'Subscription payment',
+            },
+            { onConflict: 'payment_id', ignoreDuplicates: true },
+          )
+          .select('id');
+        if (user) {
+          await db.from('users').update({ subscription_status: 'ACTIVE', payment_failed_at: null }).eq('id', user.id);
+          await track({ userId: user.id, event: EVENTS.payment_completed, props: { amount, currency } });
+          // Only the first time we see this sale: PayPal retries webhooks.
+          if (inserted && inserted.length > 0) {
+            await mail(user.id, 'receipt', templates.receipt(amount, currency, String(user.plan ?? 'plan'), res.id));
+          }
+        }
         break;
       }
 
@@ -135,4 +177,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true });
-}
+});

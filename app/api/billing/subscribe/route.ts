@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { getPayPalSubscription, paypalConfigured, planFromPayPalPlanId } from '@/lib/billing/paypal';
+import { sendEmail } from '@/lib/email';
+import { templates } from '@/lib/email/templates';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
+import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
 
 /** Called from the PayPal Buttons onApprove. Confirms the subscription with PayPal before granting a plan. */
-export async function POST(request: Request) {
+export const POST = withApi('/api/billing/subscribe', async (request: Request) => {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!paypalConfigured() || !supabaseAdmin) {
@@ -38,7 +43,7 @@ export async function POST(request: Request) {
     .update({
       paypal_subscription_id: sub.id,
       subscription_status: sub.status,
-      ...(active ? { plan } : {}),
+      ...(active ? { plan, cancelled_at: null, payment_failed_at: null } : {}),
     })
     .eq('id', session.userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -49,6 +54,11 @@ export async function POST(request: Request) {
     target: sub.id,
     details: { plan, status: sub.status },
   });
+  await track({ userId: session.userId, event: EVENTS.subscribed, props: { plan, status: sub.status, source: 'checkout' } });
+  if (active) {
+    const to = session.email ?? sub.subscriber?.email_address;
+    if (to) void sendEmail({ to, userId: session.userId, template: 'subscribed', ...templates.subscribed(plan) });
+  }
 
   return NextResponse.json({ plan: active ? plan : 'free', status: sub.status, subscriptionId: sub.id });
-}
+});

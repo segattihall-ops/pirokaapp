@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,5 +57,6 @@ export async function POST(request: Request) {
     .select('id')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  void track({ userId: me, event: EVENTS.chat_started, props: { by: body.handle ? 'handle' : 'id' } });
   return NextResponse.json({ id: created.id, created: true });
 }
