@@ -1,6 +1,7 @@
 import { Rail, TabBar } from '@/components/app-nav';
 import { SignalBootstrap } from '@/components/chat/signal-bootstrap';
 import { BellDock } from '@/components/notifications/bell-dock';
+import { AnnouncementBanner } from '@/components/growth/announcement-banner';
 
 /**
  * App shell: 80px rail on desktop (≥820px), 66px bottom tab bar on mobile.
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Rail />
       <TabBar />
       <BellDock />
+      <AnnouncementBanner />
       <main className="min-h-dvh pb-[calc(66px+var(--safe-bottom))] rail:pb-0 rail:pl-rail">{children}</main>
     </div>
   );
