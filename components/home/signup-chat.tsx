@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PersonaAgeCheck } from '@/components/age/persona-age-check';
 import {
   fetchSession,
   isDemoClient,
@@ -12,13 +13,11 @@ import {
   signInWithOAuth,
   signInWithPassword,
   signOut,
-  submitAgeCheck,
 } from '@/lib/auth/client';
 import { AFTER_GATE_PATH, APP_PATH, type AuthProvider, type Session } from '@/lib/auth/types';
 
 type Msg = { id: number; isBot?: boolean; isUser?: boolean; text: string; time?: string };
 type Step = 'ask' | 'action' | 'wait' | 'consent' | 'face' | 'done' | 'emailWait';
-type Face = 'idle' | 'starting' | 'scanning' | 'passed' | 'error';
 type Pick = Exclude<AuthProvider, 'anonymous'> | 'anon';
 
 const WELCOME: Msg = {
@@ -55,9 +54,6 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
   const [view, setView] = useState<'chat' | 'classic'>('chat');
   const [ageOk, setAgeOk] = useState(false);
   const [termsOk, setTermsOk] = useState(false);
-  const [face, setFace] = useState<Face>('idle');
-  const [faceP, setFaceP] = useState(0);
-  const [faceMode, setFaceMode] = useState<'cam' | 'id'>('cam');
   const [session, setSession] = useState<Session | null>(null);
   const [cEmail, setCEmail] = useState('');
   const [cPass, setCPass] = useState('');
@@ -66,9 +62,6 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const later = useCallback((fn: () => void, ms: number) => {
     timers.current.push(setTimeout(fn, ms));
@@ -117,11 +110,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       } else {
         bot(
           'Last step: a quick face check to estimate your age. It runs on your device and the image is never stored.',
-          () => {
-            setStep('face');
-            setFace('idle');
-            setFaceP(0);
-          },
+          () => setStep('face'),
           600,
         );
       }
@@ -154,20 +143,9 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
   useEffect(() => {
     const s = scrollRef.current;
     if (s) s.scrollTop = s.scrollHeight;
-  }, [messages, typing, step, face]);
+  }, [messages, typing, step]);
 
-  const stopCam = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  }, []);
-  useEffect(
-    () => () => {
-      stopCam();
-      if (scanRef.current) clearInterval(scanRef.current);
-      timers.current.forEach(clearTimeout);
-    },
-    [stopCam],
-  );
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const pick = (p: Pick) =>
     say(PICK_LABEL[p], PICK_REPLY[p], () => {
@@ -255,97 +233,35 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       say(
         "I'm 18+ and I accept the terms",
         'Thanks. Last step: a quick face check to estimate your age. It runs on your device and the image is never stored.',
-        () => {
-          setStep('face');
-          setFace('idle');
-          setFaceP(0);
-        },
+        () => setStep('face'),
       );
     } catch (e) {
       fail(e);
     }
   };
 
-  const finishAge = useCallback(
-    async (method: 'face' | 'id') => {
-      try {
-        const s = await submitAgeCheck(method, `local:${method}:${Date.now()}`);
-        setSession(s);
-        setFace('passed');
-        later(
-          () =>
-            bot(
-              "Age check passed — you're verified 18+. Welcome to πroka.",
-              () => {
-                setStep('done');
-                setMode('done');
-              },
-              700,
-            ),
-          600,
-        );
-      } catch (e) {
-        setFace('error');
-        fail(e);
-      }
+  const handleAgeVerified = useCallback(
+    (s: Session) => {
+      setSession(s);
+      later(
+        () =>
+          bot(
+            "Age check passed — you're verified 18+. Welcome to πroka.",
+            () => {
+              setStep('done');
+              setMode('done');
+            },
+            700,
+          ),
+        600,
+      );
     },
-    [bot, fail, later],
+    [bot, later],
   );
-
-  const scan = useCallback(
-    (method: 'face' | 'id') => {
-      if (scanRef.current) clearInterval(scanRef.current);
-      setFace('scanning');
-      setFaceP(0);
-      let p = 0;
-      scanRef.current = setInterval(() => {
-        p = Math.min(100, p + 2.2);
-        setFaceP(p);
-        if (p >= 100) {
-          if (scanRef.current) clearInterval(scanRef.current);
-          stopCam();
-          void finishAge(method);
-        }
-      }, 70);
-    },
-    [finishAge, stopCam],
-  );
-
-  const startFace = async () => {
-    setFace('starting');
-    setFaceMode('cam');
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('no camera');
-      streamRef.current = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 480 } },
-        audio: false,
-      });
-      const v = videoRef.current;
-      if (v) {
-        v.muted = true;
-        v.setAttribute('playsinline', '');
-        v.srcObject = streamRef.current;
-        try {
-          await v.play();
-        } catch {}
-      }
-      scan('face');
-    } catch {
-      stopCam();
-      setFace('error');
-    }
-  };
-  const idCheck = () => {
-    stopCam();
-    setFaceMode('id');
-    scan('id');
-  };
 
   const restart = async () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
-    stopCam();
-    if (scanRef.current) clearInterval(scanRef.current);
     await signOut().catch(() => {});
     setSession(null);
     setMessages([WELCOME]);
@@ -356,8 +272,6 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
     setInput('');
     setAgeOk(false);
     setTermsOk(false);
-    setFace('idle');
-    setFaceP(0);
   };
 
   const signin = async () => {
@@ -396,23 +310,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
   };
 
   const idle = !typing;
-  const faceDeg = Math.round((face === 'passed' ? 100 : faceP) * 3.6);
-  const faceTitle = {
-    idle: 'Quick face age check',
-    starting: 'Opening camera…',
-    scanning:
-      faceMode === 'id' ? `Checking your ID… ${Math.round(faceP)}%` : `Scanning… ${Math.round(faceP)}%`,
-    passed: 'Verified 18+',
-    error: 'Camera unavailable',
-  }[face];
-  const faceSub = {
-    idle: 'We estimate your age from a live selfie. Processed on-device, never stored.',
-    starting: 'Allow camera access to continue.',
-    scanning: faceP < 45 ? 'Center your face in the circle and hold still.' : 'Estimating age…',
-    passed: 'Thanks. Your image has been discarded.',
-    error: 'Allow camera access, or verify with a photo ID instead.',
-  }[face];
-  const showFace = view === 'chat' && (step === 'face' || (face === 'passed' && step !== 'ask'));
+  const showFace = view === 'chat' && step === 'face';
   const showEnter =
     view === 'chat' && step === 'done' && mode !== 'email' && !typing && Boolean(session?.ageVerified);
 
@@ -649,75 +547,11 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
 
               {showFace && (
                 <div className="ml-[38px] flex animate-[piIn_.45s_ease-out_both] flex-col items-center gap-2.5 rounded-[18px] border border-line-2 bg-white/5 px-4 py-5 text-center">
-                  <div
-                    className="h-[176px] w-[176px] rounded-full p-1 shadow-[0_0_40px_rgba(52,211,153,0.15)]"
-                    style={{
-                      background: `conic-gradient(#34d399 ${faceDeg}deg, rgba(255,255,255,0.1) 0deg)`,
-                    }}
-                  >
-                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-ink-900">
-                      <video
-                        ref={videoRef}
-                        muted
-                        playsInline
-                        className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
-                      />
-                      {(face === 'idle' || face === 'error') && (
-                        <svg
-                          width="64"
-                          height="64"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#555"
-                          strokeWidth="1.3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="relative"
-                        >
-                          <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" />
-                        </svg>
-                      )}
-                      {(face === 'scanning' || face === 'starting') && (
-                        <span className="absolute left-[10%] right-[10%] h-[2px] animate-[piScan_1.8s_ease-in-out_infinite] bg-green shadow-[0_0_14px_3px_rgba(52,211,153,0.6)]" />
-                      )}
-                      {face === 'passed' && (
-                        <span className="absolute inset-0 flex animate-[piFade_.4s_ease-out_both] items-center justify-center bg-[rgba(7,7,7,0.7)]">
-                          <svg
-                            width="56"
-                            height="56"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#34d399"
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="m5 12 5 5L20 7" />
-                          </svg>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="mt-1 text-[15px] font-semibold">{faceTitle}</span>
-                  <span className="max-w-[270px] text-[12px] leading-[1.5] text-fg-3">{faceSub}</span>
-                  {(face === 'idle' || face === 'error') && (
-                    <div className="mt-1 flex w-full flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={startFace}
-                        className="h-11 rounded-input bg-white text-[14px] font-semibold text-ink-950"
-                      >
-                        Start face check
-                      </button>
-                      <button
-                        type="button"
-                        onClick={idCheck}
-                        className="h-9 text-[12px] font-medium text-fg-3 hover:text-fg"
-                      >
-                        Verify with a photo ID instead
-                      </button>
-                    </div>
-                  )}
+                  <span className="text-[15px] font-semibold">Verify you are 18+</span>
+                  <span className="max-w-[270px] text-[12px] leading-[1.5] text-fg-3">
+                    Persona checks your age using a photo ID and a selfie. We keep only the result.
+                  </span>
+                  <PersonaAgeCheck onVerified={handleAgeVerified} />
                 </div>
               )}
             </div>
