@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { reportClientError } from '@/lib/errors/client';
 
 /** Route-segment error boundary: reports once, offers retry. */
-export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
     reportClientError(error.message, error.stack, { digest: error.digest, boundary: 'route' });
   }, [error]);

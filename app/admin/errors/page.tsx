@@ -10,7 +10,9 @@ export default function ErrorsPage() {
         <h1 className="text-h2 sm:text-h1">Errors</h1>
         <p className="mt-1 text-[12px] text-fg-4">
           Server throws (via <code>withApi</code>) and browser errors, grouped by fingerprint.
-          {errorForwardingConfigured() ? ' Also mirrored to Sentry.' : ' Set SENTRY_DSN to mirror them to Sentry.'}
+          {errorForwardingConfigured()
+            ? ' Also mirrored to Sentry.'
+            : ' Set SENTRY_DSN to mirror them to Sentry.'}
         </p>
       </div>
       <ErrorsFeed />

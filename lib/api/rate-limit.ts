@@ -11,7 +11,11 @@ const local = new Map<string, { count: number; start: number }>();
 
 export async function rateLimit(key: string, limit: number, windowSecs: number): Promise<boolean> {
   if (supabaseAdmin) {
-    const { data, error } = await supabaseAdmin.rpc('rate_limit_hit', { p_key: key, p_limit: limit, p_window_secs: windowSecs });
+    const { data, error } = await supabaseAdmin.rpc('rate_limit_hit', {
+      p_key: key,
+      p_limit: limit,
+      p_window_secs: windowSecs,
+    });
     if (!error && typeof data === 'boolean') return data;
     if (error) console.error('rate_limit_hit failed', error.message);
   }

@@ -47,7 +47,11 @@ export async function segmentCount(segment: Segment): Promise<number> {
 
 export async function listCampaigns(): Promise<Campaign[]> {
   if (!supabaseAdmin) return [];
-  const { data } = await supabaseAdmin.from('email_campaigns').select('*').order('created_at', { ascending: false }).limit(100);
+  const { data } = await supabaseAdmin
+    .from('email_campaigns')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
   return (data ?? []) as Campaign[];
 }
 
@@ -59,13 +63,23 @@ const CONCURRENCY = 5;
  * `sending` campaign. Recipients are chosen by SQL excluding anyone already in email_log for the
  * campaign, so retries never double-send. Returns what happened for the cron log.
  */
-export async function processCampaigns(): Promise<{ promoted: number; sent: number; failed: number; finished: number }> {
+export async function processCampaigns(): Promise<{
+  promoted: number;
+  sent: number;
+  failed: number;
+  finished: number;
+}> {
   const out = { promoted: 0, sent: 0, failed: 0, finished: 0 };
   if (!supabaseAdmin) return out;
   const db = supabaseAdmin;
   const nowIso = new Date().toISOString();
 
-  const { data: due } = await db.from('email_campaigns').select('id, segment').eq('status', 'scheduled').lte('scheduled_at', nowIso).limit(10);
+  const { data: due } = await db
+    .from('email_campaigns')
+    .select('id, segment')
+    .eq('status', 'scheduled')
+    .lte('scheduled_at', nowIso)
+    .limit(10);
   for (const c of due ?? []) {
     const total = await segmentCount(c.segment as Segment);
     const { error } = await db
@@ -78,7 +92,11 @@ export async function processCampaigns(): Promise<{ promoted: number; sent: numb
 
   const { data: sending } = await db.from('email_campaigns').select('*').eq('status', 'sending').limit(5);
   for (const c of (sending ?? []) as Campaign[]) {
-    const { data: recipients, error } = await db.rpc('campaign_recipients', { p_campaign: c.id, p_segment: c.segment, p_limit: BATCH });
+    const { data: recipients, error } = await db.rpc('campaign_recipients', {
+      p_campaign: c.id,
+      p_segment: c.segment,
+      p_limit: BATCH,
+    });
     if (error) {
       console.error('campaign_recipients', error.message);
       continue;
@@ -109,7 +127,7 @@ export async function processCampaigns(): Promise<{ promoted: number; sent: numb
           }),
         ),
       );
-      for (const r of results) (r.ok ? (sent += 1) : (failed += 1));
+      for (const r of results) r.ok ? (sent += 1) : (failed += 1);
     }
     await db
       .from('email_campaigns')
@@ -123,5 +141,10 @@ export async function processCampaigns(): Promise<{ promoted: number; sent: numb
 
 /** Preview/test: render the campaign for one address, bypassing opt-out and the log's campaign dedupe. */
 export async function sendTest(c: Pick<Campaign, 'subject' | 'body'>, to: string, userId: string) {
-  return sendEmail({ to, userId, template: 'campaign_test', ...templates.campaign(c.subject, c.body, unsubscribeUrl(userId)) });
+  return sendEmail({
+    to,
+    userId,
+    template: 'campaign_test',
+    ...templates.campaign(c.subject, c.body, unsubscribeUrl(userId)),
+  });
 }

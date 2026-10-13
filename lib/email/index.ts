@@ -62,7 +62,12 @@ async function viaResend(input: SendEmailInput): Promise<{ id?: string }> {
       text: input.text,
       tags: [{ name: 'template', value: input.template.replace(/[^a-zA-Z0-9_-]/g, '_') }],
       ...(input.unsubscribeUrl
-        ? { headers: { 'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+        ? {
+            headers: {
+              'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+          }
         : {}),
     }),
     cache: 'no-store',
@@ -82,7 +87,12 @@ async function viaSmtp(input: SendEmailInput): Promise<{ id?: string }> {
     html: input.html,
     text: input.text,
     ...(input.unsubscribeUrl
-      ? { headers: { 'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+      ? {
+          headers: {
+            'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        }
       : {}),
   });
   return { id: info.messageId };
@@ -108,7 +118,11 @@ async function log(input: SendEmailInput, res: SendEmailResult) {
 
 async function optedOut(userId: string): Promise<boolean> {
   if (!supabaseAdmin) return false;
-  const { data } = await supabaseAdmin.from('users').select('marketing_opt_out, deleted_at').eq('id', userId).maybeSingle();
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('marketing_opt_out, deleted_at')
+    .eq('id', userId)
+    .maybeSingle();
   return Boolean(data?.marketing_opt_out || data?.deleted_at);
 }
 
@@ -146,7 +160,11 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 /** Look up the address for a user id; null for anonymous or deleted accounts. */
 export async function emailOfUser(userId: string): Promise<{ email: string; handle: string | null } | null> {
   if (!supabaseAdmin) return null;
-  const { data } = await supabaseAdmin.from('users').select('email, handle, deleted_at').eq('id', userId).maybeSingle();
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('email, handle, deleted_at')
+    .eq('id', userId)
+    .maybeSingle();
   if (!data?.email || data.deleted_at) return null;
   return { email: data.email as string, handle: (data.handle as string | null) ?? null };
 }

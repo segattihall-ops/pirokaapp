@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ announcements: [] });
-  if (!supabaseAdmin || !(await isFlagEnabled('announcements', session.userId))) return NextResponse.json({ announcements: [] });
+  if (!supabaseAdmin || !(await isFlagEnabled('announcements', session.userId)))
+    return NextResponse.json({ announcements: [] });
 
   const nowIso = new Date().toISOString();
   const [{ data: me }, { data: rows }] = await Promise.all([

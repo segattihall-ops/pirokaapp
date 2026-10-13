@@ -28,11 +28,19 @@ async function audit(action: string, target: string | null, details: unknown) {
 
 async function userIdForSubscription(subscriptionId: string): Promise<string | null> {
   if (!supabaseAdmin) return null;
-  const { data } = await supabaseAdmin.from('users').select('id').eq('paypal_subscription_id', subscriptionId).maybeSingle();
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('paypal_subscription_id', subscriptionId)
+    .maybeSingle();
   return (data?.id as string | undefined) ?? null;
 }
 
-async function mail(userId: string | null, template: keyof typeof templates, content: ReturnType<(typeof templates)[keyof typeof templates]>) {
+async function mail(
+  userId: string | null,
+  template: keyof typeof templates,
+  content: ReturnType<(typeof templates)[keyof typeof templates]>,
+) {
   if (!userId) return;
   const who = await emailOfUser(userId);
   if (!who) return;
@@ -84,7 +92,10 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
           : db.from('users').update(patch).eq('paypal_subscription_id', res.id);
         const { error } = await q;
         if (error) throw error;
-        await audit(`paypal.${event.event_type}`, userId ?? res.id, { subscription: res.id, plan: res.plan_id });
+        await audit(`paypal.${event.event_type}`, userId ?? res.id, {
+          subscription: res.id,
+          plan: res.plan_id,
+        });
         if (active && plan && plan !== 'free' && event.event_type !== 'BILLING.SUBSCRIPTION.UPDATED') {
           await track({ userId, event: EVENTS.subscribed, props: { plan, source: 'webhook' } });
         }
@@ -103,7 +114,8 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
         if (error) throw error;
         await audit(`paypal.${event.event_type}`, userId ?? res.id, { subscription: res.id });
         await track({ userId, event: EVENTS.subscription_cancelled, props: { status, source: 'webhook' } });
-        if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') await mail(userId, 'cancelled', templates.cancelled());
+        if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED')
+          await mail(userId, 'cancelled', templates.cancelled());
         break;
       }
 
@@ -128,7 +140,10 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
         );
         await track({ userId, event: EVENTS.payment_failed, props: { subscription: res.id } });
         await mail(userId, 'paymentFailed', templates.paymentFailed(0));
-        await opsAlert('payment', `Payment failed for subscription ${res.id}${userId ? ` (user ${userId.slice(0, 8)}…)` : ''}`);
+        await opsAlert(
+          'payment',
+          `Payment failed for subscription ${res.id}${userId ? ` (user ${userId.slice(0, 8)}…)` : ''}`,
+        );
         break;
       }
 
@@ -158,11 +173,18 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
           )
           .select('id');
         if (user) {
-          await db.from('users').update({ subscription_status: 'ACTIVE', payment_failed_at: null }).eq('id', user.id);
+          await db
+            .from('users')
+            .update({ subscription_status: 'ACTIVE', payment_failed_at: null })
+            .eq('id', user.id);
           await track({ userId: user.id, event: EVENTS.payment_completed, props: { amount, currency } });
           // Only the first time we see this sale: PayPal retries webhooks.
           if (inserted && inserted.length > 0) {
-            await mail(user.id, 'receipt', templates.receipt(amount, currency, String(user.plan ?? 'plan'), res.id));
+            await mail(
+              user.id,
+              'receipt',
+              templates.receipt(amount, currency, String(user.plan ?? 'plan'), res.id),
+            );
           }
         }
         break;

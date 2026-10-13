@@ -57,7 +57,11 @@ export function CampaignsEditor() {
   const call = async (method: string, url: string, payload?: unknown) => {
     setBusy(true);
     setMsg('');
-    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: payload ? JSON.stringify(payload) : undefined });
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: payload ? JSON.stringify(payload) : undefined,
+    });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) {
@@ -70,7 +74,9 @@ export function CampaignsEditor() {
 
   const save = async () => {
     const payload = { subject, body, segment };
-    const j = sel ? await call('PATCH', `/api/admin/campaigns/${sel.id}`, payload) : await call('POST', '/api/admin/campaigns', payload);
+    const j = sel
+      ? await call('PATCH', `/api/admin/campaigns/${sel.id}`, payload)
+      : await call('POST', '/api/admin/campaigns', payload);
     if (j?.campaign) {
       setSel(j.campaign);
       setMsg('Saved.');
@@ -78,8 +84,12 @@ export function CampaignsEditor() {
   };
   const act = async (action: string) => {
     if (!sel) return;
-    if (action === 'send_now' && !confirm(`Send "${sel.subject}" to the "${sel.segment}" segment now?`)) return;
-    const j = await call('PATCH', `/api/admin/campaigns/${sel.id}`, { action, scheduledAt: when ? new Date(when).toISOString() : undefined });
+    if (action === 'send_now' && !confirm(`Send "${sel.subject}" to the "${sel.segment}" segment now?`))
+      return;
+    const j = await call('PATCH', `/api/admin/campaigns/${sel.id}`, {
+      action,
+      scheduledAt: when ? new Date(when).toISOString() : undefined,
+    });
     if (j?.campaign) {
       setSel(j.campaign);
       setMsg(action === 'send_now' ? 'Queued — the cron sends batches every 10 minutes.' : 'Done.');
@@ -120,11 +130,20 @@ export function CampaignsEditor() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="truncate text-[13px] font-semibold">{c.subject}</p>
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLE[c.status]}`}>{c.status}</span>
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLE[c.status]}`}
+                  >
+                    {c.status}
+                  </span>
                 </div>
                 <p className="text-[11px] text-fg-3">
-                  {c.segment} · {c.status === 'draft' ? new Date(c.created_at).toLocaleDateString() : `${c.sent_count}/${c.total_count} sent${c.failed_count ? `, ${c.failed_count} failed` : ''}`}
-                  {c.status === 'scheduled' && c.scheduled_at ? ` · ${new Date(c.scheduled_at).toLocaleString()}` : ''}
+                  {c.segment} ·{' '}
+                  {c.status === 'draft'
+                    ? new Date(c.created_at).toLocaleDateString()
+                    : `${c.sent_count}/${c.total_count} sent${c.failed_count ? `, ${c.failed_count} failed` : ''}`}
+                  {c.status === 'scheduled' && c.scheduled_at
+                    ? ` · ${new Date(c.scheduled_at).toLocaleString()}`
+                    : ''}
                 </p>
               </button>
             ))
@@ -135,26 +154,54 @@ export function CampaignsEditor() {
       <div className="flex flex-col gap-3 rounded-card border border-line-2 bg-white/[0.04] p-4">
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-semibold text-fg-2">Subject</span>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} disabled={!editable} className="input h-10" maxLength={120} />
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            disabled={!editable}
+            className="input h-10"
+            maxLength={120}
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-semibold text-fg-2">Audience</span>
-          <select value={segment} onChange={(e) => setSegment(e.target.value)} disabled={!editable} className="input h-10 py-0">
+          <select
+            value={segment}
+            onChange={(e) => setSegment(e.target.value)}
+            disabled={!editable}
+            className="input h-10 py-0"
+          >
             {segments.map((s) => (
               <option key={s.key} value={s.key}>
                 {s.label} ({s.count.toLocaleString()})
               </option>
             ))}
           </select>
-          {seg && <span className="text-[11px] text-fg-4">{seg.count.toLocaleString()} recipients right now (opted-out and deleted accounts excluded).</span>}
+          {seg && (
+            <span className="text-[11px] text-fg-4">
+              {seg.count.toLocaleString()} recipients right now (opted-out and deleted accounts excluded).
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[12px] font-semibold text-fg-2">Body · Markdown-lite (**bold**, [link](https://…), blank line = paragraph)</span>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} disabled={!editable} rows={10} className="input resize-y font-mono text-[12px]" />
+          <span className="text-[12px] font-semibold text-fg-2">
+            Body · Markdown-lite (**bold**, [link](https://…), blank line = paragraph)
+          </span>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            disabled={!editable}
+            rows={10}
+            className="input resize-y font-mono text-[12px]"
+          />
         </label>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={save} disabled={busy || !editable || subject.trim().length < 3 || body.trim().length < 10} className="btn-primary h-10 text-[13px]">
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy || !editable || subject.trim().length < 3 || body.trim().length < 10}
+            className="btn-primary h-10 text-[13px]"
+          >
             {sel ? 'Save changes' : 'Create draft'}
           </button>
           {sel && (
@@ -164,27 +211,58 @@ export function CampaignsEditor() {
               </button>
               {editable && (
                 <>
-                  <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="input h-10 w-auto" aria-label="Schedule for" />
-                  <button type="button" onClick={() => act('schedule')} disabled={busy || !when} className="btn-secondary h-10 text-[13px]">
+                  <input
+                    type="datetime-local"
+                    value={when}
+                    onChange={(e) => setWhen(e.target.value)}
+                    className="input h-10 w-auto"
+                    aria-label="Schedule for"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => act('schedule')}
+                    disabled={busy || !when}
+                    className="btn-secondary h-10 text-[13px]"
+                  >
                     Schedule
                   </button>
-                  <button type="button" onClick={() => act('send_now')} disabled={busy} className="h-10 rounded-btn bg-green px-4 text-[13px] font-semibold text-ink-950 disabled:opacity-40">
+                  <button
+                    type="button"
+                    onClick={() => act('send_now')}
+                    disabled={busy}
+                    className="h-10 rounded-btn bg-green px-4 text-[13px] font-semibold text-ink-950 disabled:opacity-40"
+                  >
                     Send now
                   </button>
                 </>
               )}
               {sel.status === 'scheduled' && (
-                <button type="button" onClick={() => act('unschedule')} disabled={busy} className="btn-secondary h-10 text-[13px]">
+                <button
+                  type="button"
+                  onClick={() => act('unschedule')}
+                  disabled={busy}
+                  className="btn-secondary h-10 text-[13px]"
+                >
                   Unschedule
                 </button>
               )}
               {sel.status !== 'sent' && sel.status !== 'cancelled' && (
-                <button type="button" onClick={() => act('cancel')} disabled={busy} className="btn-ghost h-10 text-[13px] text-danger">
+                <button
+                  type="button"
+                  onClick={() => act('cancel')}
+                  disabled={busy}
+                  className="btn-ghost h-10 text-[13px] text-danger"
+                >
                   Cancel
                 </button>
               )}
               {sel.status !== 'sending' && (
-                <button type="button" onClick={remove} disabled={busy} className="btn-ghost h-10 text-[13px] text-fg-3">
+                <button
+                  type="button"
+                  onClick={remove}
+                  disabled={busy}
+                  className="btn-ghost h-10 text-[13px] text-fg-3"
+                >
                   Delete
                 </button>
               )}
@@ -197,7 +275,9 @@ export function CampaignsEditor() {
           </p>
         )}
         <p className="text-[11px] text-fg-4">
-          Every message carries an unsubscribe link and one-click header. The cron (<code>/api/cron/campaigns</code>) sends 100 per campaign per run and never emails the same person twice for one campaign.
+          Every message carries an unsubscribe link and one-click header. The cron (
+          <code>/api/cron/campaigns</code>) sends 100 per campaign per run and never emails the same person
+          twice for one campaign.
         </p>
       </div>
     </div>

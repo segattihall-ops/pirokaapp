@@ -24,20 +24,33 @@ export const DELETE = withApi('/api/me/account', async (request: Request) => {
   if (confirm !== 'DELETE') return NextResponse.json({ error: 'Type DELETE to confirm' }, { status: 400 });
 
   // Capture what we need for the goodbye email before the row disappears.
-  const { data: before } = await db.from('users').select('email, plan, created_at').eq('id', me).maybeSingle();
+  const { data: before } = await db
+    .from('users')
+    .select('email, plan, created_at')
+    .eq('id', me)
+    .maybeSingle();
   const email = g.session.email ?? (before?.email as string | null) ?? null;
 
   // Storage: everything under users/<id>/
   const prefix = `users/${me}`;
   const { data: dirs } = await db.storage.from('photos').list(`${prefix}/photos`, { limit: 100 });
   const keys = (dirs ?? []).filter((f) => f.name).map((f) => `${prefix}/photos/${f.name}`);
-  if (keys.length) await db.storage.from('photos').remove(keys).catch((e) => console.error('storage cleanup', e));
+  if (keys.length)
+    await db.storage
+      .from('photos')
+      .remove(keys)
+      .catch((e) => console.error('storage cleanup', e));
 
   // Analytics row first: the users FK is `on delete set null`, so the event survives as anonymous.
   await track({
     userId: me,
     event: EVENTS.account_deleted,
-    props: { plan: String(before?.plan ?? 'free'), ageDays: before?.created_at ? Math.round((Date.now() - new Date(before.created_at as string).getTime()) / 86400_000) : null },
+    props: {
+      plan: String(before?.plan ?? 'free'),
+      ageDays: before?.created_at
+        ? Math.round((Date.now() - new Date(before.created_at as string).getTime()) / 86400_000)
+        : null,
+    },
   });
 
   // Rows: the users row cascades to photos, statuses, locations, favourites, trips, album, notifications,
@@ -49,7 +62,8 @@ export const DELETE = withApi('/api/me/account', async (request: Request) => {
   const { error: authErr } = await db.auth.admin.deleteUser(me);
   if (authErr) console.error('auth delete failed', authErr.message);
 
-  if (email) void sendEmail({ to: email, userId: null, template: 'accountDeleted', ...templates.accountDeleted() });
+  if (email)
+    void sendEmail({ to: email, userId: null, template: 'accountDeleted', ...templates.accountDeleted() });
 
   await signOutServer().catch(() => {});
   return NextResponse.json({ ok: true });

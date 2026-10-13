@@ -61,7 +61,11 @@ export async function POST(request: Request) {
   };
   const { error } = await supabaseAdmin.from('statuses').upsert(row, { onConflict: 'user_id' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  void track({ userId: session.userId, event: EVENTS.status_set, props: { intent, hours, fromNothing: !before } });
+  void track({
+    userId: session.userId,
+    event: EVENTS.status_set,
+    props: { intent, hours, fromNothing: !before },
+  });
 
   // Go-live alert to favouriters — only when going live from nothing, or switching to "Now", so extending never spams.
   if (!before || (intent === 'now' && before.intent !== 'now')) {
@@ -69,13 +73,16 @@ export async function POST(request: Request) {
       .then(([{ data: fans }, cards]) => {
         const who = displayName(cards.get(session.userId)?.handle);
         const meta = INTENT_LABEL[intent];
-        return notifyMany(((fans ?? []) as { user_id: string }[]).map((f) => f.user_id), {
-          kind: 'status',
-          title: `${who} is live: ${meta}`,
-          body: `For the next ${hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`}. Tap to open their profile.`,
-          url: `/app/map?user=${session.userId}`,
-          refUser: session.userId,
-        });
+        return notifyMany(
+          ((fans ?? []) as { user_id: string }[]).map((f) => f.user_id),
+          {
+            kind: 'status',
+            title: `${who} is live: ${meta}`,
+            body: `For the next ${hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`}. Tap to open their profile.`,
+            url: `/app/map?user=${session.userId}`,
+            refUser: session.userId,
+          },
+        );
       })
       .catch((e) => console.error('go-live alerts failed', e));
   }

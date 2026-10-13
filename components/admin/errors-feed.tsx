@@ -32,7 +32,11 @@ export function ErrorsFeed() {
   }, [load]);
 
   const resolve = async (id: number, resolved: boolean) => {
-    await fetch('/api/admin/errors', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, resolved }) });
+    await fetch('/api/admin/errors', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, resolved }),
+    });
     load();
   };
 
@@ -44,7 +48,12 @@ export function ErrorsFeed() {
           ['resolved', 'Resolved'],
           ['all', 'All'],
         ].map(([v, l]) => (
-          <button key={v} type="button" onClick={() => setShow(v)} className={`chip ${show === v ? 'chip-selected' : ''}`}>
+          <button
+            key={v}
+            type="button"
+            onClick={() => setShow(v)}
+            className={`chip ${show === v ? 'chip-selected' : ''}`}
+          >
             {l}
           </button>
         ))}
@@ -56,17 +65,34 @@ export function ErrorsFeed() {
       ) : (
         <ul className="space-y-2">
           {rows.map((e) => (
-            <li key={e.id} className={`rounded-card border p-3 ${e.resolved_at ? 'border-line-1 bg-white/[0.02] opacity-70' : 'border-line-2 bg-white/5'}`}>
+            <li
+              key={e.id}
+              className={`rounded-card border p-3 ${e.resolved_at ? 'border-line-1 bg-white/[0.02] opacity-70' : 'border-line-2 bg-white/5'}`}
+            >
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-fg-3">
-                <span className={`rounded px-1.5 py-0.5 font-bold uppercase ${e.severity === 'fatal' || e.severity === 'error' ? 'bg-red-900 text-red-200' : 'bg-ink-750 text-fg-2'}`}>{e.severity}</span>
+                <span
+                  className={`rounded px-1.5 py-0.5 font-bold uppercase ${e.severity === 'fatal' || e.severity === 'error' ? 'bg-red-900 text-red-200' : 'bg-ink-750 text-fg-2'}`}
+                >
+                  {e.severity}
+                </span>
                 <span className="rounded bg-ink-750 px-1.5 py-0.5 uppercase">{e.source}</span>
                 {e.route && <span className="font-mono">{e.route}</span>}
-                <span>· {e.count}× · last {new Date(e.last_seen).toLocaleString()}</span>
+                <span>
+                  · {e.count}× · last {new Date(e.last_seen).toLocaleString()}
+                </span>
                 <span className="ml-auto flex gap-1">
-                  <button type="button" onClick={() => setOpen(open === e.id ? null : e.id)} className="chip h-7 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setOpen(open === e.id ? null : e.id)}
+                    className="chip h-7 text-[11px]"
+                  >
                     {open === e.id ? 'Hide' : 'Stack'}
                   </button>
-                  <button type="button" onClick={() => resolve(e.id, !e.resolved_at)} className="chip h-7 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => resolve(e.id, !e.resolved_at)}
+                    className="chip h-7 text-[11px]"
+                  >
                     {e.resolved_at ? 'Reopen' : 'Resolve'}
                   </button>
                 </span>
@@ -76,7 +102,11 @@ export function ErrorsFeed() {
                 fingerprint {e.fingerprint} · first {new Date(e.first_seen).toLocaleString()}
                 {e.user_id ? ` · user ${e.user_id.slice(0, 8)}` : ''}
               </p>
-              {open === e.id && e.stack && <pre className="mt-2 max-h-[280px] overflow-auto rounded bg-black/40 p-2 text-[11px] text-fg-3">{e.stack}</pre>}
+              {open === e.id && e.stack && (
+                <pre className="mt-2 max-h-[280px] overflow-auto rounded bg-black/40 p-2 text-[11px] text-fg-3">
+                  {e.stack}
+                </pre>
+              )}
             </li>
           ))}
         </ul>

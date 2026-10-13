@@ -6,7 +6,8 @@ import { withApi } from '@/lib/errors/server';
 export const dynamic = 'force-dynamic';
 
 const PLANS = ['free', 'plus', 'premium', 'anonymous'];
-const COLS = 'id, handle, email, plan, subscription_status, mod_step, age_verified, created_at, last_seen_at, deleted_at, marketing_opt_out, auth_provider';
+const COLS =
+  'id, handle, email, plan, subscription_status, mod_step, age_verified, created_at, last_seen_at, deleted_at, marketing_opt_out, auth_provider';
 
 /** Search users by handle / email / id with optional plan filter. */
 export const GET = withApi('/api/admin/users', async (request: Request) => {

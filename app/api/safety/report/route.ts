@@ -9,7 +9,15 @@ import { opsAlert } from '@/lib/alerts/server';
 
 export const dynamic = 'force-dynamic';
 
-const REPORT_REASONS =['harassment', 'spam', 'underage', 'impersonation', 'hate', 'unsafe', 'other'] as const;
+const REPORT_REASONS = [
+  'harassment',
+  'spam',
+  'underage',
+  'impersonation',
+  'hate',
+  'unsafe',
+  'other',
+] as const;
 
 const Body = z.object({
   targetId: z.string().uuid(),
@@ -27,7 +35,8 @@ export async function POST(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid report' }, { status: 400 });
   const { targetId, reason, details, conversationId } = parsed.data;
-  if (targetId === session.userId) return NextResponse.json({ error: 'Cannot report yourself' }, { status: 400 });
+  if (targetId === session.userId)
+    return NextResponse.json({ error: 'Cannot report yourself' }, { status: 400 });
 
   const hourAgo = new Date(Date.now() - 3600_000).toISOString();
   const { count } = await supabaseAdmin

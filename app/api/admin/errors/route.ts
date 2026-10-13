@@ -24,7 +24,10 @@ export const PATCH = withApi('/api/admin/errors', async (request: Request) => {
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const { id, resolved } = (await request.json().catch(() => ({}))) as { id?: number; resolved?: boolean };
   if (typeof id !== 'number') return NextResponse.json({ error: 'id required' }, { status: 400 });
-  const { error } = await supabaseAdmin.from('error_events').update({ resolved_at: resolved === false ? null : new Date().toISOString() }).eq('id', id);
+  const { error } = await supabaseAdmin
+    .from('error_events')
+    .update({ resolved_at: resolved === false ? null : new Date().toISOString() })
+    .eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 });

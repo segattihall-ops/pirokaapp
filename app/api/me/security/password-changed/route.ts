@@ -19,11 +19,18 @@ export async function POST() {
   if (!(await rateLimit(`pwchanged:${session.userId}`, 3, 3600))) return tooMany();
 
   if (supabaseAdmin) {
-    await supabaseAdmin.from('audit_log').insert({ actor_id: session.userId, action: 'security.password_changed', target: session.userId });
+    await supabaseAdmin
+      .from('audit_log')
+      .insert({ actor_id: session.userId, action: 'security.password_changed', target: session.userId });
   }
   void track({ userId: session.userId, event: EVENTS.password_changed });
   if (session.email) {
-    void sendEmail({ to: session.email, userId: session.userId, template: 'passwordChanged', ...templates.passwordChanged() });
+    void sendEmail({
+      to: session.email,
+      userId: session.userId,
+      template: 'passwordChanged',
+      ...templates.passwordChanged(),
+    });
   }
   return NextResponse.json({ ok: true });
 }

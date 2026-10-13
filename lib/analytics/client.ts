@@ -33,9 +33,12 @@ export function track(event: EventName, props: Record<string, unknown> = {}): vo
       return;
     }
   } catch {}
-  fetch('/api/analytics/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(
-    () => {},
-  );
+  fetch('/api/analytics/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 /** Mount once (Providers) to record a page_view on every client-side navigation. */

@@ -26,9 +26,14 @@ export const PUT = withApi('/api/admin/flags', async (request: Request) => {
   if ('response' in g) return g.response;
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const parsed = Upsert.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: 'key (a-z0-9_), enabled, rollout_pct 0–100' }, { status: 400 });
+  if (!parsed.success)
+    return NextResponse.json({ error: 'key (a-z0-9_), enabled, rollout_pct 0–100' }, { status: 400 });
   const b = parsed.data;
-  const { data: existing } = await supabaseAdmin.from('feature_flags').select('*').eq('key', b.key).maybeSingle();
+  const { data: existing } = await supabaseAdmin
+    .from('feature_flags')
+    .select('*')
+    .eq('key', b.key)
+    .maybeSingle();
   const row = {
     key: b.key,
     enabled: b.enabled ?? existing?.enabled ?? false,
@@ -39,7 +44,9 @@ export const PUT = withApi('/api/admin/flags', async (request: Request) => {
   const { error } = await supabaseAdmin.from('feature_flags').upsert(row, { onConflict: 'key' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   invalidateFlagCache();
-  await supabaseAdmin.from('audit_log').insert({ actor_id: g.session.userId, action: 'flag.update', target: b.key, details: row });
+  await supabaseAdmin
+    .from('audit_log')
+    .insert({ actor_id: g.session.userId, action: 'flag.update', target: b.key, details: row });
   return NextResponse.json({ flag: row });
 });
 
@@ -51,6 +58,8 @@ export const DELETE = withApi('/api/admin/flags', async (request: Request) => {
   if (!/^[a-z0-9_]{2,48}$/.test(key)) return NextResponse.json({ error: 'Invalid key' }, { status: 400 });
   await supabaseAdmin.from('feature_flags').delete().eq('key', key);
   invalidateFlagCache();
-  await supabaseAdmin.from('audit_log').insert({ actor_id: g.session.userId, action: 'flag.delete', target: key });
+  await supabaseAdmin
+    .from('audit_log')
+    .insert({ actor_id: g.session.userId, action: 'flag.delete', target: key });
   return NextResponse.json({ ok: true });
 });

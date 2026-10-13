@@ -83,7 +83,9 @@ export const templates = {
         title: `Thanks for going ${escapeHtml(plan)}`,
         bodyHtml:
           p('Your subscription is active. New features unlock right away on every device.') +
-          p('You can cancel at any time from your profile; access stays until the end of the billing period.'),
+          p(
+            'You can cancel at any time from your profile; access stays until the end of the billing period.',
+          ),
         cta: { label: 'See your plan', url: appUrl('/app/me') },
         footerNote: 'Billing is handled by PayPal. This is a transactional receipt.',
       }),
@@ -98,8 +100,9 @@ export const templates = {
       html: layout({
         title: 'Payment received',
         bodyHtml:
-          p(`We received <strong>${escapeHtml(money)}</strong> for your πroka ${escapeHtml(plan)} subscription.`) +
-          p(`Reference: <code style="color:#aaa">${escapeHtml(paymentId)}</code>`),
+          p(
+            `We received <strong>${escapeHtml(money)}</strong> for your πroka ${escapeHtml(plan)} subscription.`,
+          ) + p(`Reference: <code style="color:#aaa">${escapeHtml(paymentId)}</code>`),
         cta: { label: 'Billing & plan', url: appUrl('/app/me') },
         footerNote: 'Keep this email for your records. Charged via PayPal.',
       }),
@@ -115,12 +118,15 @@ export const templates = {
           ? 'Your πroka payment is still failing after 3 days.'
           : 'Last reminder: your πroka plan will downgrade to Free unless payment succeeds.';
     return {
-      subject: day === 7 ? 'Final notice: update your payment method' : 'Action needed: your πroka payment failed',
+      subject:
+        day === 7 ? 'Final notice: update your payment method' : 'Action needed: your πroka payment failed',
       html: layout({
         title: 'Payment failed',
         bodyHtml:
           p(urgency) +
-          p('Update your card or PayPal balance and we’ll retry automatically. Your features stay on while we retry.'),
+          p(
+            'Update your card or PayPal balance and we’ll retry automatically. Your features stay on while we retry.',
+          ),
         cta: { label: 'Fix payment', url: appUrl('/app/me') },
         footerNote: 'Transactional notice about your subscription.',
       }),
@@ -134,8 +140,9 @@ export const templates = {
       html: layout({
         title: 'Cancelled — no further charges',
         bodyHtml:
-          p('Your subscription is cancelled. You keep paid features until the end of the current period, then move to Free.') +
-          p('Changed your mind? Resubscribe from your profile any time.'),
+          p(
+            'Your subscription is cancelled. You keep paid features until the end of the current period, then move to Free.',
+          ) + p('Changed your mind? Resubscribe from your profile any time.'),
         cta: { label: 'Your profile', url: appUrl('/app/me') },
       }),
       text: `Your πroka subscription is cancelled. Resubscribe any time at ${appUrl('/app/me')}`,
@@ -148,8 +155,9 @@ export const templates = {
       html: layout({
         title: 'Account deleted',
         bodyHtml:
-          p('Everything tied to your account — photos, statuses, chats, favourites — is gone. This can’t be undone.') +
-          p('If this wasn’t you, reply to this email immediately.'),
+          p(
+            'Everything tied to your account — photos, statuses, chats, favourites — is gone. This can’t be undone.',
+          ) + p('If this wasn’t you, reply to this email immediately.'),
         footerNote: 'Final message about this account.',
       }),
       text: 'Your πroka account was deleted. If this wasn’t you, reply to this email immediately.',
@@ -175,13 +183,13 @@ export const templates = {
     return {
       subject: days === 7 ? 'People near you are ready' : 'We miss you on πroka',
       html: layout({
-        title: days === 7 ? `Hey ${escapeHtml(name)}, the map moved` : `Still here for you, ${escapeHtml(name)}`,
-        bodyHtml:
-          p(
-            days === 7
-              ? 'It’s been a week. New people set intents near you every day — a 30-second status puts you back on the map.'
-              : 'It’s been a month. Your profile is still safe and private. Come see who’s around tonight.',
-          ),
+        title:
+          days === 7 ? `Hey ${escapeHtml(name)}, the map moved` : `Still here for you, ${escapeHtml(name)}`,
+        bodyHtml: p(
+          days === 7
+            ? 'It’s been a week. New people set intents near you every day — a 30-second status puts you back on the map.'
+            : 'It’s been a month. Your profile is still safe and private. Come see who’s around tonight.',
+        ),
         cta: { label: 'Set a status', url: appUrl('/app/map') },
         unsubscribeUrl,
       }),
@@ -195,8 +203,9 @@ export const templates = {
       html: layout({
         title: 'We’d love to have you back',
         bodyHtml:
-          p('You cancelled a few days ago. If something didn’t work, reply and tell us — we read every message.') +
-          p('Resubscribing takes one tap and your settings are exactly as you left them.'),
+          p(
+            'You cancelled a few days ago. If something didn’t work, reply and tell us — we read every message.',
+          ) + p('Resubscribing takes one tap and your settings are exactly as you left them.'),
         cta: { label: 'Resubscribe', url: appUrl('/app/me') },
         unsubscribeUrl,
       }),

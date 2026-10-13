@@ -7,7 +7,13 @@ import { supabaseAdmin } from '@/lib/db/client';
  * percentage rollout, sticky per user) → false. DB rows are cached for 30 s per instance.
  */
 
-export type Flag = { key: string; enabled: boolean; rollout_pct: number; description: string | null; updated_at: string };
+export type Flag = {
+  key: string;
+  enabled: boolean;
+  rollout_pct: number;
+  description: string | null;
+  updated_at: string;
+};
 
 let cache: { at: number; rows: Flag[] } | null = null;
 const TTL = 30_000;

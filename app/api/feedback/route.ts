@@ -31,7 +31,13 @@ export const POST = withApi('/api/feedback', async (request: Request) => {
   await ensureUserRow(session);
   const { data, error } = await supabaseAdmin
     .from('feedback')
-    .insert({ user_id: session.userId, email: b.email ?? session.email ?? null, kind: b.kind, message: b.message, path: b.path ?? null })
+    .insert({
+      user_id: session.userId,
+      email: b.email ?? session.email ?? null,
+      kind: b.kind,
+      message: b.message,
+      path: b.path ?? null,
+    })
     .select('id')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

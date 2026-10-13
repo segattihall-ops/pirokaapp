@@ -20,7 +20,11 @@ export function AccountData() {
     const next = !marketing;
     setSaving(true);
     setMarketing(next);
-    const r = await fetch('/api/me/marketing', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ marketing: next }) });
+    const r = await fetch('/api/me/marketing', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketing: next }),
+    });
     if (!r.ok) setMarketing(!next);
     setSaving(false);
   };
@@ -28,7 +32,10 @@ export function AccountData() {
   const download = async () => {
     setMsg('');
     const r = await fetch('/api/me/export', { cache: 'no-store' });
-    if (!r.ok) return setMsg(r.status === 429 ? 'Three exports a day — try again tomorrow.' : 'Could not export right now.');
+    if (!r.ok)
+      return setMsg(
+        r.status === 429 ? 'Three exports a day — try again tomorrow.' : 'Could not export right now.',
+      );
     const blob = await r.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -55,7 +62,9 @@ export function AccountData() {
           onClick={toggle}
           className={`tap-hit relative h-7 w-12 shrink-0 rounded-chip border transition-colors disabled:opacity-40 ${marketing ? 'border-sel-border bg-green' : 'border-line-3 bg-ink-800'}`}
         >
-          <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white transition-transform ${marketing ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+          <span
+            className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white transition-transform ${marketing ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
+          />
         </button>
       </div>
       <div className="flex items-center justify-between border-t border-line-1 py-3">

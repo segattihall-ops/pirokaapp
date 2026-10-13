@@ -42,7 +42,11 @@ export const POST = withApi('/api/billing/cancel', async () => {
     target: subscriptionId,
     details: null,
   });
-  await track({ userId: session.userId, event: EVENTS.subscription_cancelled, props: { from: String(user?.plan ?? ''), source: 'user' } });
+  await track({
+    userId: session.userId,
+    event: EVENTS.subscription_cancelled,
+    props: { from: String(user?.plan ?? ''), source: 'user' },
+  });
   const to = session.email ?? (user?.email as string | null);
   if (to) void sendEmail({ to, userId: session.userId, template: 'cancelled', ...templates.cancelled() });
 

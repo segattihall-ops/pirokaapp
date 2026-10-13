@@ -14,9 +14,13 @@ export const maxDuration = 60;
 export const GET = withApi('/api/cron/digest', async (request: Request) => {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get('authorization') ?? '';
-  if (!secret || auth !== `Bearer ${secret}`) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!secret || auth !== `Bearer ${secret}`)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const admins = (process.env.ADMIN_EMAILS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const admins = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (admins.length === 0) return NextResponse.json({ ok: false, reason: 'ADMIN_EMAILS empty' });
 
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
@@ -24,9 +28,18 @@ export const GET = withApi('/api/cron/digest', async (request: Request) => {
     getAdminStats(),
     getGrowthStats(),
     getRevenueStats(),
-    supabaseAdmin ? supabaseAdmin.from('error_events').select('id', { count: 'exact', head: true }).gte('last_seen', weekAgo) : Promise.resolve({ count: 0 }),
-    supabaseAdmin ? supabaseAdmin.from('feedback').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo) : Promise.resolve({ count: 0 }),
-    supabaseAdmin ? supabaseAdmin.from('reports').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo) : Promise.resolve({ count: 0 }),
+    supabaseAdmin
+      ? supabaseAdmin
+          .from('error_events')
+          .select('id', { count: 'exact', head: true })
+          .gte('last_seen', weekAgo)
+      : Promise.resolve({ count: 0 }),
+    supabaseAdmin
+      ? supabaseAdmin.from('feedback').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo)
+      : Promise.resolve({ count: 0 }),
+    supabaseAdmin
+      ? supabaseAdmin.from('reports').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo)
+      : Promise.resolve({ count: 0 }),
   ]);
 
   const lines = [
@@ -40,6 +53,8 @@ export const GET = withApi('/api/cron/digest', async (request: Request) => {
     `Feedback received: ${feedback.count ?? 0}`,
   ];
   const content = templates.adminDigest(lines);
-  const results = await Promise.all(admins.map((to) => sendEmail({ to, template: 'admin_digest', ...content })));
+  const results = await Promise.all(
+    admins.map((to) => sendEmail({ to, template: 'admin_digest', ...content })),
+  );
   return NextResponse.json({ ok: true, sent: results.filter((r) => r.ok).length, lines });
 });

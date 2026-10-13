@@ -54,10 +54,15 @@ export const POST = withApi('/api/billing/subscribe', async (request: Request) =
     target: sub.id,
     details: { plan, status: sub.status },
   });
-  await track({ userId: session.userId, event: EVENTS.subscribed, props: { plan, status: sub.status, source: 'checkout' } });
+  await track({
+    userId: session.userId,
+    event: EVENTS.subscribed,
+    props: { plan, status: sub.status, source: 'checkout' },
+  });
   if (active) {
     const to = session.email ?? sub.subscriber?.email_address;
-    if (to) void sendEmail({ to, userId: session.userId, template: 'subscribed', ...templates.subscribed(plan) });
+    if (to)
+      void sendEmail({ to, userId: session.userId, template: 'subscribed', ...templates.subscribed(plan) });
   }
 
   return NextResponse.json({ plan: active ? plan : 'free', status: sub.status, subscriptionId: sub.id });

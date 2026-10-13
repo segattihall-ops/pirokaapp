@@ -9,8 +9,10 @@ export default function CampaignsPage() {
       <div>
         <h1 className="text-h2 sm:text-h1">Email campaigns</h1>
         <p className="mt-1 text-[12px] text-fg-4">
-          Provider: <span className={emailConfigured() ? 'text-green' : 'text-warning'}>{emailProvider()}</span>
-          {!emailConfigured() && ' — messages are logged to the console until RESEND_API_KEY or EMAIL_SERVER is set.'}
+          Provider:{' '}
+          <span className={emailConfigured() ? 'text-green' : 'text-warning'}>{emailProvider()}</span>
+          {!emailConfigured() &&
+            ' — messages are logged to the console until RESEND_API_KEY or EMAIL_SERVER is set.'}
         </p>
       </div>
       <CampaignsEditor />

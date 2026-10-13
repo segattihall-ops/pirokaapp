@@ -26,10 +26,30 @@ export const GET = withApi('/api/admin/users/[id]', async (_request: Request, { 
       )
       .eq('id', id)
       .maybeSingle(),
-    db.from('analytics_events').select('event, props, path, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(25),
-    db.from('email_log').select('template, subject, status, provider, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(15),
-    db.from('payments').select('payment_id, amount, currency, status, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(15),
-    db.from('mod_actions').select('id, step, reason, rule_ref, expires_at, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(10),
+    db
+      .from('analytics_events')
+      .select('event, props, path, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(25),
+    db
+      .from('email_log')
+      .select('template, subject, status, provider, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(15),
+    db
+      .from('payments')
+      .select('payment_id, amount, currency, status, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(15),
+    db
+      .from('mod_actions')
+      .select('id, step, reason, rule_ref, expires_at, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(10),
     db.from('reports').select('id', { count: 'exact', head: true }).eq('target_id', id),
     db.from('reports').select('id', { count: 'exact', head: true }).eq('reporter_id', id),
   ]);
@@ -62,9 +82,11 @@ export const PATCH = withApi('/api/admin/users/[id]', async (request: Request, {
   const b = parsed.data;
 
   const patch: Record<string, unknown> = {};
-  if (b.plan) Object.assign(patch, { plan: b.plan, subscription_status: b.plan === 'free' ? 'INACTIVE' : 'COMPED' });
+  if (b.plan)
+    Object.assign(patch, { plan: b.plan, subscription_status: b.plan === 'free' ? 'INACTIVE' : 'COMPED' });
   if (b.marketingOptOut !== undefined) patch.marketing_opt_out = b.marketingOptOut;
-  if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nothing to change' }, { status: 400 });
+  if (Object.keys(patch).length === 0)
+    return NextResponse.json({ error: 'Nothing to change' }, { status: 400 });
 
   const { error } = await supabaseAdmin.from('users').update(patch).eq('id', params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

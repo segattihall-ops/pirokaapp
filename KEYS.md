@@ -155,10 +155,15 @@ openssl rand -base64 32   # run twice
 
 | Variable | Value |
 |---|---|
-| `EMAIL_SERVER` | `smtp://user:pass@smtp.provider.com:587` (Resend, Postmark, SendGrid, Gmail app password…) |
+| `RESEND_API_KEY` | **Preferred.** https://resend.com → API Keys. Used for every app email (welcome, receipts, dunning, campaigns, digest). |
+| `EMAIL_SERVER` | Fallback when there is no Resend key: `smtp://user:pass@smtp.provider.com:587` (Postmark, SendGrid, Gmail app password…) |
 | `EMAIL_FROM` | `πroka <no-reply@yourdomain.com>` |
+| `EMAIL_UNSUBSCRIBE_SECRET` | `openssl rand -base64 32` — signs unsubscribe links (falls back to `NEXTAUTH_SECRET`) |
+| `NEXT_PUBLIC_APP_URL` | `https://yourdomain.com` — absolute links inside emails (falls back to `NEXTAUTH_URL`) |
 
-Also set the same SMTP under Supabase → Authentication → SMTP so Supabase's own auth emails come from your domain.
+With neither key the app logs every email to the server console and records it in `email_log` with status
+`console`, so flows can be exercised end to end before the provider exists. Also set the same SMTP under
+Supabase → Authentication → SMTP so Supabase's own auth emails (magic link, reset) come from your domain.
 
 ---
 
@@ -200,6 +205,24 @@ relay is needed: create one on https://www.metered.ca/stun-turn (free tier), Twi
 | `ANTHROPIC_API_KEY` | smart search / moderation assist |
 | `TWILIO_*` | phone OTP |
 | `R2_*` | media storage |
+
+---
+
+## 10. Post-launch operations — *Optional mirrors and alerts*
+
+Analytics and error tracking are stored in Postgres (`analytics_events`, `error_events`) and shown under
+`/admin` with no key at all. These only **mirror** them to an external tool:
+
+| Variable | Where | Feature |
+|---|---|---|
+| `POSTHOG_KEY` + `POSTHOG_HOST` | https://posthog.com → Project settings | copy of every analytics event (`https://us.i.posthog.com` or `https://eu.i.posthog.com`) |
+| `SENTRY_DSN` | https://sentry.io → Project → Client Keys | copy of every captured error |
+| `OPS_WEBHOOK_URL` | Slack → Incoming Webhooks, or Discord → Channel → Integrations → Webhooks | one-line alerts for failed payments, new reports, error spikes, feedback |
+| `FLAG_<KEY>` | — | `1`/`0` overrides a feature flag from the environment (e.g. `FLAG_SMART_SEARCH=0`) |
+
+The cron routes in `vercel.json` (`/api/cron/campaigns`, `/api/cron/lifecycle`, `/api/cron/digest`) reuse
+`CRON_SECRET`; nothing else is needed. Apply `lib/db/migrations/032_post_launch_systems.sql` in the Supabase SQL editor
+before the first deploy that carries this code. See `POST_LAUNCH_ROADMAP.md` for the feature list.
 
 ---
 

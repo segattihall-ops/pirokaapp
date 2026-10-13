@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-type A = { id: string; title: string; body: string; url: string | null; audience: string; starts_at: string; ends_at: string | null };
+type A = {
+  id: string;
+  title: string;
+  body: string;
+  url: string | null;
+  audience: string;
+  starts_at: string;
+  ends_at: string | null;
+};
 
 export function AnnouncementsEditor() {
   const [rows, setRows] = useState<A[] | null>(null);
@@ -28,7 +36,13 @@ export function AnnouncementsEditor() {
     const r = await fetch('/api/admin/announcements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, url: url || null, audience, endsAt: endsAt ? new Date(endsAt).toISOString() : null }),
+      body: JSON.stringify({
+        title,
+        body,
+        url: url || null,
+        audience,
+        endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+      }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return setMsg(j.error ?? 'Could not publish');
@@ -45,22 +59,57 @@ export function AnnouncementsEditor() {
     load();
   };
 
-  const live = (a: A) => new Date(a.starts_at) <= new Date() && (!a.ends_at || new Date(a.ends_at) > new Date());
+  const live = (a: A) =>
+    new Date(a.starts_at) <= new Date() && (!a.ends_at || new Date(a.ends_at) > new Date());
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <form onSubmit={create} className="flex flex-col gap-3 rounded-card border border-line-2 bg-white/[0.04] p-4">
+      <form
+        onSubmit={create}
+        className="flex flex-col gap-3 rounded-card border border-line-2 bg-white/[0.04] p-4"
+      >
         <p className="text-[13px] font-semibold">New announcement</p>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="input h-10" maxLength={120} required />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="One or two sentences" rows={3} className="input resize-none" maxLength={600} required />
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Link (optional, /help/… or https://…)" className="input h-10" />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="input h-10"
+          maxLength={120}
+          required
+        />
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="One or two sentences"
+          rows={3}
+          className="input resize-none"
+          maxLength={600}
+          required
+        />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Link (optional, /help/… or https://…)"
+          className="input h-10"
+        />
         <div className="flex flex-wrap gap-2">
-          <select value={audience} onChange={(e) => setAudience(e.target.value)} className="input h-10 py-0" aria-label="Audience">
+          <select
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+            className="input h-10 py-0"
+            aria-label="Audience"
+          >
             <option value="all">Everyone</option>
             <option value="free">Free plan only</option>
             <option value="paid">Plus + Premium only</option>
           </select>
-          <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="input h-10 w-auto" aria-label="Ends at (optional)" />
+          <input
+            type="datetime-local"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+            className="input h-10 w-auto"
+            aria-label="Ends at (optional)"
+          />
           <button type="submit" className="btn-primary h-10 text-[13px]">
             Publish
           </button>
@@ -91,7 +140,11 @@ export function AnnouncementsEditor() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${live(a) ? 'bg-green/20 text-green' : 'bg-ink-750 text-fg-2'}`}>{live(a) ? 'live' : 'inactive'}</span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${live(a) ? 'bg-green/20 text-green' : 'bg-ink-750 text-fg-2'}`}
+                  >
+                    {live(a) ? 'live' : 'inactive'}
+                  </span>
                   <button type="button" onClick={() => remove(a.id)} className="text-[12px] text-danger">
                     Remove
                   </button>

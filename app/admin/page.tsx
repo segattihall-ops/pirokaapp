@@ -14,7 +14,11 @@ export default async function AdminPage() {
     getGrowthStats(),
     getRevenueStats(),
     supabaseAdmin
-      ? supabaseAdmin.from('error_events').select('id', { count: 'exact', head: true }).is('resolved_at', null).gte('last_seen', new Date(Date.now() - 86400_000).toISOString())
+      ? supabaseAdmin
+          .from('error_events')
+          .select('id', { count: 'exact', head: true })
+          .is('resolved_at', null)
+          .gte('last_seen', new Date(Date.now() - 86400_000).toISOString())
       : Promise.resolve({ count: 0 }),
   ]);
 
@@ -23,14 +27,28 @@ export default async function AdminPage() {
       <div>
         <h1 className="text-h2 sm:text-h1">Overview</h1>
         {!supabaseAdmin && (
-          <p className="mt-2 text-[13px] text-warning">Supabase is not configured — numbers below are zero.</p>
+          <p className="mt-2 text-[13px] text-warning">
+            Supabase is not configured — numbers below are zero.
+          </p>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="Users" value={stats.users} hint={`${stats.verified.toLocaleString()} verified 18+`} />
-        <StatCard label="Signups · 7d" value={growth.signupsThis7} delta={growth.signupsThis7 - growth.signupsPrev7} />
-        <StatCard label="DAU / WAU / MAU" value={`${growth.dau} / ${growth.wau} / ${growth.mau}`} hint="distinct users with events" />
+        <StatCard
+          label="Users"
+          value={stats.users}
+          hint={`${stats.verified.toLocaleString()} verified 18+`}
+        />
+        <StatCard
+          label="Signups · 7d"
+          value={growth.signupsThis7}
+          delta={growth.signupsThis7 - growth.signupsPrev7}
+        />
+        <StatCard
+          label="DAU / WAU / MAU"
+          value={`${growth.dau} / ${growth.wau} / ${growth.mau}`}
+          hint="distinct users with events"
+        />
         <StatCard label="MRR" value={`$${revenue.mrr.toLocaleString()}`} hint={`${stats.paying} paying`} />
         <StatCard label="Open reports" value={stats.openReports} />
         <StatCard label="Errors · 24h" value={errors.count ?? 0} hint="unresolved" />
@@ -75,7 +93,11 @@ export default async function AdminPage() {
       <ReportsQueue />
 
       <p className="text-[12px] text-fg-4">
-        Every moderation step writes to <code>mod_actions</code> and <code>audit_log</code> (<Link href="/admin/audit" className="text-green">viewer</Link>). Appeals must be reviewed by a different moderator.
+        Every moderation step writes to <code>mod_actions</code> and <code>audit_log</code> (
+        <Link href="/admin/audit" className="text-green">
+          viewer
+        </Link>
+        ). Appeals must be reviewed by a different moderator.
       </p>
     </div>
   );

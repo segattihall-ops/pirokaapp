@@ -28,7 +28,10 @@ async function rpcDays(fn: string, args: Record<string, unknown>): Promise<DayPo
     console.error(`${fn} failed`, error.message);
     return [];
   }
-  return ((data ?? []) as { day: string; n: number }[]).map((r) => ({ label: dayLabel(r.day), value: Number(r.n) }));
+  return ((data ?? []) as { day: string; n: number }[]).map((r) => ({
+    label: dayLabel(r.day),
+    value: Number(r.n),
+  }));
 }
 
 async function rpcNumber(fn: string, args: Record<string, unknown>): Promise<number> {
@@ -47,7 +50,17 @@ async function distinctUsersFor(event: string, days: number): Promise<number> {
 }
 
 export async function getGrowthStats(): Promise<GrowthStats> {
-  const empty: GrowthStats = { signups30d: [], active30d: [], dau: 0, wau: 0, mau: 0, signupsThis7: 0, signupsPrev7: 0, funnel: [], topEvents: [] };
+  const empty: GrowthStats = {
+    signups30d: [],
+    active30d: [],
+    dau: 0,
+    wau: 0,
+    mau: 0,
+    signupsThis7: 0,
+    signupsPrev7: 0,
+    funnel: [],
+    topEvents: [],
+  };
   if (!supabaseAdmin) return empty;
 
   const [signups30d, active30d, dau, wau, mau, topRaw] = await Promise.all([

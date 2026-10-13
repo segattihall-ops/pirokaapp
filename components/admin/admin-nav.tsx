@@ -25,7 +25,11 @@ export function AdminNav() {
           const active = t.href === '/admin' ? path === '/admin' : path.startsWith(t.href);
           return (
             <li key={t.href}>
-              <Link href={t.href} className={`chip whitespace-nowrap ${active ? 'chip-selected' : ''}`} aria-current={active ? 'page' : undefined}>
+              <Link
+                href={t.href}
+                className={`chip whitespace-nowrap ${active ? 'chip-selected' : ''}`}
+                aria-current={active ? 'page' : undefined}
+              >
                 {t.label}
               </Link>
             </li>

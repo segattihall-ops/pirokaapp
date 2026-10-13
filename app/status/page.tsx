@@ -20,13 +20,18 @@ export default async function StatusPage() {
       <div className="glass flex items-center gap-3 rounded-card px-4 py-3.5">
         <span className={`h-3 w-3 rounded-full ${s.ok ? 'bg-green' : 'bg-danger'}`} />
         <div>
-          <p className="text-[15px] font-semibold">{s.ok ? 'All systems operational' : 'Service disruption'}</p>
+          <p className="text-[15px] font-semibold">
+            {s.ok ? 'All systems operational' : 'Service disruption'}
+          </p>
           <p className="text-[12px] text-fg-3">Checked {new Date(s.checkedAt).toUTCString()}</p>
         </div>
       </div>
       <ul className="glass flex flex-col rounded-card px-4">
         {s.components.map((c) => (
-          <li key={c.key} className="flex items-center justify-between gap-3 border-t border-line-1 py-3 first:border-t-0">
+          <li
+            key={c.key}
+            className="flex items-center justify-between gap-3 border-t border-line-1 py-3 first:border-t-0"
+          >
             <div className="min-w-0">
               <p className="text-[14px] font-medium">{c.label}</p>
               <p className="truncate text-[12px] text-fg-3">{c.detail}</p>

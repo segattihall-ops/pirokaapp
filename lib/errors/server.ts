@@ -22,9 +22,19 @@ export type CaptureContext = {
 
 export function fingerprintOf(message: string, stack: string | undefined, route: string | undefined): string {
   // First stack frame + message + route: stable across requests, distinct per bug.
-  const frame = (stack ?? '').split('\n').find((l) => /^\s+at /.test(l))?.trim() ?? '';
-  const normalized = message.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, '<uuid>').replace(/\d{3,}/g, '<n>').slice(0, 300);
-  return createHash('sha1').update(`${route ?? ''}|${normalized}|${frame}`).digest('hex').slice(0, 24);
+  const frame =
+    (stack ?? '')
+      .split('\n')
+      .find((l) => /^\s+at /.test(l))
+      ?.trim() ?? '';
+  const normalized = message
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, '<uuid>')
+    .replace(/\d{3,}/g, '<n>')
+    .slice(0, 300);
+  return createHash('sha1')
+    .update(`${route ?? ''}|${normalized}|${frame}`)
+    .digest('hex')
+    .slice(0, 24);
 }
 
 function parseDsn(dsn: string) {
@@ -89,7 +99,8 @@ async function forwardToSentry(err: Error, ctx: CaptureContext, fingerprint: str
 const ALERT_AT = new Set([10, 50, 100, 500]);
 
 export async function captureError(error: unknown, ctx: CaptureContext = {}): Promise<string> {
-  const err = error instanceof Error ? error : new Error(typeof error === 'string' ? error : JSON.stringify(error));
+  const err =
+    error instanceof Error ? error : new Error(typeof error === 'string' ? error : JSON.stringify(error));
   const fingerprint = fingerprintOf(err.message, err.stack, ctx.route);
   console.error(`[error ${fingerprint}] ${ctx.route ?? ''}`, err);
 
@@ -104,7 +115,11 @@ export async function captureError(error: unknown, ctx: CaptureContext = {}): Pr
         p_user_id: ctx.userId ?? null,
         p_severity: ctx.severity ?? 'error',
       });
-      const { data } = await supabaseAdmin.from('error_events').select('count').eq('fingerprint', fingerprint).maybeSingle();
+      const { data } = await supabaseAdmin
+        .from('error_events')
+        .select('count')
+        .eq('fingerprint', fingerprint)
+        .maybeSingle();
       const n = Number(data?.count ?? 0);
       if (n === 1 && (ctx.severity === 'fatal' || ctx.source !== 'client')) {
         void opsAlert('error', `New error in ${ctx.route ?? 'app'}: ${err.message.slice(0, 160)}`);

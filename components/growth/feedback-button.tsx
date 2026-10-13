@@ -30,7 +30,12 @@ export function FeedbackButton() {
 
   return (
     <div className="glass flex flex-col rounded-card px-4 py-3.5">
-      <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center justify-between text-left text-[14px] font-medium" aria-expanded={open}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center justify-between text-left text-[14px] font-medium"
+        aria-expanded={open}
+      >
         Send feedback
         <span className="text-fg-4">{open ? '–' : '›'}</span>
       </button>
@@ -38,7 +43,12 @@ export function FeedbackButton() {
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex gap-1.5">
             {(['bug', 'idea', 'other'] as const).map((k) => (
-              <button key={k} type="button" onClick={() => setKind(k)} className={`chip capitalize ${kind === k ? 'chip-selected' : ''}`}>
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                className={`chip capitalize ${kind === k ? 'chip-selected' : ''}`}
+              >
                 {k}
               </button>
             ))}
@@ -48,10 +58,17 @@ export function FeedbackButton() {
             onChange={(e) => setMessage(e.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder={kind === 'bug' ? 'What happened, and what did you expect?' : 'What would make πroka better?'}
+            placeholder={
+              kind === 'bug' ? 'What happened, and what did you expect?' : 'What would make πroka better?'
+            }
             className="input resize-none"
           />
-          <button type="button" onClick={send} disabled={busy || message.trim().length < 3} className="btn-primary h-10 text-[13px]">
+          <button
+            type="button"
+            onClick={send}
+            disabled={busy || message.trim().length < 3}
+            className="btn-primary h-10 text-[13px]"
+          >
             {busy ? 'Sending…' : 'Send'}
           </button>
         </div>

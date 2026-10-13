@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-type Flag = { key: string; enabled: boolean; rollout_pct: number; description: string | null; updated_at: string };
+type Flag = {
+  key: string;
+  enabled: boolean;
+  rollout_pct: number;
+  description: string | null;
+  updated_at: string;
+};
 
 export function FlagsTable() {
   const [flags, setFlags] = useState<Flag[] | null>(null);
@@ -21,7 +27,11 @@ export function FlagsTable() {
 
   const put = async (body: Partial<Flag> & { key: string }) => {
     setMsg('');
-    const r = await fetch('/api/admin/flags', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch('/api/admin/flags', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return setMsg(j.error ?? 'Save failed');
     load();
@@ -45,8 +55,18 @@ export function FlagsTable() {
         }}
         className="flex flex-wrap gap-2"
       >
-        <input value={key} onChange={(e) => setKey(e.target.value.toLowerCase())} placeholder="new_flag_key" className="input h-10 w-[200px] font-mono" />
-        <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What it gates" className="input h-10 min-w-[200px] flex-1" />
+        <input
+          value={key}
+          onChange={(e) => setKey(e.target.value.toLowerCase())}
+          placeholder="new_flag_key"
+          className="input h-10 w-[200px] font-mono"
+        />
+        <input
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          placeholder="What it gates"
+          className="input h-10 min-w-[200px] flex-1"
+        />
         <button type="submit" className="btn-secondary h-10 text-[13px]">
           Add flag
         </button>
@@ -90,7 +110,9 @@ export function FlagsTable() {
                       onClick={() => put({ key: f.key, enabled: !f.enabled })}
                       className={`relative h-6 w-11 rounded-chip border ${f.enabled ? 'border-sel-border bg-green' : 'border-line-3 bg-ink-800'}`}
                     >
-                      <span className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-transform ${f.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                      <span
+                        className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-transform ${f.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
+                      />
                     </button>
                   </td>
                   <td className="px-3 py-2">
@@ -126,7 +148,9 @@ export function FlagsTable() {
         </p>
       )}
       <p className="text-[11px] text-fg-4">
-        Server: <code>isFlagEnabled(&apos;key&apos;, userId)</code>. Client: <code>useFlag(&apos;key&apos;)</code>. Percentage rollouts are sticky per user. Changes take up to 30 s.
+        Server: <code>isFlagEnabled(&apos;key&apos;, userId)</code>. Client:{' '}
+        <code>useFlag(&apos;key&apos;)</code>. Percentage rollouts are sticky per user. Changes take up to 30
+        s.
       </p>
     </div>
   );

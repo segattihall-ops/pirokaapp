@@ -38,15 +38,22 @@ export const PATCH = withApi('/api/admin/campaigns/[id]', async (request: Reques
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (b.subject || b.body || b.segment) {
-    if (c.status !== 'draft' && c.status !== 'scheduled') return NextResponse.json({ error: 'Only drafts can be edited' }, { status: 409 });
-    Object.assign(patch, { ...(b.subject && { subject: b.subject }), ...(b.body && { body: b.body }), ...(b.segment && { segment: b.segment }) });
+    if (c.status !== 'draft' && c.status !== 'scheduled')
+      return NextResponse.json({ error: 'Only drafts can be edited' }, { status: 409 });
+    Object.assign(patch, {
+      ...(b.subject && { subject: b.subject }),
+      ...(b.body && { body: b.body }),
+      ...(b.segment && { segment: b.segment }),
+    });
   }
   if (b.action === 'schedule') {
     if (!b.scheduledAt) return NextResponse.json({ error: 'scheduledAt required' }, { status: 400 });
-    if (c.status !== 'draft' && c.status !== 'scheduled') return NextResponse.json({ error: 'Campaign already sent' }, { status: 409 });
+    if (c.status !== 'draft' && c.status !== 'scheduled')
+      return NextResponse.json({ error: 'Campaign already sent' }, { status: 409 });
     Object.assign(patch, { status: 'scheduled', scheduled_at: b.scheduledAt });
   } else if (b.action === 'send_now') {
-    if (c.status !== 'draft' && c.status !== 'scheduled') return NextResponse.json({ error: 'Campaign already sent' }, { status: 409 });
+    if (c.status !== 'draft' && c.status !== 'scheduled')
+      return NextResponse.json({ error: 'Campaign already sent' }, { status: 409 });
     Object.assign(patch, { status: 'scheduled', scheduled_at: new Date().toISOString() });
   } else if (b.action === 'unschedule') {
     if (c.status !== 'scheduled') return NextResponse.json({ error: 'Not scheduled' }, { status: 409 });
@@ -56,10 +63,22 @@ export const PATCH = withApi('/api/admin/campaigns/[id]', async (request: Reques
     Object.assign(patch, { status: 'cancelled', finished_at: new Date().toISOString() });
   }
 
-  const { data, error } = await supabaseAdmin.from('email_campaigns').update(patch).eq('id', c.id).select('*').single();
+  const { data, error } = await supabaseAdmin
+    .from('email_campaigns')
+    .update(patch)
+    .eq('id', c.id)
+    .select('*')
+    .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (b.action) {
-    await supabaseAdmin.from('audit_log').insert({ actor_id: g.session.userId, action: `campaign.${b.action}`, target: c.id, details: { segment: data.segment } });
+    await supabaseAdmin
+      .from('audit_log')
+      .insert({
+        actor_id: g.session.userId,
+        action: `campaign.${b.action}`,
+        target: c.id,
+        details: { segment: data.segment },
+      });
   }
   return NextResponse.json({ campaign: data });
 });

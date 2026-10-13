@@ -23,10 +23,19 @@ export async function POST(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
   const b = parsed.data;
-  await track({ userId: session?.userId ?? null, anonId: session ? null : (b.anonId ?? null), event: b.event, props: b.props, path: b.path });
+  await track({
+    userId: session?.userId ?? null,
+    anonId: session ? null : (b.anonId ?? null),
+    event: b.event,
+    props: b.props,
+    path: b.path,
+  });
   // Page views double as the presence heartbeat that lifecycle emails and the users browser read.
   if (session?.userId && b.event === 'page_view' && supabaseAdmin) {
-    void supabaseAdmin.from('users').update({ last_seen_at: new Date().toISOString() }).eq('id', session.userId);
+    void supabaseAdmin
+      .from('users')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', session.userId);
   }
   return NextResponse.json({ ok: true });
 }

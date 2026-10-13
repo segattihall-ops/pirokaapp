@@ -14,10 +14,18 @@ export function reportClientError(message: string, stack?: string, extra?: Recor
   if ((recent.get(key) ?? 0) > now - 30_000) return;
   recent.set(key, now);
   if (recent.size > 50) recent.clear();
-  const body = JSON.stringify({ message: message.slice(0, 1000), stack: stack?.slice(0, 4000), path: window.location.pathname, extra });
-  fetch('/api/errors/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(
-    () => {},
-  );
+  const body = JSON.stringify({
+    message: message.slice(0, 1000),
+    stack: stack?.slice(0, 4000),
+    path: window.location.pathname,
+    extra,
+  });
+  fetch('/api/errors/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 let installed = false;

@@ -18,6 +18,11 @@ export async function POST(req: Request) {
   const first = !session.consentAt;
   const next = await updateGate(session, { consentAt: new Date().toISOString() });
   // First consent is the closest thing to "account created" the app sees.
-  if (first) void track({ userId: session.userId, event: EVENTS.signup, props: { provider: session.provider, anonymous: session.anonymous } });
+  if (first)
+    void track({
+      userId: session.userId,
+      event: EVENTS.signup,
+      props: { provider: session.provider, anonymous: session.anonymous },
+    });
   return NextResponse.json({ session: next });
 }

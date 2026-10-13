@@ -8,7 +8,13 @@ import { errorForwardingConfigured } from '@/lib/errors/server';
 import { opsAlertsConfigured } from '@/lib/alerts/server';
 
 export type ComponentState = 'ok' | 'degraded' | 'off';
-export type ComponentStatus = { key: string; label: string; state: ComponentState; detail: string; latencyMs?: number };
+export type ComponentStatus = {
+  key: string;
+  label: string;
+  state: ComponentState;
+  detail: string;
+  latencyMs?: number;
+};
 export type SystemStatus = { ok: boolean; checkedAt: string; components: ComponentStatus[] };
 
 /** Public-safe view of what is wired up. Never includes a key, host or secret. */
@@ -26,20 +32,29 @@ export async function getSystemStatus(): Promise<SystemStatus> {
       latencyMs: Date.now() - t,
     });
   } else {
-    components.push({ key: 'database', label: 'Database', state: 'off', detail: 'Demo mode (no Supabase keys)' });
+    components.push({
+      key: 'database',
+      label: 'Database',
+      state: 'off',
+      detail: 'Demo mode (no Supabase keys)',
+    });
   }
 
   components.push({
     key: 'email',
     label: 'Email',
     state: emailConfigured() ? 'ok' : 'off',
-    detail: emailConfigured() ? `Provider: ${emailProvider()}` : 'Console only — set RESEND_API_KEY or EMAIL_SERVER',
+    detail: emailConfigured()
+      ? `Provider: ${emailProvider()}`
+      : 'Console only — set RESEND_API_KEY or EMAIL_SERVER',
   });
   components.push({
     key: 'billing',
     label: 'Billing',
     state: paypalConfigured() ? 'ok' : 'off',
-    detail: paypalConfigured() ? `PayPal ${process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox'}` : 'PayPal keys missing',
+    detail: paypalConfigured()
+      ? `PayPal ${process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox'}`
+      : 'PayPal keys missing',
   });
   components.push({
     key: 'push',
@@ -75,7 +90,10 @@ export async function getSystemStatus(): Promise<SystemStatus> {
     key: 'age',
     label: 'Age verification',
     state: process.env.AGE_PROVIDER && process.env.AGE_PROVIDER !== 'local' ? 'ok' : 'degraded',
-    detail: process.env.AGE_PROVIDER && process.env.AGE_PROVIDER !== 'local' ? `Provider: ${process.env.AGE_PROVIDER}` : 'Local demo provider',
+    detail:
+      process.env.AGE_PROVIDER && process.env.AGE_PROVIDER !== 'local'
+        ? `Provider: ${process.env.AGE_PROVIDER}`
+        : 'Local demo provider',
   });
 
   return {

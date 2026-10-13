@@ -8,12 +8,24 @@ export const CHART_COLORS = { green: '#0ea371', amber: '#c2680a', indigo: '#5b5f
 
 export type Point = { label: string; value: number };
 
-export function StatCard({ label, value, hint, delta }: { label: string; value: string | number; hint?: string; delta?: number | null }) {
+export function StatCard({
+  label,
+  value,
+  hint,
+  delta,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  delta?: number | null;
+}) {
   const up = (delta ?? 0) > 0;
   return (
     <div className="glass rounded-card px-4 py-3.5">
       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-fg-3">{label}</p>
-      <p className="mt-1 text-[26px] font-semibold tracking-[-0.03em]">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+      <p className="mt-1 text-[26px] font-semibold tracking-[-0.03em]">
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </p>
       {delta !== undefined && delta !== null && (
         <p className={`text-[11px] ${up ? 'text-green' : delta < 0 ? 'text-danger' : 'text-fg-4'}`}>
           {up ? '▲' : delta < 0 ? '▼' : '—'} {Math.abs(delta).toLocaleString()} vs prior period
@@ -57,10 +69,22 @@ export function Bars({
         <span className="text-[13px] font-semibold">{title}</span>
         <span className="text-[12px] text-fg-3">{format(total)} total</span>
       </figcaption>
-      <svg viewBox={`0 0 ${w} ${height}`} role="img" aria-label={`${title}: ${data.map((d) => `${d.label} ${format(d.value)}`).join(', ')}`} className="mt-2 h-auto w-full">
+      <svg
+        viewBox={`0 0 ${w} ${height}`}
+        role="img"
+        aria-label={`${title}: ${data.map((d) => `${d.label} ${format(d.value)}`).join(', ')}`}
+        className="mt-2 h-auto w-full"
+      >
         {[0, 0.5, 1].map((t) => (
           <g key={t}>
-            <line x1={padL} x2={w} y1={y(max * t)} y2={y(max * t)} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+            <line
+              x1={padL}
+              x2={w}
+              y1={y(max * t)}
+              y2={y(max * t)}
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth={1}
+            />
             <text x={padL - 6} y={y(max * t) + 4} textAnchor="end" fontSize={10} fill="#8a8a8a">
               {format(Math.round(max * t))}
             </text>
@@ -105,8 +129,14 @@ export function Funnel({ title, stages }: { title: string; stages: Point[] }) {
           return (
             <li key={s.label} className="flex items-center gap-3 text-[12px]">
               <span className="w-[120px] shrink-0 truncate text-fg-2">{s.label}</span>
-              <span className="h-5 flex-1 rounded bg-white/[0.05]" title={`${s.label}: ${s.value.toLocaleString()}`}>
-                <span className="block h-full rounded" style={{ width: `${Math.max(1, pct)}%`, background: CHART_COLORS.green }} />
+              <span
+                className="h-5 flex-1 rounded bg-white/[0.05]"
+                title={`${s.label}: ${s.value.toLocaleString()}`}
+              >
+                <span
+                  className="block h-full rounded"
+                  style={{ width: `${Math.max(1, pct)}%`, background: CHART_COLORS.green }}
+                />
               </span>
               <span className="w-[112px] shrink-0 text-right text-fg-3">
                 {s.value.toLocaleString()} · {pct}%{prev !== null ? ` (${prev}% step)` : ''}

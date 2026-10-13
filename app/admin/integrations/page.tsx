@@ -22,7 +22,10 @@ export default async function IntegrationsPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-h2 sm:text-h1">Integrations</h1>
-        <p className="mt-1 text-[12px] text-fg-4">What is wired up on this deployment. Values never leave the server; see KEYS.md for where each key comes from.</p>
+        <p className="mt-1 text-[12px] text-fg-4">
+          What is wired up on this deployment. Values never leave the server; see KEYS.md for where each key
+          comes from.
+        </p>
       </div>
       <ul className="glass flex flex-col rounded-card px-4">
         {s.components.map((c) => (

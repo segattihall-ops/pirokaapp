@@ -18,11 +18,24 @@ type Row = {
 };
 
 type Detail = {
-  user: Row & { paypal_subscription_id: string | null; visibility: string; cancelled_at: string | null; payment_failed_at: string | null; verified_at: string | null };
+  user: Row & {
+    paypal_subscription_id: string | null;
+    visibility: string;
+    cancelled_at: string | null;
+    payment_failed_at: string | null;
+    verified_at: string | null;
+  };
   events: { event: string; props: Record<string, unknown>; path: string | null; created_at: string }[];
   emails: { template: string; subject: string; status: string; provider: string; created_at: string }[];
   payments: { payment_id: string; amount: number; currency: string; status: string; created_at: string }[];
-  modActions: { id: string; step: string; reason: string; rule_ref: string; expires_at: string | null; created_at: string }[];
+  modActions: {
+    id: string;
+    step: string;
+    reason: string;
+    rule_ref: string;
+    expires_at: string | null;
+    created_at: string;
+  }[];
   reports: { about: number; filed: number };
 };
 
@@ -113,14 +126,24 @@ export function UsersBrowser() {
           className="input h-10 min-w-[220px] flex-1"
           aria-label="Search users"
         />
-        <select value={plan} onChange={(e) => setPlan(e.target.value)} className="input h-10 py-0" aria-label="Plan">
+        <select
+          value={plan}
+          onChange={(e) => setPlan(e.target.value)}
+          className="input h-10 py-0"
+          aria-label="Plan"
+        >
           <option value="">Any plan</option>
           <option value="free">Free</option>
           <option value="plus">Plus</option>
           <option value="premium">Premium</option>
           <option value="anonymous">Anonymous</option>
         </select>
-        <select value={flag} onChange={(e) => setFlag(e.target.value)} className="input h-10 py-0" aria-label="Filter">
+        <select
+          value={flag}
+          onChange={(e) => setFlag(e.target.value)}
+          className="input h-10 py-0"
+          aria-label="Filter"
+        >
           <option value="">Active accounts</option>
           <option value="moderated">Under moderation</option>
           <option value="failed_payment">Payment failed</option>
@@ -157,8 +180,16 @@ export function UsersBrowser() {
                     </td>
                     <td className="px-3 py-2 capitalize">
                       {u.plan}
-                      {u.mod_step && <span className="ml-1 rounded bg-red-900 px-1 text-[10px] uppercase text-red-200">{u.mod_step}</span>}
-                      {u.subscription_status === 'PAYMENT_FAILED' && <span className="ml-1 rounded bg-ink-750 px-1 text-[10px] uppercase text-warning">dunning</span>}
+                      {u.mod_step && (
+                        <span className="ml-1 rounded bg-red-900 px-1 text-[10px] uppercase text-red-200">
+                          {u.mod_step}
+                        </span>
+                      )}
+                      {u.subscription_status === 'PAYMENT_FAILED' && (
+                        <span className="ml-1 rounded bg-ink-750 px-1 text-[10px] uppercase text-warning">
+                          dunning
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-fg-3">{ago(u.last_seen_at)}</td>
                     <td className="px-3 py-2 text-fg-3">{new Date(u.created_at).toLocaleDateString()}</td>
@@ -172,11 +203,16 @@ export function UsersBrowser() {
         {detail ? (
           <div className="flex max-h-[640px] flex-col gap-3 overflow-y-auto rounded-card border border-line-2 bg-white/[0.04] p-4 text-[12px]">
             <div>
-              <h3 className="text-[15px] font-bold text-white">{detail.user.handle ? `@${detail.user.handle}` : 'Anonymous'}</h3>
-              <p className="text-fg-3">{detail.user.email ?? 'no email'} · {detail.user.auth_provider} · id {detail.user.id}</p>
+              <h3 className="text-[15px] font-bold text-white">
+                {detail.user.handle ? `@${detail.user.handle}` : 'Anonymous'}
+              </h3>
               <p className="text-fg-3">
-                Joined {new Date(detail.user.created_at).toLocaleString()} · seen {ago(detail.user.last_seen_at)} ·{' '}
-                {detail.user.age_verified ? '18+ verified' : 'not verified'} · visibility {detail.user.visibility}
+                {detail.user.email ?? 'no email'} · {detail.user.auth_provider} · id {detail.user.id}
+              </p>
+              <p className="text-fg-3">
+                Joined {new Date(detail.user.created_at).toLocaleString()} · seen{' '}
+                {ago(detail.user.last_seen_at)} · {detail.user.age_verified ? '18+ verified' : 'not verified'}{' '}
+                · visibility {detail.user.visibility}
                 {detail.user.deleted_at ? ' · DELETED' : ''}
               </p>
               <p className="text-fg-3">
@@ -186,7 +222,9 @@ export function UsersBrowser() {
 
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1">
-                <span className="font-semibold text-fg-2">Plan ({detail.user.subscription_status ?? '—'})</span>
+                <span className="font-semibold text-fg-2">
+                  Plan ({detail.user.subscription_status ?? '—'})
+                </span>
                 <select
                   value={detail.user.plan}
                   disabled={busy}
@@ -221,8 +259,18 @@ export function UsersBrowser() {
                   <option value="suspend">Suspended</option>
                   <option value="remove">Removed</option>
                 </select>
-                <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason shown to the user" className="input h-9 flex-1" />
-                <button type="button" onClick={modAction} disabled={busy || !reason.trim()} className="h-9 rounded-btn bg-danger px-3 font-semibold text-ink-950 disabled:opacity-40">
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Reason shown to the user"
+                  className="input h-9 flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={modAction}
+                  disabled={busy || !reason.trim()}
+                  className="h-9 rounded-btn bg-danger px-3 font-semibold text-ink-950 disabled:opacity-40"
+                >
                   Apply
                 </button>
               </div>
@@ -230,7 +278,8 @@ export function UsersBrowser() {
                 <ul className="mt-2 space-y-1 text-fg-3">
                   {detail.modActions.map((m) => (
                     <li key={m.id}>
-                      {new Date(m.created_at).toLocaleDateString()} · <span className="uppercase">{m.step}</span> · {m.reason}
+                      {new Date(m.created_at).toLocaleDateString()} ·{' '}
+                      <span className="uppercase">{m.step}</span> · {m.reason}
                     </li>
                   ))}
                 </ul>
@@ -240,7 +289,8 @@ export function UsersBrowser() {
             <Section title={`Payments (${detail.payments.length})`}>
               {detail.payments.map((p) => (
                 <li key={p.payment_id}>
-                  {new Date(p.created_at).toLocaleDateString()} · {p.currency} {Number(p.amount).toFixed(2)} · {p.status}
+                  {new Date(p.created_at).toLocaleDateString()} · {p.currency} {Number(p.amount).toFixed(2)} ·{' '}
+                  {p.status}
                 </li>
               ))}
             </Section>
