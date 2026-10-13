@@ -1707,10 +1707,10 @@ PIROKA respects intellectual-property rights.
 
 Before relying on DMCA safe-harbor procedures, XRMG should register a designated agent through the U.S. Copyright Office and publish the same agent information on PIROKA.
 
-**DMCA Agent:** Gleicimar Hall, designated agent for XRankFlow Media Group LLC (PIROKA, pirokaapp.com)
+**DMCA Agent:** Gleicimar Hall, designated agent for X RankFlow Media Group LLC (PIROKA, pirokaapp.com)
 **Registration Number:** DMCA-1082833
 **Address:** 2334 Lucas Drive, Dallas, TX 75219, United States
-**Phone:** [REQUIRED]
+**Phone:** 470-899-2222
 **Email:** dmca@pirokaapp.com
 
 ## Takedown Notice
