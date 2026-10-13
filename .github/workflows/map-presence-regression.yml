@@ -1,6 +1,7 @@
 name: Map presence regression
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'app/api/me/location/route.ts'
