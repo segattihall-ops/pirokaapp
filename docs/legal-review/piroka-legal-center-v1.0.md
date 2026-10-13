@@ -457,7 +457,7 @@ X RankFlow Media Group LLC
 Dover, Delaware 19904
 United States
 
-Legal: **[LEGAL EMAIL REQUIRED]**
+Legal: **legal@pirokaapp.com**
 Support: **[SUPPORT EMAIL REQUIRED]**
 
 ---
@@ -783,7 +783,7 @@ Submit requests through:
 
 or
 
-**[PRIVACY EMAIL REQUIRED]**
+**privacy@pirokaapp.com**
 
 We may verify your identity before completing a request.
 
@@ -817,7 +817,7 @@ Material changes will be communicated as required by law.
 
 ## 22. Contact
 
-Privacy: **[PRIVACY EMAIL REQUIRED]**
+Privacy: **privacy@pirokaapp.com**
 
 X RankFlow Media Group LLC
 8 The Green
@@ -944,7 +944,7 @@ Requests:
 
 **[PRIVACY REQUEST URL REQUIRED]**
 
-**[PRIVACY EMAIL REQUIRED]**
+**privacy@pirokaapp.com**
 
 Authorized agents may submit requests where permitted by law.
 
@@ -957,7 +957,7 @@ X RankFlow Media Group LLC
 Dover, Delaware 19904
 United States
 
-**[PRIVACY EMAIL REQUIRED]**
+**privacy@pirokaapp.com**
 
 ---
 
@@ -1461,7 +1461,7 @@ PIROKA should provide:
 
 and
 
-**[SAFETY/REPORT EMAIL REQUIRED]**
+**safety@pirokaapp.com**
 
 A request should include where possible:
 
@@ -1710,7 +1710,7 @@ Before relying on DMCA safe-harbor procedures, XRMG should register a designated
 **DMCA Agent:** [REQUIRED]
 **Address:** [REQUIRED]
 **Phone:** [REQUIRED]
-**Email:** [REQUIRED]
+**Email:** dmca@pirokaapp.com
 
 ## Takedown Notice
 
@@ -1769,7 +1769,7 @@ Requests should identify:
 
 ## Submission
 
-**[LEGAL REQUEST EMAIL REQUIRED]**
+**legal@pirokaapp.com**
 
 Physical correspondence:
 
