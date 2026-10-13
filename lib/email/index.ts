@@ -41,6 +41,9 @@ export function emailConfigured(): boolean {
   return emailProvider() !== 'console';
 }
 
+/** The footer link opens the /unsubscribe page; mail clients POST one-click requests to the API route. */
+const oneClickUrl = (pageUrl: string) => pageUrl.replace('/unsubscribe?', '/api/unsubscribe?');
+
 let smtp: nodemailer.Transporter | null = null;
 function smtpTransport() {
   if (!smtp && process.env.EMAIL_SERVER) smtp = nodemailer.createTransport(process.env.EMAIL_SERVER);
@@ -59,7 +62,7 @@ async function viaResend(input: SendEmailInput): Promise<{ id?: string }> {
       text: input.text,
       tags: [{ name: 'template', value: input.template.replace(/[^a-zA-Z0-9_-]/g, '_') }],
       ...(input.unsubscribeUrl
-        ? { headers: { 'List-Unsubscribe': `<${input.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+        ? { headers: { 'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
         : {}),
     }),
     cache: 'no-store',
@@ -78,7 +81,9 @@ async function viaSmtp(input: SendEmailInput): Promise<{ id?: string }> {
     subject: input.subject,
     html: input.html,
     text: input.text,
-    ...(input.unsubscribeUrl ? { headers: { 'List-Unsubscribe': `<${input.unsubscribeUrl}>` } } : {}),
+    ...(input.unsubscribeUrl
+      ? { headers: { 'List-Unsubscribe': `<${oneClickUrl(input.unsubscribeUrl)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+      : {}),
   });
   return { id: info.messageId };
 }

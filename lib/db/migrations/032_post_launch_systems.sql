@@ -211,6 +211,48 @@ language sql stable security definer set search_path = public as $$
   group by 1 order by 1
 $$;
 
+-- ---------- campaign audiences ----------
+-- Segment predicate shared by count + recipient fetch. Always excludes deleted, opted-out and
+-- address-less accounts. Segments: all, free, plus, premium, paid, inactive_7d, inactive_30d, new_7d, cancelled.
+create or replace function public.campaign_segment_sql(p_segment text)
+returns text language sql immutable as $$
+  select case p_segment
+    when 'free'         then $q$ u.plan = 'free' $q$
+    when 'plus'         then $q$ u.plan = 'plus' $q$
+    when 'premium'      then $q$ u.plan = 'premium' $q$
+    when 'paid'         then $q$ u.plan in ('plus','premium') $q$
+    when 'inactive_7d'  then $q$ coalesce(u.last_seen_at, u.created_at) < now() - interval '7 days' $q$
+    when 'inactive_30d' then $q$ coalesce(u.last_seen_at, u.created_at) < now() - interval '30 days' $q$
+    when 'new_7d'       then $q$ u.created_at > now() - interval '7 days' $q$
+    when 'cancelled'    then $q$ u.cancelled_at is not null $q$
+    else                     $q$ true $q$
+  end
+$$;
+
+create or replace function public.campaign_segment_count(p_segment text)
+returns bigint language plpgsql stable security definer set search_path = public as $$
+declare n bigint;
+begin
+  execute format(
+    'select count(*) from public.users u where u.email is not null and u.deleted_at is null and not u.marketing_opt_out and (%s)',
+    public.campaign_segment_sql(p_segment)
+  ) into n;
+  return n;
+end $$;
+
+create or replace function public.campaign_recipients(p_campaign uuid, p_segment text, p_limit integer)
+returns table (id uuid, email text, handle text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  return query execute format(
+    'select u.id, u.email::text, u.handle from public.users u
+      where u.email is not null and u.deleted_at is null and not u.marketing_opt_out and (%s)
+        and not exists (select 1 from public.email_log l where l.campaign_id = $1 and l.user_id = u.id)
+      order by u.created_at limit $2',
+    public.campaign_segment_sql(p_segment)
+  ) using p_campaign, p_limit;
+end $$;
+
 -- ---------- lockdown ----------
 do $$
 declare t text;
@@ -231,6 +273,12 @@ revoke all on function public.event_counts_daily(text,integer) from public, anon
 revoke all on function public.top_events(integer,integer) from public, anon, authenticated;
 revoke all on function public.active_user_count(integer) from public, anon, authenticated;
 revoke all on function public.revenue_monthly(integer) from public, anon, authenticated;
+revoke all on function public.campaign_segment_sql(text) from public, anon, authenticated;
+revoke all on function public.campaign_segment_count(text) from public, anon, authenticated;
+revoke all on function public.campaign_recipients(uuid,text,integer) from public, anon, authenticated;
+grant execute on function public.campaign_segment_sql(text) to service_role;
+grant execute on function public.campaign_segment_count(text) to service_role;
+grant execute on function public.campaign_recipients(uuid,text,integer) to service_role;
 grant execute on function public.record_error_event(text,text,text,text,text,uuid,text) to service_role;
 grant execute on function public.rate_limit_hit(text,integer,integer) to service_role;
 grant execute on function public.signups_daily(integer) to service_role;

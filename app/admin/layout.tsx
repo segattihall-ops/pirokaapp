@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
 import { LogoTile } from '@/components/logo';
+import { AdminNav } from '@/components/admin/admin-nav';
 
 export const metadata: Metadata = { title: 'Admin' };
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <span className="eyebrow">Admin</span>
         <span className="ml-auto truncate text-[12px] text-fg-3">{session.email ?? session.userId}</span>
       </header>
-      <main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-6">{children}</main>
+      <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-5 px-4 py-6 sm:px-6">
+        <AdminNav />
+        {children}
+      </main>
     </div>
   );
 }
