@@ -131,7 +131,6 @@ test('full app smoke as a new anonymous member', async ({ page, baseURL }) => {
     return `${i} screen(s)`;
   });
 
-<<<<<<< HEAD
   await step(page, '06 map: pins, layers, filters, responsive', async () => {
     await page.waitForTimeout(5000);
     await expect(page.getByRole('button', { name: /^Layers/ })).toBeVisible({ timeout: 15_000 });
