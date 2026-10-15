@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { track } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +15,12 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as { userId?: string; handle?: string };
   let peerId = body.userId?.trim();
-  if (peerId && !/^[0-9a-f-]{36}$/i.test(peerId)) return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
-  if (body.handle !== undefined && (typeof body.handle !== 'string' || !/^@?[\w.-]{2,24}$/.test(body.handle.trim()))) {
+  if (peerId && !/^[0-9a-f-]{36}$/i.test(peerId))
+    return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+  if (
+    body.handle !== undefined &&
+    (typeof body.handle !== 'string' || !/^@?[\w.-]{2,24}$/.test(body.handle.trim()))
+  ) {
     return NextResponse.json({ error: 'Invalid handle' }, { status: 400 });
   }
 
@@ -55,5 +61,6 @@ export async function POST(request: Request) {
     .select('id')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  void track({ userId: me, event: EVENTS.chat_started, props: { by: body.handle ? 'handle' : 'id' } });
   return NextResponse.json({ id: created.id, created: true });
 }

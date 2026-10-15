@@ -155,28 +155,39 @@ openssl rand -base64 32   # run twice
 
 | Variable | Value |
 |---|---|
-| `EMAIL_SERVER` | `smtp://user:pass@smtp.provider.com:587` (Resend, Postmark, SendGrid, Gmail app password…) |
+| `RESEND_API_KEY` | **Preferred.** https://resend.com → API Keys. Used for every app email (welcome, receipts, dunning, campaigns, digest). |
+| `EMAIL_SERVER` | Fallback when there is no Resend key: `smtp://user:pass@smtp.provider.com:587` (Postmark, SendGrid, Gmail app password…) |
 | `EMAIL_FROM` | `πroka <no-reply@yourdomain.com>` |
+| `EMAIL_UNSUBSCRIBE_SECRET` | `openssl rand -base64 32` — signs unsubscribe links (falls back to `NEXTAUTH_SECRET`) |
+| `NEXT_PUBLIC_APP_URL` | `https://yourdomain.com` — absolute links inside emails (falls back to `NEXTAUTH_URL`) |
 
-Also set the same SMTP under Supabase → Authentication → SMTP so Supabase's own auth emails come from your domain.
+With neither key the app logs every email to the server console and records it in `email_log` with status
+`console`, so flows can be exercised end to end before the provider exists. Also set the same SMTP under
+Supabase → Authentication → SMTP so Supabase's own auth emails (magic link, reset) come from your domain.
 
 ---
 
 ## 7. Age verification — **Required before real users**
 
-The 18+ gate is what keeps the app legal. Today it runs in **demo** mode: `AGE_PROVIDER=local` accepts the
-on-device face/ID prototype flow and proves nothing. That mode is refused in production unless `AGE_PROVIDER=local`
-is set on purpose, so the preview works only because the variable is set explicitly.
+The 18+ gate runs on **Didit**. Without keys it falls back to `AGE_PROVIDER=local`, a demo that proves nothing
+and is refused in production.
+
+**Flow.** Selfie age estimation first. Clear adults pass in seconds. Anyone near the threshold, or an
+inconclusive estimate, is asked for a photo ID inside the same Didit session. Accounts an admin flags as
+possibly underage (Admin → Users → **Require ID**) lose 18+ and must pass an ID-document check to return.
+We store only `age_verified` and the method (`face` or `id`).
 
 | Variable | Value |
 |---|---|
-| `AGE_PROVIDER` | `yoti` for launch (`local` = demo only) |
-| `YOTI_CLIENT_SDK_ID` | https://hub.yoti.com → your app |
-| `YOTI_PEM_PATH` | path to the downloaded `.pem` (on Vercel: store the PEM as a secret and write it to disk in the build step) |
+| `AGE_PROVIDER` | `didit` |
+| `DIDIT_API_KEY` | Didit console → API keys |
+| `DIDIT_WORKFLOW_ID` | Workflow 1: **Age Estimation** (liveness), approve at estimated age ≥ 25, otherwise route to **ID Verification + Face Match** with minimum age 18 |
+| `DIDIT_ID_WORKFLOW_ID` | Workflow 2: **ID Verification + Face Match**, minimum age 18 (used for forced re-checks) |
+| `DIDIT_WEBHOOK_SECRET` | `secret_shared_key` of the webhook destination below |
 
-Server-to-server verification against Yoti's Age Estimation API is stubbed to **fail closed** in
-`lib/age/index.ts` (`verifyYoti`): with `AGE_PROVIDER=yoti` nobody passes until that call is wired to your
-Yoti contract. Do not "fix" it by trusting a token decoded from the client — the server must ask Yoti.
+**Webhook destination** (Didit console → Webhooks): `https://www.pirokaapp.com/api/webhooks/didit`,
+version v3, event `status.updated`. Use the `www` host: the bare domain answers with a redirect, and
+webhooks don't follow redirects. The callback URL is set per session by the app (`/age/return`).
 
 ---
 
@@ -200,6 +211,24 @@ relay is needed: create one on https://www.metered.ca/stun-turn (free tier), Twi
 | `ANTHROPIC_API_KEY` | smart search / moderation assist |
 | `TWILIO_*` | phone OTP |
 | `R2_*` | media storage |
+
+---
+
+## 10. Post-launch operations — *Optional mirrors and alerts*
+
+Analytics and error tracking are stored in Postgres (`analytics_events`, `error_events`) and shown under
+`/admin` with no key at all. These only **mirror** them to an external tool:
+
+| Variable | Where | Feature |
+|---|---|---|
+| `POSTHOG_KEY` + `POSTHOG_HOST` | https://posthog.com → Project settings | copy of every analytics event (`https://us.i.posthog.com` or `https://eu.i.posthog.com`) |
+| `SENTRY_DSN` | https://sentry.io → Project → Client Keys | copy of every captured error |
+| `OPS_WEBHOOK_URL` | Slack → Incoming Webhooks, or Discord → Channel → Integrations → Webhooks | one-line alerts for failed payments, new reports, error spikes, feedback |
+| `FLAG_<KEY>` | — | `1`/`0` overrides a feature flag from the environment (e.g. `FLAG_SMART_SEARCH=0`) |
+
+The cron routes in `vercel.json` (`/api/cron/campaigns`, `/api/cron/lifecycle`, `/api/cron/digest`) reuse
+`CRON_SECRET`; nothing else is needed. Apply `lib/db/migrations/032_post_launch_systems.sql` in the Supabase SQL editor
+before the first deploy that carries this code. See `POST_LAUNCH_ROADMAP.md` for the feature list.
 
 ---
 

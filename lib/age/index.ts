@@ -1,20 +1,23 @@
 import 'server-only';
+import { verifyDidit } from './didit';
 
 /**
  * Age verification providers. Only a boolean ever reaches storage.
  *
+ * - didit: hosted session (selfie age estimation, ID fallback); see ./didit.ts.
  * - persona: the server creates an inquiry for the signed-in user, the browser completes it in
  *   Persona's embedded flow, and the server asks Persona whether it was approved.
  * - yoti: not wired yet (fails closed).
  * - local: the prototype's on-device UI. It proves nothing about age, so it only runs outside
  *   production, and never when NODE_ENV is production (including Vercel previews).
  */
-export type AgeProvider = 'persona' | 'yoti' | 'local';
+export type AgeProvider = 'didit' | 'persona' | 'yoti' | 'local';
 export type AgeMethod = 'face' | 'id';
 
 export function ageProvider(): AgeProvider {
   const p = process.env.AGE_PROVIDER as AgeProvider | undefined;
-  if (p === 'persona' || p === 'yoti' || p === 'local') return p;
+  if (p === 'didit' || p === 'persona' || p === 'yoti' || p === 'local') return p;
+  if (process.env.DIDIT_API_KEY) return 'didit';
   if (process.env.PERSONA_API_KEY) return 'persona';
   if (process.env.YOTI_CLIENT_SDK_ID && process.env.YOTI_PEM_PATH) return 'yoti';
   return 'local';
@@ -27,6 +30,8 @@ const PERSONA_API = 'https://api.withpersona.com/api/v1/inquiries';
 export async function verifyAgeToken(method: AgeMethod, token: string, userId: string): Promise<AgeResult> {
   const provider = ageProvider();
   switch (provider) {
+    case 'didit':
+      return verifyDidit(token, userId);
     case 'persona':
       return verifyPersona(token, method, userId);
     case 'yoti':

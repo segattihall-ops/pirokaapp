@@ -10,6 +10,8 @@ import { AlbumInbox } from '@/components/me/album-inbox';
 import { FavoritesList } from '@/components/me/favorites-list';
 import { TripsList } from '@/components/me/trips-list';
 import { DeleteAccount } from '@/components/me/delete-account';
+import { AccountData } from '@/components/me/account-data';
+import { FeedbackButton } from '@/components/growth/feedback-button';
 import { SafeMeetMe } from '@/components/meet/safemeet-me';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
@@ -87,6 +89,10 @@ export default async function MePage() {
       <PushToggle />
 
       <NotifPrefs />
+
+      <AccountData />
+
+      <FeedbackButton />
 
       <div className="flex flex-col gap-2">
         {ROWS.map((r) => (

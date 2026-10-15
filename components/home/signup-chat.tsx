@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PersonaAgeCheck } from '@/components/age/persona-age-check';
+import { AgeCheck } from '@/components/age/age-check';
 import {
   fetchSession,
   isDemoClient,
@@ -549,9 +549,9 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
                 <div className="ml-[38px] flex animate-[piIn_.45s_ease-out_both] flex-col items-center gap-2.5 rounded-[18px] border border-line-2 bg-white/5 px-4 py-5 text-center">
                   <span className="text-[15px] font-semibold">Verify you are 18+</span>
                   <span className="max-w-[270px] text-[12px] leading-[1.5] text-fg-3">
-                    Persona checks your age using a photo ID and a selfie. We keep only the result.
+                    A quick selfie confirms your age. If it&apos;s unclear, we&apos;ll ask for a photo ID. We keep only the result.
                   </span>
-                  <PersonaAgeCheck onVerified={handleAgeVerified} />
+                  <AgeCheck onVerified={handleAgeVerified} />
                 </div>
               )}
             </div>
