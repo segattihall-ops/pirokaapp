@@ -32,7 +32,9 @@ function workflowFor(mode: DiditMode): string | undefined {
 }
 
 function allowedWorkflows(): Set<string> {
-  return new Set([process.env.DIDIT_WORKFLOW_ID, process.env.DIDIT_ID_WORKFLOW_ID].filter(Boolean) as string[]);
+  return new Set(
+    [process.env.DIDIT_WORKFLOW_ID, process.env.DIDIT_ID_WORKFLOW_ID].filter(Boolean) as string[],
+  );
 }
 
 export async function createDiditSession(
@@ -113,7 +115,10 @@ export async function needsIdRecheck(userId: string): Promise<boolean> {
   return data.user?.app_metadata?.age_recheck === true;
 }
 
-// ---------- webhook signature (X-Signature-V2, falling back to raw-body X-Signature) ----------
+// ---------- webhook signature ----------
+// Order: X-Signature-V2 (canonical JSON) → X-Signature (raw bytes) → X-Signature-Simple (envelope
+// only; safe here because every decision is re-fetched from Didit's API before we act on it).
+// Freshness is checked on the SIGNED body `timestamp`, never on the unsigned X-Timestamp header.
 
 function sortKeys(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(sortKeys);
@@ -130,24 +135,75 @@ function sortKeys(v: unknown): unknown {
 
 function hexEqual(expected: string, given: string): boolean {
   const a = Buffer.from(expected, 'utf8');
-  const b = Buffer.from(given, 'utf8');
+  const b = Buffer.from(given.trim().toLowerCase(), 'utf8');
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function verifyDiditWebhook(rawBody: string, headers: Headers): boolean {
-  const secret = process.env.DIDIT_WEBHOOK_SECRET;
-  const ts = Number(headers.get('x-timestamp'));
-  if (!secret || !Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
+const hmac = (secret: string, data: string) =>
+  createHmac('sha256', secret).update(data, 'utf8').digest('hex');
 
-  const v2 = headers.get('x-signature-v2');
-  if (v2) {
-    try {
-      const canonical = JSON.stringify(sortKeys(JSON.parse(rawBody)));
-      if (hexEqual(createHmac('sha256', secret).update(canonical, 'utf8').digest('hex'), v2)) return true;
-    } catch {
-      return false;
-    }
+export type DiditEvent = {
+  event_id?: string;
+  webhook_type?: string;
+  timestamp?: number;
+  session_id?: string;
+  status?: string;
+  vendor_data?: string;
+  workflow_id?: string;
+  [k: string]: unknown;
+};
+
+export type WebhookCheck =
+  | { ok: true; event: DiditEvent; via: 'v2' | 'raw' | 'simple' }
+  | { ok: false; reason: 'not_configured' | 'bad_json' | 'bad_signature' | 'stale' };
+
+export function verifyDiditWebhook(rawBody: string, headers: Headers): WebhookCheck {
+  const secret = process.env.DIDIT_WEBHOOK_SECRET;
+  if (!secret) return { ok: false, reason: 'not_configured' };
+
+  let event: DiditEvent;
+  try {
+    event = JSON.parse(rawBody) as DiditEvent;
+  } catch {
+    return { ok: false, reason: 'bad_json' };
   }
+  if (!event || typeof event !== 'object') return { ok: false, reason: 'bad_json' };
+
+  let via: 'v2' | 'raw' | 'simple' | null = null;
+  const v2 = headers.get('x-signature-v2');
   const raw = headers.get('x-signature');
-  return Boolean(raw && hexEqual(createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex'), raw));
+  const simple = headers.get('x-signature-simple');
+  if (v2 && hexEqual(hmac(secret, JSON.stringify(sortKeys(event))), v2)) via = 'v2';
+  else if (raw && hexEqual(hmac(secret, rawBody), raw)) via = 'raw';
+  else if (simple) {
+    const canonical = [
+      event.timestamp ?? '',
+      event.session_id ?? '',
+      event.status ?? '',
+      event.webhook_type ?? '',
+    ].join(':');
+    if (hexEqual(hmac(secret, canonical), simple)) via = 'simple';
+  }
+  if (!via) return { ok: false, reason: 'bad_signature' };
+
+  const ts = Number(event.timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return { ok: false, reason: 'stale' };
+  return { ok: true, event, via };
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  'Not Started': 'not_started',
+  'In Progress': 'in_progress',
+  'In Review': 'pending_review',
+  Approved: 'approved',
+  Declined: 'declined',
+  Resubmitted: 'resubmitted',
+  Abandoned: 'abandoned',
+  Expired: 'expired',
+  'Kyc Expired': 'expired',
+  'KYC Expired': 'expired',
+};
+
+export function ageCheckLabel(status: string | undefined): string | null {
+  return (status && STATUS_LABEL[status]) || null;
 }
