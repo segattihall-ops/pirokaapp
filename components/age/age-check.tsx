@@ -39,10 +39,11 @@ function loadSdk(): Promise<PersonaGlobal> {
 }
 
 /**
- * Runs the Persona age check. The server creates the inquiry for this user; the browser only
- * shows Persona's flow; the server confirms the result before the session is updated.
+ * Runs the age check with whichever provider the server is configured for.
+ * Didit: hosted page; we redirect there and it sends the user back to /age/return.
+ * Persona: embedded flow; the result is confirmed on the server before the session updates.
  */
-export function PersonaAgeCheck({ onVerified }: { onVerified: (session: Session) => void }) {
+export function AgeCheck({ onVerified }: { onVerified: (session: Session) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const clientRef = useRef<PersonaClient | null>(null);
@@ -53,12 +54,23 @@ export function PersonaAgeCheck({ onVerified }: { onVerified: (session: Session)
     setBusy(true);
     setError('');
     try {
-      const environmentId = process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT_ID;
-      if (!environmentId) throw new Error('Age check is not configured');
-
       const r = await fetch('/api/age/start', { method: 'POST' });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? 'Could not start the age check');
-      const { inquiryId } = (await r.json()) as { inquiryId: string };
+      const started = (await r.json()) as
+        | { provider: 'didit'; url: string; sessionId: string }
+        | { provider: 'persona'; inquiryId: string };
+
+      if (started.provider === 'didit') {
+        try {
+          sessionStorage.setItem('piroka_age_session', started.sessionId);
+        } catch {}
+        window.location.assign(started.url);
+        return;
+      }
+
+      const environmentId = process.env.NEXT_PUBLIC_PERSONA_ENVIRONMENT_ID;
+      if (!environmentId) throw new Error('Age check is not configured');
+      const { inquiryId } = started;
 
       const Persona = await loadSdk();
       clientRef.current = new Persona.Client({

@@ -35,6 +35,7 @@ export async function updateGate(
     app_metadata: {
       ...(patch.consentAt !== undefined ? { consent_at: patch.consentAt } : {}),
       ...(patch.ageVerified !== undefined ? { age_verified: patch.ageVerified } : {}),
+      ...(patch.ageVerified === true ? { age_recheck: false } : {}),
       ...(patch.ageMethod !== undefined ? { age_method: patch.ageMethod } : {}),
     },
   });

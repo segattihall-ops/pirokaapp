@@ -169,19 +169,25 @@ Supabase → Authentication → SMTP so Supabase's own auth emails (magic link, 
 
 ## 7. Age verification — **Required before real users**
 
-The 18+ gate is what keeps the app legal. Today it runs in **demo** mode: `AGE_PROVIDER=local` accepts the
-on-device face/ID prototype flow and proves nothing. That mode is refused in production unless `AGE_PROVIDER=local`
-is set on purpose, so the preview works only because the variable is set explicitly.
+The 18+ gate runs on **Didit**. Without keys it falls back to `AGE_PROVIDER=local`, a demo that proves nothing
+and is refused in production.
+
+**Flow.** Selfie age estimation first. Clear adults pass in seconds. Anyone near the threshold, or an
+inconclusive estimate, is asked for a photo ID inside the same Didit session. Accounts an admin flags as
+possibly underage (Admin → Users → **Require ID**) lose 18+ and must pass an ID-document check to return.
+We store only `age_verified` and the method (`face` or `id`).
 
 | Variable | Value |
 |---|---|
-| `AGE_PROVIDER` | `yoti` for launch (`local` = demo only) |
-| `YOTI_CLIENT_SDK_ID` | https://hub.yoti.com → your app |
-| `YOTI_PEM_PATH` | path to the downloaded `.pem` (on Vercel: store the PEM as a secret and write it to disk in the build step) |
+| `AGE_PROVIDER` | `didit` |
+| `DIDIT_API_KEY` | Didit console → API keys |
+| `DIDIT_WORKFLOW_ID` | Workflow 1: **Age Estimation** (liveness), approve at estimated age ≥ 25, otherwise route to **ID Verification + Face Match** with minimum age 18 |
+| `DIDIT_ID_WORKFLOW_ID` | Workflow 2: **ID Verification + Face Match**, minimum age 18 (used for forced re-checks) |
+| `DIDIT_WEBHOOK_SECRET` | `secret_shared_key` of the webhook destination below |
 
-Server-to-server verification against Yoti's Age Estimation API is stubbed to **fail closed** in
-`lib/age/index.ts` (`verifyYoti`): with `AGE_PROVIDER=yoti` nobody passes until that call is wired to your
-Yoti contract. Do not "fix" it by trusting a token decoded from the client — the server must ask Yoti.
+**Webhook destination** (Didit console → Webhooks): `https://www.pirokaapp.com/api/webhooks/didit`,
+version v3, event `status.updated`. Use the `www` host: the bare domain answers with a redirect, and
+webhooks don't follow redirects. The callback URL is set per session by the app (`/age/return`).
 
 ---
 

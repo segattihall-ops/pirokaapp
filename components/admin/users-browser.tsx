@@ -250,6 +250,32 @@ export function UsersBrowser() {
               </label>
             </div>
 
+            <div className="flex items-center justify-between gap-2 rounded-card border border-line-1 p-3">
+              <div>
+                <p className="font-semibold text-fg-2">Age re-check</p>
+                <p className="text-fg-4">Revokes 18+ and requires an ID document before they can return.</p>
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  if (!detail || !confirm('Revoke 18+ and require an ID check?')) return;
+                  setBusy(true);
+                  const r = await fetch(`/api/admin/users/${detail.user.id}/age-recheck`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'reported underage' }),
+                  });
+                  setBusy(false);
+                  setMsg(r.ok ? 'ID re-check required.' : 'Could not require re-check.');
+                  if (r.ok) open(detail.user.id);
+                }}
+                className="btn-secondary h-9 shrink-0 text-[12px]"
+              >
+                Require ID
+              </button>
+            </div>
+
             <div className="rounded-card border border-line-1 p-3">
               <p className="mb-2 font-semibold text-fg-2">Moderation ladder</p>
               <div className="flex gap-2">
