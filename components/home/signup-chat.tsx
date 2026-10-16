@@ -707,7 +707,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       <button
         type="button"
         onClick={() => (step === 'action' ? act() : inputRef.current?.focus())}
-        className="hidden h-12 rounded-btn border border-line-2 bg-white/[0.04] text-[14px] font-semibold text-fg transition-colors hover:border-[rgba(52,211,153,0.5)] lg:block"
+        className="hidden h-[54px] rounded-[18px] bg-[#34d399] text-[15px] font-semibold tracking-[-0.005em] text-[#070707] shadow-[0_14px_40px_rgba(52,211,153,0.28),inset_0_1px_0_rgba(255,255,255,0.35)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(52,211,153,0.42),inset_0_1px_0_rgba(255,255,255,0.35)] lg:block"
       >
         Start chatting
       </button>
