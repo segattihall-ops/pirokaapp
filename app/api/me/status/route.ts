@@ -7,19 +7,19 @@ import { notifyMany } from '@/lib/notify/server';
 import { displayName, userCards } from '@/lib/users/cards';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
+import { INTENTS as INTENT_META, INTENT_ORDER, type Intent } from '@/lib/intent';
 
 export const dynamic = 'force-dynamic';
 
-const INTENTS = ['now', 'tonight', 'hosting', 'visiting', 'looking', 'later'] as const;
-const INTENT_LABEL: Record<(typeof INTENTS)[number], string> = {
-  now: 'Now',
-  tonight: 'Tonight',
-  hosting: 'Hosting',
-  visiting: 'Visiting',
-  looking: 'Looking',
-  later: 'Later',
-};
-const Body = z.object({ intent: z.enum(INTENTS), hours: z.number().min(0.5).max(8).default(2) });
+const INTENTS = INTENT_ORDER as [Intent, ...Intent[]];
+const Body = z.object({
+  intent: z.enum(INTENTS),
+  hours: z.number().min(0.5).max(8).default(2),
+  // "Can travel" radius in miles (1–15). Ignored for every other intent.
+  travelMi: z.number().int().min(1).max(15).optional(),
+});
+
+export type MyStatusRow = { intent: Intent; starts_at: string; ends_at: string; travel_mi: number | null };
 
 export async function GET() {
   const session = await getSession();
@@ -27,11 +27,11 @@ export async function GET() {
   if (!supabaseAdmin) return NextResponse.json({ status: null });
   const { data } = await supabaseAdmin
     .from('statuses')
-    .select('intent, starts_at, ends_at')
+    .select('intent, starts_at, ends_at, travel_mi')
     .eq('user_id', session.userId)
     .gt('ends_at', new Date().toISOString())
     .maybeSingle();
-  return NextResponse.json({ status: data ?? null });
+  return NextResponse.json({ status: (data as MyStatusRow | null) ?? null });
 }
 
 /** Sets "what I'm up to" for up to 8 hours. Replaces any current status. */
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   const { intent, hours } = parsed.data;
+  const travelMi = intent === 'travel' ? (parsed.data.travelMi ?? 5) : null;
 
   await ensureUserRow(session);
   const { data: before } = await supabaseAdmin
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
     intent,
     starts_at: now.toISOString(),
     ends_at: new Date(now.getTime() + hours * 3600_000).toISOString(),
+    travel_mi: travelMi,
     warned: false,
   };
   const { error } = await supabaseAdmin.from('statuses').upsert(row, { onConflict: 'user_id' });
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
     Promise.all([supabaseAdmin.rpc('favoriters_of', { owner: session.userId }), userCards([session.userId])])
       .then(([{ data: fans }, cards]) => {
         const who = displayName(cards.get(session.userId)?.handle);
-        const meta = INTENT_LABEL[intent];
+        const meta = INTENT_META[intent].label;
         return notifyMany(
           ((fans ?? []) as { user_id: string }[]).map((f) => f.user_id),
           {
@@ -86,7 +88,14 @@ export async function POST(request: Request) {
       })
       .catch((e) => console.error('go-live alerts failed', e));
   }
-  return NextResponse.json({ status: { intent, starts_at: row.starts_at, ends_at: row.ends_at } });
+  return NextResponse.json({
+    status: {
+      intent,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+      travel_mi: travelMi,
+    } satisfies MyStatusRow,
+  });
 }
 
 export async function DELETE() {

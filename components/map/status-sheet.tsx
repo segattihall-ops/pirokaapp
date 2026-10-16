@@ -4,9 +4,15 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { INTENTS, timeLeft } from '@/lib/geo/client';
 
-export type MyStatus = { intent: string; starts_at: string; ends_at: string } | null;
+export type MyStatus = {
+  intent: string;
+  starts_at: string;
+  ends_at: string;
+  travel_mi?: number | null;
+} | null;
 
 const DURATIONS = [0.5, 1, 2, 4];
+const TRAVEL_MILES = [1, 3, 5, 10, 15];
 
 export function StatusSheet({
   status,
@@ -19,6 +25,7 @@ export function StatusSheet({
 }) {
   const [intent, setIntent] = useState(status?.intent ?? 'now');
   const [hours, setHours] = useState(2);
+  const [travelMi, setTravelMi] = useState(status?.travel_mi ?? 5);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -28,7 +35,7 @@ export function StatusSheet({
     const r = await fetch('/api/me/status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ intent, hours }),
+      body: JSON.stringify({ intent, hours, travelMi: intent === 'travel' ? travelMi : undefined }),
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
@@ -68,6 +75,31 @@ export function StatusSheet({
           </button>
         ))}
       </div>
+      {intent === 'travel' && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[12px] font-semibold text-fg-3">
+            Can travel up to <span className="text-green">{travelMi} mi</span>
+          </span>
+          <div className="flex gap-2">
+            {TRAVEL_MILES.map((mi) => (
+              <button
+                key={mi}
+                type="button"
+                onClick={() => setTravelMi(mi)}
+                className={`chip ${travelMi === mi ? 'chip-selected' : ''}`}
+              >
+                {mi} mi
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {intent === 'couchless' && (
+        <p className="rounded-input bg-white/[0.04] px-3 py-2.5 text-[12px] leading-relaxed text-fg-2">
+          Couchless: you can&apos;t host and can&apos;t travel far. You&apos;ll figure it out together — a
+          café, a walk, a bar nearby. Meet somewhere public first.
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-fg-3">For</span>
         {DURATIONS.map((h) => (

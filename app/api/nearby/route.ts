@@ -3,8 +3,21 @@ import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
 import { presenceActivity } from '@/lib/geo/presence';
+import { isIntent, type Intent } from '@/lib/intent';
 
 export const dynamic = 'force-dynamic';
+
+/** Self-described, public profile facts used by the Filter sheet and the pin badges. Never health or exact location. */
+export type NearbyAttrs = {
+  gender: string[];
+  orientation: string[];
+  communities: string[];
+  ethnicity: string[];
+  /** Position marks as the profile stores them (e.g. "top", "versatile", "bottom"). */
+  position: string[];
+  /** ISO 3166-1 alpha-2 or `us-xx`, when the member shared where they are from. */
+  origin: string | null;
+};
 
 export type NearbyPerson = {
   id: string;
@@ -12,13 +25,27 @@ export type NearbyPerson = {
   lat: number;
   lon: number;
   distanceM: number;
-  intent: string | null;
+  intent: Intent | null;
   intentStartsAt: string | null;
   intentEndsAt: string | null;
+  /** "Can travel" radius in miles, only while that intent is live. */
+  travelMi: number | null;
+  /** Premium "Desperate" alert — a red blinking ring until this time. */
+  desperateUntil: string | null;
   activity: 'active' | 'recent' | 'today';
   photo: string | null;
   verified: boolean;
   plan: string;
+  attrs: NearbyAttrs;
+};
+
+const EMPTY_ATTRS: NearbyAttrs = {
+  gender: [],
+  orientation: [],
+  communities: [],
+  ethnicity: [],
+  position: [],
+  origin: null,
 };
 
 /**
@@ -28,7 +55,7 @@ export type NearbyPerson = {
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!supabaseAdmin) return NextResponse.json({ configured: false, people: [], hotspots: [] });
+  if (!supabaseAdmin) return NextResponse.json({ configured: false, people: [], hotspots: [], visitors: [] });
 
   const q = new URL(request.url).searchParams;
   const lat = Number(q.get('lat'));
@@ -57,37 +84,65 @@ export async function GET(request: Request) {
   ]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // nearby_users intentionally exposes only public_geo. Fetch status start times separately so
-  // the client can draw a truthful remaining-time ring without widening the location RPC.
-  const ids = (rows ?? []).map((r: any) => r.id).filter(Boolean);
+  // nearby_users intentionally exposes only public_geo. Everything else about a person is fetched by id
+  // from tables that hold no location at all, so widening the pins never widens the location RPC.
+  const ids: string[] = (rows ?? []).map((r: any) => r.id).filter(Boolean);
+  const nowIso = new Date().toISOString();
   let activeStatuses: any[] = [];
+  let profiles: any[] = [];
+  let desperate: any[] = [];
   if (ids.length > 0) {
-    const { data } = await supabaseAdmin
-      .from('statuses')
-      .select('user_id, starts_at, ends_at')
-      .in('user_id', ids)
-      .gt('ends_at', new Date().toISOString());
-    activeStatuses = data ?? [];
+    const [st, pr, dp] = await Promise.all([
+      supabaseAdmin
+        .from('statuses')
+        .select('user_id, starts_at, ends_at, travel_mi')
+        .in('user_id', ids)
+        .gt('ends_at', nowIso),
+      supabaseAdmin
+        .from('users')
+        .select('id, gender, orientation, communities, ethnicity, position_marks, origin')
+        .in('id', ids),
+      supabaseAdmin.from('desperate_alerts').select('user_id, until').in('user_id', ids).gt('until', nowIso),
+    ]);
+    activeStatuses = st.data ?? [];
+    profiles = pr.data ?? [];
+    desperate = dp.data ?? [];
   }
   const statusOf = new Map(activeStatuses.map((s) => [s.user_id, s]));
+  const profileOf = new Map(profiles.map((p) => [p.id, p]));
+  const desperateOf = new Map(desperate.map((d) => [d.user_id, d.until as string]));
 
   const people: NearbyPerson[] = (rows ?? [])
     .filter((r: any) => !intent || r.intent === intent)
     .map((r: any) => {
       const status = statusOf.get(r.id);
+      const p = profileOf.get(r.id);
+      const live: Intent | null = isIntent(r.intent) ? r.intent : null;
       return {
         id: r.id,
         handle: r.handle,
         lat: r.lat,
         lon: r.lon,
         distanceM: Math.round(r.distance_m),
-        intent: r.intent ?? null,
+        intent: live,
         intentStartsAt: status?.starts_at ?? null,
         intentEndsAt: status?.ends_at ?? r.intent_ends_at ?? null,
+        travelMi: live === 'travel' ? (status?.travel_mi ?? null) : null,
+        desperateUntil: desperateOf.get(r.id) ?? null,
         activity: presenceActivity(r.presence_at),
         photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
         verified: Boolean(r.verified),
         plan: r.plan,
+        attrs: p
+          ? {
+              gender: p.gender ?? [],
+              orientation: p.orientation ?? [],
+              communities: p.communities ?? [],
+              ethnicity: p.ethnicity ?? [],
+              position: p.position_marks ?? [],
+              origin: p.origin ?? null,
+            }
+          : EMPTY_ATTRS,
       };
     });
 

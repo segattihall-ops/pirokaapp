@@ -4,10 +4,19 @@ import type { Visitor } from '@/app/api/nearby/route';
 import { UserRow } from '@/components/people/user-row';
 import { Sheet } from './status-sheet';
 
-const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const fmt = (d: string) =>
+  new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** People who announced a trip to the area you are looking at. */
-export function VisitorsSheet({ visitors, onOpen, onClose }: { visitors: Visitor[]; onOpen: (id: string) => void; onClose: () => void }) {
+export function VisitorsSheet({
+  visitors,
+  onOpen,
+  onClose,
+}: {
+  visitors: Visitor[];
+  onOpen: (id: string) => void;
+  onClose: () => void;
+}) {
   return (
     <Sheet title="Visiting soon" onClose={onClose}>
       {visitors.length === 0 ? (

@@ -24,7 +24,9 @@ export function TravelSheet({
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [picked, setPicked] = useState<Hit | null>(view ? { name: view.label, lat: view.lat, lon: view.lon } : null);
+  const [picked, setPicked] = useState<Hit | null>(
+    view ? { name: view.label, lat: view.lat, lon: view.lon } : null,
+  );
   const [arriveOn, setArriveOn] = useState(today());
   const [nights, setNights] = useState(3);
   const [busy, setBusy] = useState(false);
@@ -37,7 +39,9 @@ export function TravelSheet({
     if (q.trim().length < 2) return setHits([]);
     timer.current = setTimeout(async () => {
       setSearching(true);
-      const r = await fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, { cache: 'no-store' }).catch(() => null);
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, { cache: 'no-store' }).catch(
+        () => null,
+      );
       setSearching(false);
       if (!r?.ok) return setErr('City search is unavailable right now');
       setErr('');
@@ -84,10 +88,16 @@ export function TravelSheet({
         />
         {(hits.length > 0 || searching) && (
           <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-input border border-line-2 bg-ink-900 shadow-sheet">
-            {searching && hits.length === 0 && <li className="px-3.5 py-2.5 text-[13px] text-fg-4">Searching…</li>}
+            {searching && hits.length === 0 && (
+              <li className="px-3.5 py-2.5 text-[13px] text-fg-4">Searching…</li>
+            )}
             {hits.map((h) => (
               <li key={`${h.lat},${h.lon}`}>
-                <button type="button" onClick={() => pick(h)} className="tap block w-full px-3.5 py-2.5 text-left text-[14px] hover:bg-ink-850">
+                <button
+                  type="button"
+                  onClick={() => pick(h)}
+                  className="tap block w-full px-3.5 py-2.5 text-left text-[14px] hover:bg-ink-850"
+                >
                   {h.name}
                 </button>
               </li>
@@ -114,11 +124,19 @@ export function TravelSheet({
 
           <div className="flex flex-col gap-2 rounded-card border border-line-1 p-3.5">
             <p className="text-[13px] font-semibold">Announce this trip</p>
-            <p className="text-[12px] text-fg-3">Shows “visiting” on your profile and alerts favourites who are near that city.</p>
+            <p className="text-[12px] text-fg-3">
+              Shows “visiting” on your profile and alerts favourites who are near that city.
+            </p>
             <div className="flex gap-2">
               <label className="flex flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-3">
                 Arrive
-                <input type="date" min={today()} value={arriveOn} onChange={(e) => setArriveOn(e.target.value)} className="input h-11 normal-case tracking-normal" />
+                <input
+                  type="date"
+                  min={today()}
+                  value={arriveOn}
+                  onChange={(e) => setArriveOn(e.target.value)}
+                  className="input h-11 normal-case tracking-normal"
+                />
               </label>
               <label className="flex w-[110px] flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-3">
                 Nights
@@ -138,7 +156,12 @@ export function TravelSheet({
               </p>
             )}
             {msg && <p className="text-[12px] text-green">{msg}</p>}
-            <button type="button" onClick={announce} disabled={busy} className="btn-primary h-11 bg-green hover:bg-green-hover">
+            <button
+              type="button"
+              onClick={announce}
+              disabled={busy}
+              className="btn-primary h-11 bg-green hover:bg-green-hover"
+            >
               {busy ? '…' : 'Announce trip'}
             </button>
           </div>
