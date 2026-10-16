@@ -44,7 +44,8 @@ function container(): HTMLElement {
     el = document.createElement('div');
     el.id = 'piroka-turnstile';
     // Above every sheet and modal, near the top, so an interactive challenge is never hidden behind buttons.
-    el.style.cssText = 'position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2147483000';
+    el.style.cssText =
+      'position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2147483000';
     document.body.appendChild(el);
   }
   return el;
@@ -77,7 +78,12 @@ export async function getCaptchaToken(action = 'signin'): Promise<string | undef
       execution: 'execute',
       theme: 'dark',
       callback: (token: string) => done(() => resolve(token)),
-      'error-callback': () => done(() => reject(new Error('Security check failed — please try again'))),
+      // Turnstile's error code says why (110xxx: site key or hostname not allowed, 300xxx/600xxx: the
+      // browser failed the challenge, e.g. blocked scripts or cookies), so surface it.
+      'error-callback': (code?: string | number) => {
+        done(() => reject(new Error(`Security check failed${code ? ` (${code})` : ''} — please try again`)));
+        return true;
+      },
       'expired-callback': () => done(() => reject(new Error('Security check expired — please try again'))),
       'timeout-callback': () => done(() => reject(new Error('Security check timed out — please try again'))),
     });
