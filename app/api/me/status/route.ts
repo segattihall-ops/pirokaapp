@@ -9,6 +9,7 @@ import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { INTENTS as INTENT_META, INTENT_ORDER, type Intent } from '@/lib/intent';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
+import { upsertStatusWithTravelFallback, type StatusUpsertRow } from '@/lib/status/upsert';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,17 +70,22 @@ export async function POST(request: Request) {
     .gt('ends_at', new Date().toISOString())
     .maybeSingle();
   const now = new Date();
-  const row = {
+  const row: StatusUpsertRow = {
     user_id: session.userId,
     intent,
     starts_at: now.toISOString(),
     ends_at: new Date(now.getTime() + hours * 3600_000).toISOString(),
     warned: false,
-    // Only sent when it carries a value: before migration 035 the column does not exist, and the
-    // seven original intents must keep working regardless of when 035 lands.
-    ...(travelMi !== null ? { travel_mi: travelMi } : {}),
+    // Always sent, null for every intent but "travel", so leaving travel mode clears the old radius
+    // instead of the upsert keeping it (the next GET would otherwise say "Hosting · 5 mi"). Before
+    // migration 035 the column does not exist: the helper retries without it for non-travel intents.
+    travel_mi: travelMi,
   };
-  const { error } = await supabaseAdmin.from('statuses').upsert(row, { onConflict: 'user_id' });
+  const db = supabaseAdmin;
+  const { error } = await upsertStatusWithTravelFallback(async (r) => {
+    const { error: e } = await db.from('statuses').upsert(r, { onConflict: 'user_id' });
+    return { error: e };
+  }, row);
   if (error) {
     // "Can travel" radius and the "couchless" intent both need 035 (column + enum value).
     if (isMissingSchema(error))

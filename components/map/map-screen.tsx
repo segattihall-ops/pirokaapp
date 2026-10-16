@@ -589,7 +589,7 @@ export function MapScreen({ userId }: { userId: string }) {
             />
             <span className="truncate">
               {mine ? `You: ${mine.label}` : 'Set your intent'}
-              {status?.travel_mi ? ` · ${status.travel_mi} mi` : ''}
+              {status?.intent === 'travel' && status.travel_mi ? ` · ${status.travel_mi} mi` : ''}
             </span>
           </button>
           <button
