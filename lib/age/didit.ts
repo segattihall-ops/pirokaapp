@@ -2,6 +2,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { appUrl } from '@/lib/app-url';
+import { captureError } from '@/lib/errors/server';
 import type { AgeMethod, AgeResult } from './index';
 
 /**
@@ -45,22 +46,35 @@ export async function createDiditSession(
   const workflowId = workflowFor(mode);
   if (!apiKey || !workflowId) return { ok: false, reason: 'Didit is not configured' };
 
-  const res = await fetch(`${API}/`, {
-    method: 'POST',
-    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      workflow_id: workflowId,
-      vendor_data: userId,
-      callback: appUrl('/age/return'),
-      metadata: { mode },
-    }),
-    cache: 'no-store',
-  });
-  if (!res.ok) return { ok: false, reason: 'Could not start the age check' };
+  const fail = { ok: false as const, reason: 'Could not start the age check' };
+  let res: Response;
+  try {
+    res = await fetch(`${API}/`, {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        workflow_id: workflowId,
+        vendor_data: userId,
+        callback: appUrl('/age/return'),
+        callback_method: 'both',
+        metadata: { mode },
+      }),
+      cache: 'no-store',
+    });
+  } catch (e) {
+    await captureError(e, { route: '/api/age/start' });
+    return fail;
+  }
+  if (!res.ok) {
+    // Didit's reason (bad workflow, no credits, key scope, …) goes to /admin/errors, never to the user.
+    const body = (await res.text().catch(() => '')).slice(0, 500);
+    await captureError(new Error(`Didit create session ${res.status} (${mode}): ${body}`), {
+      route: '/api/age/start',
+    });
+    return fail;
+  }
   const j = (await res.json()) as { session_id?: string; url?: string };
-  return j.session_id && j.url
-    ? { ok: true, sessionId: j.session_id, url: j.url }
-    : { ok: false, reason: 'Could not start the age check' };
+  return j.session_id && j.url ? { ok: true, sessionId: j.session_id, url: j.url } : fail;
 }
 
 type Decision = {
