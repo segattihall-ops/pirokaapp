@@ -8,6 +8,8 @@ import { displayName, userCards } from '@/lib/users/cards';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { INTENTS as INTENT_META, INTENT_ORDER, type Intent } from '@/lib/intent';
+import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
+import { upsertStatusWithTravelFallback, type StatusUpsertRow } from '@/lib/status/upsert';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +27,28 @@ export async function GET() {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!supabaseAdmin) return NextResponse.json({ status: null });
-  const { data } = await supabaseAdmin
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
     .from('statuses')
     .select('intent, starts_at, ends_at, travel_mi')
     .eq('user_id', session.userId)
-    .gt('ends_at', new Date().toISOString())
+    .gt('ends_at', nowIso)
     .maybeSingle();
-  return NextResponse.json({ status: (data as MyStatusRow | null) ?? null });
+  if (!error) return NextResponse.json({ status: (data as MyStatusRow | null) ?? null });
+  // `travel_mi` arrives with migration 035. Until it is applied, the status still exists; only the radius is unknown.
+  if (isMissingSchema(error)) {
+    const { data: legacy } = await supabaseAdmin
+      .from('statuses')
+      .select('intent, starts_at, ends_at')
+      .eq('user_id', session.userId)
+      .gt('ends_at', nowIso)
+      .maybeSingle();
+    return NextResponse.json({
+      status: legacy ? ({ ...legacy, travel_mi: null } as MyStatusRow) : null,
+      schemaPending: '035_app_v2_map',
+    });
+  }
+  return NextResponse.json({ error: error.message }, { status: 500 });
 }
 
 /** Sets "what I'm up to" for up to 8 hours. Replaces any current status. */
@@ -53,16 +70,28 @@ export async function POST(request: Request) {
     .gt('ends_at', new Date().toISOString())
     .maybeSingle();
   const now = new Date();
-  const row = {
+  const row: StatusUpsertRow = {
     user_id: session.userId,
     intent,
     starts_at: now.toISOString(),
     ends_at: new Date(now.getTime() + hours * 3600_000).toISOString(),
-    travel_mi: travelMi,
     warned: false,
+    // Always sent, null for every intent but "travel", so leaving travel mode clears the old radius
+    // instead of the upsert keeping it (the next GET would otherwise say "Hosting · 5 mi"). Before
+    // migration 035 the column does not exist: the helper retries without it for non-travel intents.
+    travel_mi: travelMi,
   };
-  const { error } = await supabaseAdmin.from('statuses').upsert(row, { onConflict: 'user_id' });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const db = supabaseAdmin;
+  const { error } = await upsertStatusWithTravelFallback(async (r) => {
+    const { error: e } = await db.from('statuses').upsert(r, { onConflict: 'user_id' });
+    return { error: e };
+  }, row);
+  if (error) {
+    // "Can travel" radius and the "couchless" intent both need 035 (column + enum value).
+    if (isMissingSchema(error))
+      return NextResponse.json(schemaPendingResponse('035_app_v2_map'), { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   void track({
     userId: session.userId,
     event: EVENTS.status_set,
