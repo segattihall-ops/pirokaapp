@@ -6,6 +6,7 @@ import { notifyMany } from '@/lib/notify/server';
 import { displayName, userCards } from '@/lib/users/cards';
 import { track } from '@/lib/analytics/server';
 import { DESPERATE_COOLDOWN_H, DESPERATE_MINUTES, type DesperateState } from '@/lib/desperate';
+import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +81,12 @@ export async function POST(request: Request) {
       { user_id: me, until, sent_at: now.toISOString(), reached: nearby.length },
       { onConflict: 'user_id' },
     );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // The table arrives with migration 035; say so instead of a generic failure.
+    if (isMissingSchema(error))
+      return NextResponse.json(schemaPendingResponse('035_app_v2_map'), { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   void track({ userId: me, event: 'desperate_sent', props: { reached: nearby.length } });
   if (nearby.length) {

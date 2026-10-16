@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
 import { presenceActivity } from '@/lib/geo/presence';
 import { isIntent, type Intent } from '@/lib/intent';
+import { isMissingSchema } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
   let profiles: any[] = [];
   let desperate: any[] = [];
   if (ids.length > 0) {
-    const [st, pr, dp] = await Promise.all([
+    const [stFirst, pr, dp] = await Promise.all([
       supabaseAdmin
         .from('statuses')
         .select('user_id, starts_at, ends_at, travel_mi')
@@ -104,6 +105,22 @@ export async function GET(request: Request) {
         .in('id', ids),
       supabaseAdmin.from('desperate_alerts').select('user_id, until').in('user_id', ids).gt('until', nowIso),
     ]);
+    type StatusRow = { user_id: string; starts_at: string; ends_at: string; travel_mi?: number | null };
+    let st: { data: StatusRow[] | null; error: { code?: string; message: string } | null } = stFirst;
+    // Before migration 035 `statuses.travel_mi` does not exist. Losing every status timer on the map
+    // because of one optional column is not acceptable: fall back to the pre-035 shape.
+    if (st.error && isMissingSchema(st.error)) {
+      st = await supabaseAdmin
+        .from('statuses')
+        .select('user_id, starts_at, ends_at')
+        .in('user_id', ids)
+        .gt('ends_at', nowIso);
+    }
+    if (st.error) console.error('nearby: statuses lookup failed', st.error.code, st.error.message);
+    if (pr.error) console.error('nearby: profiles lookup failed', pr.error.code, pr.error.message);
+    // `desperate_alerts` also arrives with 035; without it there are simply no alerts to show.
+    if (dp.error && !isMissingSchema(dp.error))
+      console.error('nearby: desperate lookup failed', dp.error.code, dp.error.message);
     activeStatuses = st.data ?? [];
     profiles = pr.data ?? [];
     desperate = dp.data ?? [];
