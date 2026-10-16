@@ -2,7 +2,7 @@
 
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { getPosition, intentMeta, type Position } from '@/lib/geo/client';
 import { LOCATION_REFRESH_MS, PRESENCE_HEARTBEAT_MS } from '@/lib/geo/presence';
@@ -18,6 +18,9 @@ import { VisitorsSheet } from './visitors-sheet';
 import { AssistantPanel } from './assistant-panel';
 import { EMPTY_FILTERS, activeFilterCount, matchesFilters, type Filters } from './filters';
 import { pinElement, updatePinElement, youElement, updateYouElement, pinRingDegrees } from './pins';
+import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement } from './place-pins';
+import { DemoProfileSheet } from './demo-profile-sheet';
+import { demoWorld, type DemoArrival, type DemoEvent, type DemoPlace } from '@/lib/demo/presence';
 import { promosFor, type Promo } from './promos';
 
 const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -56,6 +59,17 @@ const EMPTY_ATTRS = {
   origin: null,
 };
 /** Pin builders read attrs; tolerate a partial person (e.g. a test mock) and honour the position toggle. */
+/** Map the backend place kinds onto the six glyphs the pin builder draws. */
+function normalizeKind(kind: string): DemoPlace['kind'] {
+  const k = kind.toLowerCase();
+  if (k === 'club') return 'club';
+  if (k === 'sauna') return 'sauna';
+  if (k === 'park' || k === 'beach') return 'park';
+  if (k === 'cafe' || k === 'restaurant' || k === 'shop') return 'cafe';
+  if (k === 'gym') return 'gym';
+  return 'bar';
+}
+
 function withPos(p: NearbyPerson, showPosition: boolean): NearbyPerson {
   const attrs = p.attrs ?? EMPTY_ATTRS;
   return { ...p, attrs: { ...attrs, position: showPosition ? (attrs.position ?? []) : [] } };
@@ -65,15 +79,28 @@ export function MapScreen({ userId }: { userId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const placeMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const hotspotMarkersRef = useRef<maplibregl.Marker[]>([]);
   const youRef = useRef<maplibregl.Marker | null>(null);
   const [pos, setPos] = useState<Position | null>(null);
   const [people, setPeople] = useState<NearbyPerson[]>([]);
-  const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number }[]>([]);
+  const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number; up?: boolean }[]>([]);
+  const [places, setPlaces] = useState<DemoPlace[]>([]);
+  const [events, setEvents] = useState<DemoEvent[]>([]);
+  const [arrivals, setArrivals] = useState<DemoArrival[]>([]);
+  const [demo, setDemo] = useState(false);
+  const [interested, setInterested] = useState<NearbyPerson | null>(null);
+  const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null }>({
+    handle: null,
+    photo: null,
+  });
   const [chip, setChip] = useState<IntentChip>('all');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [showPosition, setShowPosition] = useState(true);
   const [layers, setLayers] = useState<MapLayers>(DEFAULT_LAYERS);
   const [demand, setDemand] = useState(false);
+  const [showPlaces, setShowPlaces] = useState(true);
+  const router = useRouter();
   const [layersOpen, setLayersOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -102,6 +129,7 @@ export function MapScreen({ userId }: { userId: string }) {
   const promoSeenRef = useRef<Set<string>>(new Set());
   const ethnicityEnabled = useFlag('ethnicity_filter', true);
   const params = useSearchParams();
+  const forceDemo = params.get('demo') === '1';
 
   const scrubbed = scrub > 0;
   const T = now + scrub * 60_000;
@@ -151,25 +179,135 @@ export function MapScreen({ userId }: { userId: string }) {
     if (r?.status === 503) setConfigured(false);
   }, []);
 
-  const refresh = useCallback(async (p: Position | null) => {
-    const c = viewRef.current ?? p;
-    if (!c) return;
-    const r = await fetch(`/api/nearby?lat=${c.lat}&lon=${c.lon}&radius=${RADIUS_M}`, {
-      cache: 'no-store',
-    }).catch(() => null);
-    if (!r?.ok) return;
-    const j = (await r.json()) as {
-      configured: boolean;
-      people: NearbyPerson[];
-      hotspots: typeof hotspots;
-      visitors?: Visitor[];
-    };
-    setConfigured(j.configured);
-    setPeople(j.people);
-    setHotspots(j.hotspots);
-    setVisitors(j.visitors ?? []);
-    setNow(Date.now());
-  }, []);
+  const refresh = useCallback(
+    async (p: Position | null) => {
+      const c = viewRef.current ?? p;
+      if (!c) return;
+      const r = await fetch(`/api/nearby?lat=${c.lat}&lon=${c.lon}&radius=${RADIUS_M}`, {
+        cache: 'no-store',
+      }).catch(() => null);
+      const j = r?.ok
+        ? ((await r.json()) as {
+            configured: boolean;
+            people: NearbyPerson[];
+            hotspots: typeof hotspots;
+            visitors?: Visitor[];
+          })
+        : { configured: false, people: [], hotspots: [], visitors: [] };
+
+      // No backend (or ?demo=1) → fill the map with simulated presence instead of leaving it empty.
+      if (forceDemo || !j.configured) {
+        const w = demoWorld({ lat: c.lat, lon: c.lon });
+        setDemo(true);
+        setConfigured(true);
+        setPeople(w.people);
+        setHotspots(w.hotspots);
+        setPlaces(w.places);
+        setEvents(w.events);
+        setArrivals(w.arrivals);
+        setVisitors(
+          w.arrivals.map((a) => ({
+            id: a.id,
+            handle: a.handle,
+            city: '',
+            arriveOn: '',
+            nights: 0,
+            photo: null,
+            lat: a.lat,
+            lon: a.lon,
+          })),
+        );
+        setNow(Date.now());
+        return;
+      }
+
+      setDemo(false);
+      setConfigured(true);
+      setPeople(j.people);
+      setHotspots(j.hotspots);
+      setVisitors(j.visitors ?? []);
+      setArrivals(
+        (j.visitors ?? [])
+          .filter((v) => v.lat != null && v.lon != null)
+          .map((v) => ({
+            id: v.id,
+            handle: v.handle ?? '',
+            lat: v.lat as number,
+            lon: v.lon as number,
+            originCode: null,
+            when: 'Arriving soon',
+          })),
+      );
+      setNow(Date.now());
+
+      // Real place and event pins, from the APIs that already carry coordinates. Fire-and-forget so this never
+      // delays the caller (the startup sequence attaches the visibilitychange listener right after refresh).
+      void (async () => {
+        const [pr, ev] = await Promise.all([
+          fetch(`/api/places?lat=${c.lat}&lon=${c.lon}&radius=${RADIUS_M}`, { cache: 'no-store' }).catch(
+            () => null,
+          ),
+          fetch(`/api/events?lat=${c.lat}&lon=${c.lon}&radius=6`, { cache: 'no-store' }).catch(() => null),
+        ]);
+        if (pr?.ok) {
+          const pj = (await pr.json().catch(() => ({}))) as {
+            places?: {
+              id: string;
+              name: string;
+              kind: string;
+              lat: number;
+              lon: number;
+              here: number;
+              going: number;
+            }[];
+          };
+          setPlaces(
+            (pj.places ?? []).map((x) => ({
+              id: x.id,
+              name: x.name,
+              kind: normalizeKind(x.kind),
+              lat: x.lat,
+              lon: x.lon,
+              here: x.here,
+              arriving: x.going,
+              popping: false,
+              peak: '',
+            })),
+          );
+        } else {
+          setPlaces([]);
+        }
+        if (ev?.ok) {
+          const ej = (await ev.json().catch(() => ({}))) as {
+            events?: {
+              id: string;
+              title: string;
+              lat?: number;
+              lon?: number;
+              starts_at: string;
+              attendee_count?: number;
+            }[];
+          };
+          const today = new Date().toDateString();
+          setEvents(
+            (ej.events ?? [])
+              .filter((e) => e.lat != null && e.lon != null && new Date(e.starts_at).toDateString() === today)
+              .map((e) => ({
+                id: e.id,
+                name: e.title,
+                lat: e.lat as number,
+                lon: e.lon as number,
+                time: new Date(e.starts_at).toLocaleTimeString([], { hour: 'numeric' }),
+                going: e.attendee_count ?? 0,
+              })),
+          );
+        } else {
+          setEvents([]);
+        }
+      })();
+    },
+    [forceDemo],
+  );
 
   const travelTo = useCallback(
     (v: TravelView | null) => {
@@ -229,6 +367,15 @@ export function MapScreen({ userId }: { userId: string }) {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => alive && j && setDesperate(j))
       .catch(() => {});
+    // Your own handle and main photo, for the self-pin "Your profile" card.
+    fetch(`/api/users/${userId}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive || !j) return;
+        const main = (j.photos ?? []).find((x: { slot: number }) => x.slot === 0);
+        setSelfCard({ handle: j.handle ?? null, photo: main?.url ?? null });
+      })
+      .catch(() => {});
     return () => {
       alive = false;
       if (refreshTimer) clearInterval(refreshTimer);
@@ -236,7 +383,7 @@ export function MapScreen({ userId }: { userId: string }) {
       if (locationTimer) clearInterval(locationTimer);
       document.removeEventListener('visibilitychange', resumeVisible);
     };
-  }, [heartbeat, locate, refresh]);
+  }, [heartbeat, locate, refresh, userId]);
 
   // 2) map
   useEffect(() => {
@@ -317,10 +464,10 @@ export function MapScreen({ userId }: { userId: string }) {
     updateYouElement(el, {
       color: meta?.color ?? '#34d399',
       degrees,
-      photo: null,
+      photo: selfCard.photo,
       desperate: Boolean(desperate?.active),
     });
-  }, [status, now, desperate]);
+  }, [status, now, desperate, selfCard.photo]);
 
   const searchFiltered = useMemo(() => people.filter((p) => matchesFilters(p, filters)), [people, filters]);
   const shown = useMemo(
@@ -409,6 +556,88 @@ export function MapScreen({ userId }: { userId: string }) {
     }
   }, [shown, hotspots, layers, demand, showPosition, now]);
 
+  // Place / event / arrival markers + hotspot count labels. Gated behind the "Places & events" layer so the
+  // design's neutral white place pins, tonight's events and traveler arrivals sit beside the person pins.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    type Spec = {
+      id: string;
+      lat: number;
+      lon: number;
+      label: string;
+      build: () => HTMLButtonElement;
+      onClick: () => void;
+    };
+    const specs: Spec[] = [];
+    if (showPlaces) {
+      for (const pl of places)
+        specs.push({
+          id: pl.id,
+          lat: pl.lat,
+          lon: pl.lon,
+          label: `${pl.name} · ${pl.here} here`,
+          build: () => placePinElement(pl),
+          onClick: () => router.push('/app/places'),
+        });
+      for (const ev of events)
+        specs.push({
+          id: ev.id,
+          lat: ev.lat,
+          lon: ev.lon,
+          label: `${ev.name} · ${ev.time} · ${ev.going} going`,
+          build: () => eventPinElement(ev),
+          onClick: () => router.push('/app/places?tab=events'),
+        });
+    }
+    for (const a of arrivals)
+      specs.push({
+        id: a.id,
+        lat: a.lat,
+        lon: a.lon,
+        label: `${a.handle || 'Traveler'} · ${a.when}`,
+        build: () => arrivalPinElement(a),
+        onClick: () => setShowVisitors(true),
+      });
+
+    const wanted = new Set(specs.map((s) => s.id));
+    for (const [id, marker] of placeMarkersRef.current) {
+      if (!wanted.has(id)) {
+        marker.remove();
+        placeMarkersRef.current.delete(id);
+      }
+    }
+    for (const s of specs) {
+      if (placeMarkersRef.current.has(s.id)) {
+        placeMarkersRef.current.get(s.id)!.setLngLat([s.lon, s.lat]);
+        continue;
+      }
+      const el = s.build();
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        s.onClick();
+      });
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([s.lon, s.lat])
+        .addTo(map);
+      // MapLibre overwrites aria-label with a generic "Map marker" during addTo(); restore the descriptive one.
+      el.setAttribute('aria-label', s.label);
+      placeMarkersRef.current.set(s.id, marker);
+    }
+
+    for (const m of hotspotMarkersRef.current) m.remove();
+    hotspotMarkersRef.current = layers.activity
+      ? hotspots
+          .filter((h) => (h.count ?? 0) >= 3)
+          .map((h) =>
+            new maplibregl.Marker({ element: hotspotLabelElement(h.count, h.up ?? true), anchor: 'center' })
+              .setLngLat([h.lon, h.lat])
+              .addTo(map),
+          )
+      : [];
+  }, [places, events, arrivals, hotspots, showPlaces, layers.activity, router]);
+
   // Free members see their 2-mile reach ring; it clears when travelling.
   useEffect(() => {
     const map = mapRef.current;
@@ -464,6 +693,22 @@ export function MapScreen({ userId }: { userId: string }) {
     const t = setTimeout(() => setPromo(null), 12_000);
     return () => clearTimeout(t);
   }, [promo]);
+
+  // "Someone nearby is interested" — simulated in demo mode (real mode drives this from a backend signal later).
+  useEffect(() => {
+    if (!demo || interested || selected || aiOpen) return;
+    const t = setTimeout(() => {
+      const live = people.filter((p) => p.intent && p.intent !== 'looking' && p.distanceM < 2500);
+      if (live.length) setInterested(live[Math.floor(Math.random() * live.length)]);
+    }, 9000);
+    return () => clearTimeout(t);
+  }, [demo, interested, selected, aiOpen, people]);
+
+  useEffect(() => {
+    if (!interested) return;
+    const t = setTimeout(() => setInterested(null), 10_000);
+    return () => clearTimeout(t);
+  }, [interested]);
 
   const liveCount = useMemo(
     () =>
@@ -717,6 +962,16 @@ export function MapScreen({ userId }: { userId: string }) {
                 <span className="mx-3 my-1 block h-px bg-line-1" />
                 <button
                   type="button"
+                  onClick={() => setShowPlaces((v) => !v)}
+                  className="tap flex h-11 w-full items-center justify-between rounded-[11px] px-3 text-left text-[13px] hover:bg-white/5"
+                >
+                  <span>Places &amp; events</span>
+                  <span className={showPlaces ? 'font-bold text-green' : 'font-bold text-fg-4'}>
+                    {showPlaces ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setDemand((v) => !v)}
                   className="tap flex h-11 w-full items-center justify-between rounded-[11px] px-3 text-left text-[13px] hover:bg-white/5"
                 >
@@ -762,7 +1017,14 @@ export function MapScreen({ userId }: { userId: string }) {
             )}
           </button>
 
-          <span className="ml-auto hidden rounded-full border border-line-1 bg-ink-850/75 px-2.5 py-1.5 text-[10px] text-fg-4 backdrop-blur-md sm:block">
+          {demo && (
+            <span className="ml-auto rounded-full border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-warning backdrop-blur-md">
+              Demo data
+            </span>
+          )}
+          <span
+            className={`hidden rounded-full border border-line-1 bg-ink-850/75 px-2.5 py-1.5 text-[10px] text-fg-4 backdrop-blur-md sm:block ${demo ? '' : 'ml-auto'}`}
+          >
             Approximate locations
           </span>
         </div>
@@ -815,6 +1077,28 @@ export function MapScreen({ userId }: { userId: string }) {
               Stop
             </button>
           </div>
+        )}
+
+        {interested && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelected({ id: interested.id, distanceM: interested.distanceM });
+              setInterested(null);
+            }}
+            className="glass pointer-events-auto flex items-center gap-3 self-start rounded-card px-3 py-2 text-left"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-800 text-[16px] font-bold text-fg-3">
+              ?
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[13px] font-bold">Someone nearby is interested</span>
+              <span className="text-[12px] text-fg-3">
+                ~{(interested.distanceM / 1609).toFixed(1)} mi · they&apos;ll see you if you like them back
+              </span>
+            </span>
+            <span className="shrink-0 text-[12px] font-semibold text-green">See →</span>
+          </button>
         )}
 
         {(notice || !configured) && (
@@ -1035,8 +1319,8 @@ export function MapScreen({ userId }: { userId: string }) {
       )}
       {showMyCard && (
         <MyCardSheet
-          handle={null}
-          photo={null}
+          handle={selfCard.handle}
+          photo={selfCard.photo}
           status={status}
           now={now}
           onEditIntent={() => {
@@ -1057,9 +1341,19 @@ export function MapScreen({ userId }: { userId: string }) {
           onClose={() => setShowVisitors(false)}
         />
       )}
-      {selected && (
-        <ProfileSheet userId={selected.id} distanceM={selected.distanceM} onClose={() => setSelected(null)} />
-      )}
+      {selected &&
+        (selected.id.startsWith('demo:') ? (
+          (() => {
+            const p = people.find((x) => x.id === selected.id);
+            return p ? <DemoProfileSheet person={p} onClose={() => setSelected(null)} /> : null;
+          })()
+        ) : (
+          <ProfileSheet
+            userId={selected.id}
+            distanceM={selected.distanceM}
+            onClose={() => setSelected(null)}
+          />
+        ))}
     </div>
   );
 }
