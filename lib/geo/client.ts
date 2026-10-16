@@ -1,5 +1,7 @@
 'use client';
 
+import { INTENTS as INTENT_META, INTENT_ORDER } from '@/lib/intent';
+
 export type Position = { lat: number; lon: number; precise: boolean };
 
 const FALLBACK: Position = { lat: 32.7767, lon: -96.797, precise: false }; // launch market: Dallas
@@ -85,15 +87,12 @@ export function distanceLabel(m: number): string {
   return mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`;
 }
 
-export const INTENTS: { value: string; label: string; color: string; hint: string }[] = [
-  // Design: green = people available now (now / hosting), white = tonight / later / visiting, grey = just looking.
-  { value: 'now', label: 'Available now', color: '#34d399', hint: 'Free right now' },
-  { value: 'hosting', label: 'Hosting', color: '#34d399', hint: 'Can host' },
-  { value: 'tonight', label: 'Tonight', color: '#f5f5f5', hint: 'Later today' },
-  { value: 'later', label: 'Later', color: '#f5f5f5', hint: 'This week' },
-  { value: 'visiting', label: 'Visiting', color: '#f5f5f5', hint: 'In town for a bit' },
-  { value: 'looking', label: 'Just looking', color: '#666666', hint: 'Open to chat' },
-];
+export const INTENTS: { value: string; label: string; color: string; hint: string }[] = INTENT_ORDER.map(
+  (k) => ({
+    value: k,
+    ...INTENT_META[k],
+  }),
+);
 
 export const intentMeta = (v: string | null | undefined) => INTENTS.find((i) => i.value === v) ?? null;
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { distanceLabel, getPosition, timeLeft, type Position } from '@/lib/geo/client';
 import type { Place } from '@/app/api/places/route';
 import { Sheet } from '@/components/map/status-sheet';
@@ -30,7 +31,12 @@ export function PlacesScreen() {
   const [suggest, setSuggest] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState<'places' | 'events' | 'testing'>('places');
+  const params = useSearchParams();
+  const initialTab = ((): 'places' | 'events' | 'testing' => {
+    const t = params.get('tab');
+    return t === 'events' || t === 'testing' ? t : 'places';
+  })();
+  const [tab, setTab] = useState<'places' | 'events' | 'testing'>(initialTab);
   const [events, setEvents] = useState<Event[] | null>(null);
 
   const loadEvents = useCallback(async (p: Position) => {

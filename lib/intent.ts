@@ -1,18 +1,40 @@
-// Intent, availability, pin rings, and Smart Inbox buckets — ported from the prototype logic.
+// Intent, availability, pin rings, and Smart Inbox buckets — ported from the prototype logic
+// (design_handoff/design/Piroka App v2.dc.html). Shared by the server routes and the client.
 
-export type Intent = 'now' | 'next' | 'hosting' | 'travel' | 'tonight' | 'later' | 'visiting' | 'looking';
+export type Intent =
+  'now' | 'next' | 'hosting' | 'travel' | 'tonight' | 'later' | 'visiting' | 'looking' | 'couchless';
 export type Status = { intent: Intent; startsAt: number; endsAt: number }; // ms epoch
 
-export const INTENTS: Record<Intent, { label: string; color: string }> = {
-  now: { label: 'Available now', color: '#34d399' },
-  next: { label: 'Next hour', color: '#34d399' },
-  hosting: { label: 'Hosting', color: '#34d399' },
-  travel: { label: 'Can travel', color: '#34d399' },
-  tonight: { label: 'Tonight', color: '#f5f5f5' },
-  later: { label: 'Later', color: '#f5f5f5' },
-  visiting: { label: 'Visiting', color: '#f5f5f5' },
-  looking: { label: 'Just looking', color: '#666666' },
+/** The order the PIROKA Mode sheet shows them in. */
+export const INTENT_ORDER: Intent[] = [
+  'now',
+  'next',
+  'hosting',
+  'travel',
+  'tonight',
+  'later',
+  'visiting',
+  'looking',
+  'couchless',
+];
+
+/** Colour system: green = available people, white = later / places, grey = just looking. */
+export const INTENTS: Record<Intent, { label: string; color: string; hint: string }> = {
+  now: { label: 'Available now', color: '#34d399', hint: 'Free right now' },
+  next: { label: 'Next hour', color: '#34d399', hint: 'Free within the hour' },
+  hosting: { label: 'Hosting', color: '#34d399', hint: 'Can host at my place' },
+  travel: { label: 'Can travel', color: '#34d399', hint: 'Will come to you' },
+  tonight: { label: 'Tonight', color: '#f5f5f5', hint: 'Later today' },
+  later: { label: 'Later', color: '#f5f5f5', hint: 'This week' },
+  visiting: { label: 'Visiting', color: '#f5f5f5', hint: 'In town for a bit' },
+  looking: { label: 'Just looking', color: '#666666', hint: 'Open to chat' },
+  couchless: { label: 'Couchless', color: '#f5f5f5', hint: "Can't host or travel far" },
 };
+
+export const isIntent = (v: unknown): v is Intent => typeof v === 'string' && v in INTENTS;
+
+/** Intents that count as "available right now" (map chip "Now", Smart Inbox "NOW"). */
+export const LIVE_INTENTS: Intent[] = ['now', 'next', 'hosting', 'travel', 'couchless'];
 
 /** Time scrubber: is the person available at time T (now + offset)? */
 export const availableAt = (s: Status, T: number) =>
@@ -26,16 +48,39 @@ export function ringDegrees(s: Status, T: number): number {
 }
 
 export const minutesLeft = (s: Status, T = Date.now()) => Math.max(0, Math.round((s.endsAt - T) / 60e3));
-export const fmtDur = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
+export const fmtDur = (m: number) => {
+  m = Math.max(0, Math.round(m));
+  if (m < 60) return `${m}m`;
+  return m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${Math.floor(m / 60)}h`;
+};
+
+export type IntentChip = 'all' | 'now' | 'tonight' | 'hosting' | 'visitors';
+export const INTENT_CHIPS: { key: IntentChip; label: string; color: string }[] = [
+  { key: 'all', label: 'Everyone', color: '#999999' },
+  { key: 'now', label: 'Now', color: '#34d399' },
+  { key: 'tonight', label: 'Tonight', color: '#f5f5f5' },
+  { key: 'hosting', label: 'Hosting', color: '#34d399' },
+  { key: 'visitors', label: 'Visitors', color: '#f5f5f5' },
+];
 
 /** Intent chips on the map. */
-export function matchesIntentChip(i: Intent, chip: 'all' | 'now' | 'tonight' | 'hosting' | 'visitors') {
+export function matchesIntentChip(i: Intent | null | undefined, chip: IntentChip) {
   if (chip === 'all') return true;
-  if (chip === 'now') return ['now', 'next', 'hosting', 'travel'].includes(i);
-  if (chip === 'tonight') return ['tonight', 'later'].includes(i);
+  if (!i) return false;
+  if (chip === 'now') return LIVE_INTENTS.includes(i);
+  if (chip === 'tonight') return i === 'tonight' || i === 'later';
   if (chip === 'hosting') return i === 'hosting';
   return i === 'visiting';
 }
+
+/** Small glyph drawn on the pin for intents that change how you meet (prototype: house / arrow / plane / no-couch). */
+export const INTENT_BADGE_PATH: Partial<Record<Intent, string>> = {
+  hosting: 'M3 11l9-7 9 7M5 10v10h14V10',
+  travel: 'M5 12h14M13 6l6 6-6 6',
+  visiting:
+    'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+  couchless: 'M4 12v5h16v-5M6 12V9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3M3 3l18 18',
+};
 
 export type Bucket = 'NOW' | 'MUTUAL' | 'ACTIVE' | 'LATER' | 'EXPIRED';
 /** Smart Inbox bucket for a conversation partner. */
@@ -46,8 +91,7 @@ export function bucketFor(
   if (p.mutual) return 'MUTUAL';
   const s = p.status;
   if (s && s.intent !== 'looking' && s.endsAt < now) return 'EXPIRED';
-  if (s && ['now', 'next', 'hosting', 'travel'].includes(s.intent) && s.startsAt <= now + 60 * 60e3)
-    return 'NOW';
+  if (s && LIVE_INTENTS.includes(s.intent) && s.startsAt <= now + 60 * 60e3) return 'NOW';
   if ((s && ['tonight', 'later'].includes(s.intent)) || p.arrivingAt) return 'LATER';
   return 'ACTIVE';
 }
