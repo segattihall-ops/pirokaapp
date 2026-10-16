@@ -1,4 +1,5 @@
 import 'server-only';
+import { headers } from 'next/headers';
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -24,11 +25,31 @@ import { appUrl } from '@/lib/app-url';
 
 const RP_NAME = 'πroka';
 
-/** Registrable domain, so a passkey made on www works on the apex and vice versa. */
+function requestHostname(): string | null {
+  try {
+    const h = headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    return host ? host.split(',')[0].trim().split(':')[0].toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The RP ID must be the page's own host or a registrable suffix of it, or the browser refuses
+ * ("The RP ID is invalid for this domain"). On pirokaapp.com and any subdomain that is
+ * pirokaapp.com, so a passkey made on www works on the apex. Any other host this app is served
+ * from (a *.vercel.app alias, localhost) uses its own hostname.
+ */
 export function rpID(): string {
   if (process.env.PASSKEY_RP_ID) return process.env.PASSKEY_RP_ID;
-  const host = new URL(appUrl()).hostname;
-  return host.startsWith('www.') ? host.slice(4) : host;
+  const host = requestHostname();
+  if (host) {
+    if (host === 'pirokaapp.com' || host.endsWith('.pirokaapp.com')) return 'pirokaapp.com';
+    return host;
+  }
+  const fallback = new URL(appUrl()).hostname;
+  return fallback.startsWith('www.') ? fallback.slice(4) : fallback;
 }
 
 function expectedOrigins(): string[] {
@@ -193,7 +214,7 @@ export async function startSessionFor(userId: string): Promise<{ ok: true } | Fa
 
   let email = u.user.email;
   if (!email) {
-    email = `${userId}@passkey.${rpID()}`;
+    email = `${userId}@passkey.pirokaapp.com`;
     const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
     if (error) return { ok: false, reason: 'Could not start the session.' };
   }
