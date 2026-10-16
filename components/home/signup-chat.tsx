@@ -11,9 +11,9 @@ import {
   signInAnonymously,
   signInWithMagicLink,
   signInWithOAuth,
-  signInWithPassword,
   signOut,
 } from '@/lib/auth/client';
+import { biometricLabel, passkeysSupported, signInWithPasskey } from '@/lib/auth/passkey-client';
 import { AFTER_GATE_PATH, APP_PATH, type AuthProvider, type Session } from '@/lib/auth/types';
 
 type Msg = { id: number; isBot?: boolean; isUser?: boolean; text: string; time?: string };
@@ -56,7 +56,9 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
   const [termsOk, setTermsOk] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [cEmail, setCEmail] = useState('');
-  const [cPass, setCPass] = useState('');
+  const [cSent, setCSent] = useState(false);
+  const [canPasskey, setCanPasskey] = useState(false);
+  const [bioLabel, setBioLabel] = useState('Face ID');
   const [cErr, setCErr] = useState('');
   const [cBusy, setCBusy] = useState('');
 
@@ -274,22 +276,45 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
     setTermsOk(false);
   };
 
-  const signin = async () => {
+  useEffect(() => {
+    setCanPasskey(passkeysSupported());
+    setBioLabel(biometricLabel());
+  }, []);
+
+  const afterSignIn = async () => {
+    const s = await fetchSession();
+    if (s?.ageVerified) return router.push(APP_PATH);
+    // Not through the gate yet: hand over to the chat, which continues at consent or the age check.
+    setCBusy('');
+    setView('chat');
+    if (s) resume(s);
+  };
+
+  const emailLink = async () => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cEmail.trim())) return setCErr('Enter a valid email address.');
-    if (cPass.length < 6) return setCErr('Password must be at least 6 characters.');
-    setCBusy('Signing in…');
+    setCBusy('Sending link…');
     setCErr('');
     try {
-      await signInWithPassword(cEmail.trim(), cPass);
-      const s = await fetchSession();
-      if (s?.ageVerified) return router.push(APP_PATH);
-      // Not through the gate yet: hand over to the chat, which continues at consent or the face check.
+      await signInWithMagicLink(cEmail.trim(), APP_PATH);
+      if (isDemoClient()) return afterSignIn();
       setCBusy('');
-      setView('chat');
-      if (s) resume(s);
+      setCSent(true);
     } catch (e) {
       setCBusy('');
-      setCErr(e instanceof Error ? e.message : 'Could not sign in.');
+      setCErr(e instanceof Error ? e.message : 'Could not send the link.');
+    }
+  };
+
+  const passkeyLogin = async () => {
+    setCBusy(`Opening ${bioLabel}…`);
+    setCErr('');
+    try {
+      await signInWithPasskey();
+      await afterSignIn();
+    } catch (e) {
+      setCBusy('');
+      const msg = e instanceof Error ? e.message : '';
+      if (msg !== 'Cancelled.') setCErr(msg || `Could not sign in with ${bioLabel}.`);
     }
   };
   const classicOAuth = async (p: 'google') => {
@@ -593,55 +618,64 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
           <div className="relative flex animate-[piIn_.45s_ease-out_both] flex-col gap-3.5 px-5 pb-[22px] pt-6">
             <div className="flex flex-col gap-1">
               <span className="text-[20px] font-semibold tracking-[-0.02em]">Log in</span>
-              <span className="text-[13px] text-fg-3">Welcome back. Your profile stays private.</span>
+              <span className="text-[13px] text-fg-3">Welcome back. No password needed.</span>
             </div>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] text-fg-3">Email</span>
-              <input
-                type="email"
-                value={cEmail}
-                onChange={(e) => {
-                  setCEmail(e.target.value);
-                  setCErr('');
-                }}
-                autoComplete="email"
-                placeholder="you@email.com"
-                className="input"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="flex items-center justify-between text-[12px] text-fg-3">
-                <span>Password</span>
-                <Link href="/account/forgot" className="text-fg-3 hover:text-green">
-                  Forgot password?
-                </Link>
-              </span>
-              <input
-                type="password"
-                value={cPass}
-                onChange={(e) => {
-                  setCPass(e.target.value);
-                  setCErr('');
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && signin()}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="input"
-              />
-            </label>
+            {canPasskey && (
+              <button
+                type="button"
+                onClick={passkeyLogin}
+                disabled={Boolean(cBusy)}
+                className="flex h-[50px] items-center justify-center gap-2 rounded-btn bg-white text-[15px] font-semibold text-ink-950 disabled:opacity-70"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                  <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1M15 9v1M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0" />
+                </svg>
+                {cBusy.startsWith('Opening') ? cBusy : `Sign in with ${bioLabel}`}
+              </button>
+            )}
+            {cSent ? (
+              <div className="flex flex-col gap-1 rounded-card border border-line-2 bg-white/[0.04] p-3.5">
+                <span className="text-[14px] font-semibold">Check your inbox</span>
+                <span className="text-[12px] text-fg-3">
+                  We sent a sign-in link to <span className="text-fg">{cEmail.trim()}</span>. Open it on this
+                  device. It expires in 15 minutes.
+                </span>
+                <button type="button" onClick={() => setCSent(false)} className="mt-1 self-start text-[12px] text-green">
+                  Use a different email
+                </button>
+              </div>
+            ) : (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] text-fg-3">Email</span>
+                  <input
+                    type="email"
+                    value={cEmail}
+                    onChange={(e) => {
+                      setCEmail(e.target.value);
+                      setCErr('');
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && emailLink()}
+                    autoComplete="email webauthn"
+                    placeholder="you@email.com"
+                    className="input"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={emailLink}
+                  disabled={Boolean(cBusy)}
+                  className={`h-[46px] rounded-btn text-[14px] font-semibold disabled:opacity-70 ${canPasskey ? 'btn-secondary' : 'bg-white text-ink-950'}`}
+                >
+                  {cBusy === 'Sending link…' ? cBusy : 'Email me a sign-in link'}
+                </button>
+              </>
+            )}
             {cErr && (
               <span role="alert" className="text-[12px] text-danger">
                 {cErr}
               </span>
             )}
-            <button
-              type="button"
-              onClick={signin}
-              disabled={Boolean(cBusy)}
-              className="h-[46px] rounded-btn bg-white text-[14px] font-semibold text-ink-950 disabled:opacity-70"
-            >
-              {cBusy || 'Log in'}
-            </button>
             <div className="flex items-center gap-3 text-[12px] text-fg-4">
               <span className="h-px flex-1 bg-line-2" />
               or

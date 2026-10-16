@@ -11,6 +11,7 @@ import { FavoritesList } from '@/components/me/favorites-list';
 import { TripsList } from '@/components/me/trips-list';
 import { DeleteAccount } from '@/components/me/delete-account';
 import { AccountData } from '@/components/me/account-data';
+import { PasskeySettings } from '@/components/me/passkey-settings';
 import { FeedbackButton } from '@/components/growth/feedback-button';
 import { SafeMeetMe } from '@/components/meet/safemeet-me';
 import { supabaseAdmin } from '@/lib/db/client';
@@ -73,7 +74,7 @@ export default async function MePage() {
             Edit profile ›
           </Link>
         </div>
-        <SignOutButton />
+        <SignOutButton anonymous={session.anonymous} />
       </div>
 
       <SafeMeetMe />
@@ -89,6 +90,8 @@ export default async function MePage() {
       <PushToggle />
 
       <NotifPrefs />
+
+      <PasskeySettings />
 
       <AccountData />
 
