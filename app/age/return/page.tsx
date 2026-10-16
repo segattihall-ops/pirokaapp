@@ -13,7 +13,7 @@ const KEY = 'piroka_age_session';
 function Return() {
   const router = useRouter();
   const params = useSearchParams();
-  const [state, setState] = useState<'checking' | 'review' | 'failed'>('checking');
+  const [state, setState] = useState<'checking' | 'review' | 'failed' | 'other-device'>('checking');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -35,6 +35,9 @@ function Return() {
       })
       .catch((e: Error) => {
         if (/review/i.test(e.message)) setState('review');
+        // Finished on a device that isn't signed in (e.g. the phone after scanning a computer's QR code):
+        // the check itself went through and the webhook grants access to the account that started it.
+        else if (/not signed in/i.test(e.message)) setState('other-device');
         else {
           setState('failed');
           setError(e.message);
@@ -52,6 +55,15 @@ function Return() {
           <p className="text-[14px] text-fg-3">
             Your check needs a quick manual review. You&apos;ll get access automatically once it&apos;s
             approved — usually within minutes.
+          </p>
+        </>
+      )}
+      {state === 'other-device' && (
+        <>
+          <h1 className="text-h2">Check sent</h1>
+          <p className="text-[14px] text-fg-3">
+            Your age check went through. Go back to the device where you started it. It will open
+            automatically once it is approved.
           </p>
         </>
       )}

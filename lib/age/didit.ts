@@ -56,7 +56,9 @@ export async function createDiditSession(
         workflow_id: workflowId,
         vendor_data: userId,
         callback: appUrl('/age/return'),
-        callback_method: 'both',
+        // Only the device that started the check is sent back to us. With 'both', a phone that finished
+        // a check started on a computer lands on /age/return signed out and is told it failed.
+        callback_method: 'initiator',
         metadata: { mode },
       }),
       cache: 'no-store',
