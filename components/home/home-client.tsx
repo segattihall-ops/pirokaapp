@@ -119,9 +119,11 @@ export function HomeClient({
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col justify-center px-[clamp(16px,5vw,64px)] pb-8 pt-2">
-          <div className="h-[30vh] min-h-[200px] lg:hidden" />
-          <SignupChat gated={gated} authError={authError} />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[clamp(16px,5vw,64px)] pb-8 pt-2 lg:overflow-visible">
+          <div className="my-auto flex flex-col">
+            <div className="h-[22vh] min-h-[120px] lg:hidden" />
+            <SignupChat gated={gated} authError={authError} />
+          </div>
         </main>
 
         <footer className="flex shrink-0 flex-col gap-1 px-[clamp(20px,5vw,64px)] pb-[calc(8px+var(--safe-bottom))] pt-1 text-[11px] text-fg-3 lg:gap-3 lg:pb-[calc(24px+var(--safe-bottom))] lg:pt-2 lg:text-[12px]">
