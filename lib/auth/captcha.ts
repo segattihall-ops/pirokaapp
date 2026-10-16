@@ -43,7 +43,8 @@ function container(): HTMLElement {
   if (!el) {
     el = document.createElement('div');
     el.id = 'piroka-turnstile';
-    el.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60';
+    // Above every sheet and modal, near the top, so an interactive challenge is never hidden behind buttons.
+    el.style.cssText = 'position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2147483000';
     document.body.appendChild(el);
   }
   return el;
