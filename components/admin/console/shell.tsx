@@ -41,40 +41,62 @@ const NAV: NavItem[] = [
   { href: '/admin/regions', label: 'Risk regions' },
   { href: '/admin/audit', label: 'Audit log' },
 ];
+// The pre-existing operational tools keep their links, after the Trust & Safety queues.
+const OPS: NavItem[] = [
+  { href: '/admin/revenue', label: 'Revenue' },
+  { href: '/admin/campaigns', label: 'Campaigns' },
+  { href: '/admin/errors', label: 'Errors' },
+  { href: '/admin/feedback', label: 'Feedback' },
+  { href: '/admin/announcements', label: 'Announcements' },
+  { href: '/admin/flags', label: 'Flags' },
+  { href: '/admin/integrations', label: 'Integrations' },
+];
+const ALL_NAV: NavItem[] = [...NAV, ...OPS];
 
-/** Live-ish badge counts: Reports is fetched from the real API; the seeded queues report their seed counts. */
+/**
+ * Badge counts. Reports comes from the real API. The seeded queues only show their seed counts when there is
+ * no backend at all (the reports fetch failed) — in a configured deployment they stay blank rather than
+ * presenting fabricated workloads as live.
+ */
 function useBadges() {
   const [reportsOpen, setReportsOpen] = useState<number | null>(null);
   const [reportsHot, setReportsHot] = useState(false);
+  const [configured, setConfigured] = useState<boolean | null>(null);
   useEffect(() => {
     let alive = true;
     fetch('/api/admin/reports?status=open', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j: { reports?: { reason: string }[] } | null) => {
-        if (!alive || !j?.reports) return;
+        if (!alive) return;
+        if (!j?.reports) return setConfigured(false);
+        setConfigured(true);
         setReportsOpen(j.reports.length);
         setReportsHot(j.reports.some((r) => SEV[r.reason] === 3));
       })
-      .catch(() => {});
+      .catch(() => alive && setConfigured(false));
     return () => {
       alive = false;
     };
   }, []);
-  return useMemo(
-    () =>
-      ({
-        '/admin/reports': { count: reportsOpen ?? 0, hot: reportsHot },
-        '/admin/appeals': { count: seedAppeals().filter((a) => a.status === 'open').length, hot: false },
-        '/admin/verifications': { count: seedVerifs().filter((v) => v.status === 'open').length, hot: false },
-        '/admin/support': { count: seedTickets().filter((t) => t.status === 'open').length, hot: false },
-        '/admin/ambassadors': {
-          count: seedAmbassadors().filter((b) => b.status === 'open').length,
-          hot: false,
-        },
-        '/admin/places': { count: seedSites().filter((p) => p.status === 'open').length, hot: false },
-      }) as Record<string, { count: number; hot: boolean }>,
-    [reportsOpen, reportsHot],
-  );
+  return useMemo(() => {
+    const out: Record<string, { count: number; hot: boolean }> = {
+      '/admin/reports': { count: reportsOpen ?? 0, hot: reportsHot },
+    };
+    if (configured === false) {
+      out['/admin/appeals'] = { count: seedAppeals().filter((a) => a.status === 'open').length, hot: false };
+      out['/admin/verifications'] = {
+        count: seedVerifs().filter((v) => v.status === 'open').length,
+        hot: false,
+      };
+      out['/admin/support'] = { count: seedTickets().filter((t) => t.status === 'open').length, hot: false };
+      out['/admin/ambassadors'] = {
+        count: seedAmbassadors().filter((b) => b.status === 'open').length,
+        hot: false,
+      };
+      out['/admin/places'] = { count: seedSites().filter((p) => p.status === 'open').length, hot: false };
+    }
+    return out;
+  }, [reportsOpen, reportsHot, configured]);
 }
 
 export function AdminShell({
@@ -135,7 +157,7 @@ export function AdminShell({
               </span>
             </Link>
 
-            {NAV.map((n) => {
+            {ALL_NAV.map((n) => {
               const active = n.href === '/admin' ? path === '/admin' : path.startsWith(n.href);
               const b = badges[n.href];
               return (
@@ -211,7 +233,7 @@ export function AdminShell({
             </div>
             <div className="overflow-x-auto border-b border-line-1 px-3 py-2 [scrollbar-width:none] rail:hidden">
               <div className="flex w-max gap-1.5">
-                {NAV.map((n) => {
+                {ALL_NAV.map((n) => {
                   const active = n.href === '/admin' ? path === '/admin' : path.startsWith(n.href);
                   return (
                     <Link

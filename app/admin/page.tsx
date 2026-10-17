@@ -68,8 +68,9 @@ export default async function AdminOverview() {
         col: '#34d399',
       },
     ];
+    // Real data only here: an all-zero or empty fortnight renders as an honest empty chart, never demo bars.
     const series = growth.active30d.slice(-14).map((d) => d.value);
-    dau = series.some((v) => v > 0) ? series : DEMO_DAU;
+    dau = series.length ? series : Array<number>(14).fill(0);
   } else {
     const safety = seedReports().filter((r) => r.status === 'open' && r.sev === 3).length;
     reportsOpen = seedReports().filter((r) => r.status === 'open').length;
@@ -91,37 +92,43 @@ export default async function AdminOverview() {
   }
 
   const peak = Math.max(...dau, 1);
-  const openAppeals = seedAppeals().filter((a) => a.status === 'open').length;
-  const openVerifs = seedVerifs().filter((v) => v.status === 'open').length;
-  const openTickets = seedTickets().filter((t) => t.status === 'open').length;
-  const premTickets = seedTickets().filter((t) => t.status === 'open' && t.prem).length;
-
-  const attention = [
+  type Attention = { label: string; href: string; col: string; meta: string };
+  const attention: Attention[] = [
     {
       label: `${reportsSafety || reportsOpen} ${reportsSafety ? 'safety reports' : 'reports'} to review`,
       href: '/admin/reports',
       col: reportsSafety ? '#f87171' : '#fbbf24',
       meta: reportsSafety ? 'SLA 4h' : 'SLA 24h',
     },
-    {
-      label: `${openAppeals} appeals waiting`,
-      href: '/admin/appeals',
-      col: '#f5f5f5',
-      meta: 'second review',
-    },
-    {
-      label: `${openVerifs} verifications`,
-      href: '/admin/verifications',
-      col: '#34d399',
-      meta: 'manual check',
-    },
-    {
-      label: `${openTickets} support tickets`,
-      href: '/admin/support',
-      col: '#fbbf24',
-      meta: premTickets ? `${premTickets} Premium` : 'standard',
-    },
   ];
+  // Appeals / verifications / support have no backend yet, so their seeded workloads only appear in the
+  // unconfigured (demo-labelled) overview — never as live numbers in a configured deployment.
+  if (!configured) {
+    const openAppeals = seedAppeals().filter((a) => a.status === 'open').length;
+    const openVerifs = seedVerifs().filter((v) => v.status === 'open').length;
+    const openTickets = seedTickets().filter((t) => t.status === 'open').length;
+    const premTickets = seedTickets().filter((t) => t.status === 'open' && t.prem).length;
+    attention.push(
+      {
+        label: `${openAppeals} appeals waiting`,
+        href: '/admin/appeals',
+        col: '#f5f5f5',
+        meta: 'second review',
+      },
+      {
+        label: `${openVerifs} verifications`,
+        href: '/admin/verifications',
+        col: '#34d399',
+        meta: 'manual check',
+      },
+      {
+        label: `${openTickets} support tickets`,
+        href: '/admin/support',
+        col: '#fbbf24',
+        meta: premTickets ? `${premTickets} Premium` : 'standard',
+      },
+    );
+  }
 
   return (
     <>

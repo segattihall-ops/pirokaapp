@@ -130,11 +130,16 @@ export default function ReportsPage() {
   const dismiss = async () => {
     if (!x) return;
     if (configured) {
-      await fetch('/api/admin/reports', {
+      const r = await fetch('/api/admin/reports', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: x.id, status: 'dismissed' }),
-      }).catch(() => {});
+      }).catch(() => null);
+      // On failure keep the report selected and say so — never report a dismissal that didn't happen.
+      if (!r?.ok) {
+        const j = r ? await r.json().catch(() => null) : null;
+        return toast(j?.error ?? 'Could not dismiss the report.');
+      }
       await load();
       setSel(null);
       setNote('');
@@ -243,8 +248,8 @@ export default function ReportsPage() {
               <ActionRow>
                 <Action label="Dismiss" onClick={dismiss} />
                 <Action label="Warn" onClick={act('warn', 'Warned')} />
-                <Action label="Limit 24h" onClick={act('limit', 'Limited')} />
-                <Action label="Suspend 7d" onClick={act('suspend', 'Suspended')} kind="danger" />
+                <Action label="Limit 7d" onClick={act('limit', 'Limited')} />
+                <Action label="Suspend 30d" onClick={act('suspend', 'Suspended')} kind="danger" />
                 <Action
                   label="Remove"
                   onClick={act('remove', 'Removed')}
