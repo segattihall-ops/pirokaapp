@@ -44,8 +44,8 @@ export function placePinElement(p: DemoPlace): HTMLButtonElement {
   const el = baseButton(`${p.name} · ${p.here} here`);
   el.innerHTML = `
     ${p.popping ? `<span aria-hidden style="position:absolute;left:-7px;top:-7px;z-index:2;width:20px;height:20px;border-radius:999px;background:#f5f5f5;box-shadow:0 0 0 2px #070707;display:flex;align-items:center;justify-content:center">${svg(FLAME_GLYPH, '#ef4444', '#ef4444', 12, 1.5)}</span>` : ''}
-    <span style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#f5f5f5 ${deg}deg,rgba(255,255,255,.12) 0deg);box-shadow:0 8px 20px rgba(0,0,0,.6)"></span>
-    <span style="position:absolute;inset:3px;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#2c2c2c,#0b0b0b 72%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#f5f5f5">${svg(KIND_GLYPH[p.kind], 'currentColor')}</span>
+    <span style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#f5f5f5 ${deg}deg,rgba(255,255,255,.12) 0deg);box-shadow:0 6px 16px rgba(0,0,0,.55)"></span>
+    <span style="position:absolute;inset:3px;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#f5f5f5">${svg(KIND_GLYPH[p.kind], 'currentColor')}</span>
     <span style="position:absolute;top:-6px;right:-9px;min-width:20px;height:18px;padding:0 5px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 10px/18px Geist,sans-serif;text-align:center;box-shadow:0 0 0 2px #070707">${p.here}</span>`;
   return el;
 }
@@ -56,7 +56,7 @@ export function eventPinElement(e: DemoEvent): HTMLButtonElement {
   el.style.width = '40px';
   el.style.height = '40px';
   el.innerHTML = `
-    <span style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#2c2c2c,#0b0b0b 72%);border:1.5px solid rgba(52,211,153,.5);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(EVENT_GLYPH, 'currentColor', 'none', 18)}</span>
+    <span style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);border:1.5px solid rgba(52,211,153,.75);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(EVENT_GLYPH, 'currentColor', 'none', 18)}</span>
     <span style="position:absolute;top:-6px;right:-10px;height:17px;padding:0 5px;border-radius:999px;background:#34d399;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${e.time}</span>`;
   return el;
 }
@@ -67,7 +67,7 @@ export function testingPinElement(t: { name: string; cost: string }): HTMLButton
   el.style.width = '40px';
   el.style.height = '40px';
   el.innerHTML = `
-    <span style="position:absolute;inset:0;border-radius:999px;background:rgba(52,211,153,.12);border:1.5px solid rgba(52,211,153,.5);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(TEST_GLYPH, 'currentColor', 'none', 18)}</span>
+    <span style="position:absolute;inset:0;border-radius:999px;background:rgba(52,211,153,.14);border:1.5px solid rgba(52,211,153,.75);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(TEST_GLYPH, 'currentColor', 'none', 18)}</span>
     <span style="position:absolute;top:-6px;right:-8px;height:17px;padding:0 6px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${t.cost}</span>`;
   return el;
 }
@@ -93,7 +93,7 @@ export function hotspotLabelElement(count: number, up: boolean): HTMLElement {
   const el = document.createElement('div');
   el.setAttribute('aria-hidden', 'true');
   el.style.cssText =
-    'transform:translate(-50%,-50%);white-space:nowrap;padding:4px 9px;border-radius:999px;background:rgba(7,7,7,.82);border:1px solid rgba(52,211,153,.45);color:#f5f5f5;font:600 11px/1 Geist,sans-serif;pointer-events:none';
+    'transform:translate(-50%,-50%);white-space:nowrap;padding:4px 9px;border-radius:999px;background:rgba(7,7,7,.82);border:1px solid rgba(52,211,153,.75);color:#f5f5f5;font:600 11px/1 Geist,sans-serif;pointer-events:none';
   el.textContent = `${count} now ${up ? '↑' : '↓'}`;
   return el;
 }

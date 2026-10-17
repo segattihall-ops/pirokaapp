@@ -17,7 +17,14 @@ import { TravelSheet, type TravelView } from './travel-sheet';
 import { VisitorsSheet } from './visitors-sheet';
 import { AssistantPanel } from './assistant-panel';
 import { EMPTY_FILTERS, activeFilterCount, matchesFilters, type Filters } from './filters';
-import { pinElement, updatePinElement, youElement, updateYouElement, pinRingDegrees } from './pins';
+import {
+  pinElement,
+  updatePinElement,
+  youElement,
+  updateYouElement,
+  pinRingDegrees,
+  timeLeftLabel,
+} from './pins';
 import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement } from './place-pins';
 import { DemoProfileSheet } from './demo-profile-sheet';
 import { demoWorld, type DemoArrival, type DemoEvent, type DemoPlace } from '@/lib/demo/presence';
@@ -32,7 +39,8 @@ const REFRESH_MS = 60_000;
 const RING_TICK_MS = 30_000;
 
 type MapLayers = { people: boolean; activity: boolean; labels: boolean };
-const DEFAULT_LAYERS: MapLayers = { people: true, activity: true, labels: true };
+// Labels default off: the prototype keeps map pins clean (name/time surface in the hover card and profile).
+const DEFAULT_LAYERS: MapLayers = { people: true, activity: true, labels: false };
 
 type DesperateState = {
   allowed: boolean;
@@ -461,11 +469,14 @@ export function MapScreen({ userId }: { userId: string }) {
           now,
         )
       : 360;
+    const left = status?.ends_at ? timeLeftLabel(status.ends_at, now) : '';
+    const label = meta ? meta.label + (left ? ` · ${left}` : '') : 'You';
     updateYouElement(el, {
       color: meta?.color ?? '#34d399',
       degrees,
       photo: selfCard.photo,
       desperate: Boolean(desperate?.active),
+      label,
     });
   }, [status, now, desperate, selfCard.photo]);
 
@@ -862,7 +873,9 @@ export function MapScreen({ userId }: { userId: string }) {
             >
               <path d="M12 22c4 0 7-3 7-7 0-3-2-5.5-3.5-7-.2 2-1.3 3.3-2.5 3.8C13.5 8.5 12 5 9 2c.3 3-1.5 5.5-3 7.5A7.9 7.9 0 0 0 5 15c0 4 3 7 7 7z" />
             </svg>
-            {despActive ? `Desperate · ${despLeftMin}m` : 'Desperate'}
+            <span className={despActive ? '' : 'hidden sm:inline'}>
+              {despActive ? `Desperate · ${despLeftMin}m` : 'Desperate'}
+            </span>
             {!premium && !despActive && (
               <svg
                 width="11"
