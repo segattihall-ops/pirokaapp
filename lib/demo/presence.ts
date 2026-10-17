@@ -128,15 +128,20 @@ function metres(a: { lat: number; lon: number }, b: { lat: number; lon: number }
 
 export function demoWorld(center: { lat: number; lon: number }): DemoWorld {
   const now = Date.now();
-  const hubs = Array.from({ length: 4 }, () => offset(center.lat, center.lon, rnd(250, 1400), rnd(0, 6.28)));
+  // Six hubs fanned around the viewer (not piled on the centre), so presence spreads across the map the way
+  // the prototype does and the self pin keeps its breathing room rather than being buried under a blob.
+  const hubs = Array.from({ length: 6 }, (_, i) =>
+    offset(center.lat, center.lon, rnd(600, 2600), (i / 6) * 6.28 + rnd(-0.5, 0.5)),
+  );
 
   const people: NearbyPerson[] = Array.from({ length: 30 }, (_, i): NearbyPerson => {
     const k = pick(INTENT_POOL);
-    const useHub = Math.random() < 0.6;
+    const useHub = Math.random() < 0.5;
     const base = useHub
       ? pick(hubs)
-      : offset(center.lat, center.lon, Math.pow(Math.random(), 0.7) * 2000, rnd(0, 6.28));
-    const pos = useHub ? offset(base.lat, base.lon, rnd(0, 260), rnd(0, 6.28)) : base;
+      : offset(center.lat, center.lon, (0.3 + Math.pow(Math.random(), 0.7)) * 2100, rnd(0, 6.28));
+    // Fan hub members out over a wide ring so pins read individually instead of stacking into one circle.
+    const pos = useHub ? offset(base.lat, base.lon, rnd(120, 560), rnd(0, 6.28)) : base;
     let startsAt = now;
     let endsAt = now + rnd(15, 170) * 60_000;
     if (k === 'next') {
