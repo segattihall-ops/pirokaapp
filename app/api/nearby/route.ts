@@ -175,6 +175,8 @@ export async function GET(request: Request) {
     arriveOn: t.arrive_on,
     nights: t.nights,
     photo: t.photo_blur_key ? photoUrl(t.photo_blur_key) : null,
+    lat: Number.isFinite(t.lat) ? t.lat : null,
+    lon: Number.isFinite(t.lon) ? t.lon : null,
   }));
   return NextResponse.json({ configured: true, people, hotspots, visitors });
 }
@@ -186,4 +188,7 @@ export type Visitor = {
   arriveOn: string;
   nights: number;
   photo: string | null;
+  /** The announced city point, so the map can place an arrival pin (null on older DBs without the column). */
+  lat: number | null;
+  lon: number | null;
 };
