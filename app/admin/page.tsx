@@ -131,7 +131,7 @@ export default async function AdminOverview() {
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="flex flex-col gap-1.5 rounded-[16px] border border-[rgba(255,255,255,0.07)] bg-[#0c0c0c] p-4"
+            className="flex flex-col gap-1.5 rounded-card border border-line-1 bg-ink-850 p-4"
           >
             <span className="text-[12px] text-fg-3">{k.label}</span>
             <span className="text-[26px] font-semibold tracking-[-0.02em] [font-variant-numeric:tabular-nums]">
@@ -145,7 +145,7 @@ export default async function AdminOverview() {
       </div>
 
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))]">
-        <div className="flex flex-col gap-3.5 rounded-[16px] border border-[rgba(255,255,255,0.07)] bg-[#0c0c0c] p-[18px]">
+        <div className="flex flex-col gap-3.5 rounded-card border border-line-1 bg-ink-850 p-[18px]">
           <span className="flex justify-between text-[14px] font-semibold">
             Daily active users
             <span className="text-[12px] font-normal text-fg-3">Last 14 days</span>
@@ -165,13 +165,13 @@ export default async function AdminOverview() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2.5 rounded-[16px] border border-[rgba(255,255,255,0.07)] bg-[#0c0c0c] p-[18px]">
+        <div className="flex flex-col gap-2.5 rounded-card border border-line-1 bg-ink-850 p-[18px]">
           <span className="text-[14px] font-semibold">Needs attention</span>
           {attention.map((t) => (
             <Link
               key={t.href}
               href={t.href}
-              className="flex items-center justify-between gap-2.5 rounded-[12px] border border-[rgba(255,255,255,0.07)] bg-white/[0.02] px-3 py-2.5 text-[13px] font-medium hover:bg-white/[0.04]"
+              className="flex items-center justify-between gap-2.5 rounded-input border border-line-1 bg-ink-800 px-3 py-2.5 text-[13px] font-medium hover:bg-ink-750"
             >
               <span className="flex items-center gap-2.5">
                 <span className="h-2 w-2 rounded-full" style={{ background: t.col }} />

@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-const CARD = 'rounded-[16px] border border-[rgba(255,255,255,0.07)] bg-[#0c0c0c]';
+// Every value here is a design token (design_handoff/DESIGN_TOKENS.md): ink-850 cards with a line-1 hairline.
+const CARD = 'rounded-card border border-line-1 bg-ink-850';
 
 /** Page header: title + subtitle, with an optional search box (right-aligned), matching the prototype. */
 export function ConsoleHeader({
@@ -26,7 +27,7 @@ export function ConsoleHeader({
         <span className="flex items-center gap-2.5">
           <span className="text-[26px] font-semibold tracking-[-0.03em]">{title}</span>
           {demo && (
-            <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-warning">
+            <span className="rounded-chip border border-warning/40 bg-warning/10 px-2 py-0.5 text-eyebrow text-warning">
               Demo data
             </span>
           )}
@@ -39,7 +40,7 @@ export function ConsoleHeader({
           onChange={(e) => onQ?.(e.target.value)}
           placeholder="Search…"
           aria-label="Search"
-          className="h-10 w-[260px] max-w-full rounded-[11px] border border-[rgba(255,255,255,0.12)] bg-[#0e0e0e] px-3 text-[13px] text-fg outline-none placeholder:text-fg-4 focus:border-[rgba(52,211,153,0.55)]"
+          className="h-10 w-[260px] max-w-full rounded-input border border-line-2 bg-ink-850 px-3 text-[13px] text-fg outline-none placeholder:text-fg-4 focus:border-sel-border"
         />
       )}
     </div>
@@ -67,11 +68,9 @@ export function FilterChips({
             key={f.key}
             type="button"
             onClick={() => onPick(f.key)}
-            className="h-8 rounded-full border px-3 text-[12px] font-medium text-fg"
-            style={{
-              borderColor: on ? 'rgba(52,211,153,0.7)' : 'rgba(255,255,255,0.12)',
-              background: on ? 'rgba(52,211,153,0.12)' : 'transparent',
-            }}
+            className={`h-8 rounded-chip border px-3 text-[12px] font-medium text-fg ${
+              on ? 'border-sel-border bg-sel-fill' : 'border-line-2 bg-transparent'
+            }`}
           >
             {f.label} <span className="text-fg-3">{f.n}</span>
           </button>
@@ -112,10 +111,11 @@ export function QueueLayout({
             key={r.id}
             type="button"
             onClick={() => onSelect(r.id)}
-            className="flex items-center gap-3 border-b border-white/[0.05] px-3.5 py-3 text-left last:border-b-0"
-            style={{ background: selectedId === r.id ? 'rgba(255,255,255,0.06)' : 'transparent' }}
+            className={`flex items-center gap-3 border-b border-line-1 px-3.5 py-3 text-left last:border-b-0 ${
+              selectedId === r.id ? 'bg-ink-750' : 'bg-transparent'
+            }`}
           >
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: r.dot }} />
+            <span className="h-2 w-2 shrink-0 rounded-chip" style={{ background: r.dot }} />
             <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
               <span className="truncate text-[13px] font-semibold">{r.title}</span>
               <span className="truncate text-[12px] text-fg-3">{r.meta}</span>
@@ -155,7 +155,7 @@ export function Facts({ items }: { items: { k: string; v: string }[] }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
       {items.map((f) => (
-        <div key={f.k} className="flex flex-col gap-[3px] rounded-[12px] bg-white/[0.03] px-3 py-2.5">
+        <div key={f.k} className="flex flex-col gap-[3px] rounded-input bg-ink-800 px-3 py-2.5">
           <span className="text-[11px] text-fg-4">{f.k}</span>
           <span className="text-[13px]">{f.v}</span>
         </div>
@@ -166,7 +166,7 @@ export function Facts({ items }: { items: { k: string; v: string }[] }) {
 
 export function DetailBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-white/[0.03] px-3.5 py-3">
+    <div className="flex flex-col gap-1.5 rounded-input border border-line-1 bg-ink-800 px-3.5 py-3">
       <span className="text-[11px] text-fg-4">{label}</span>
       {children}
     </div>
@@ -188,20 +188,20 @@ export function Action({
   disabled?: boolean;
   title?: string;
 }) {
-  const style =
+  // Primary / outline / destructive, per the tokens' button rules (14px radius, 44px tall).
+  const look =
     kind === 'pri'
-      ? { borderColor: '#34d399', background: '#34d399', color: '#070707' }
+      ? 'border-green bg-green text-ink-950'
       : kind === 'danger'
-        ? { borderColor: 'rgba(248,113,113,0.6)', background: 'rgba(248,113,113,0.12)', color: '#f87171' }
-        : { borderColor: 'rgba(255,255,255,0.14)', background: 'transparent', color: '#f5f5f5' };
+        ? 'border-danger/60 bg-danger/10 text-danger'
+        : 'border-line-3 bg-transparent text-fg';
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="h-[38px] rounded-[10px] border px-3.5 text-[12px] font-semibold disabled:cursor-not-allowed"
-      style={{ ...style, opacity: disabled ? 0.4 : 1 }}
+      className={`h-11 rounded-btn border px-3.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${look}`}
     >
       {label}
     </button>
@@ -231,7 +231,7 @@ export function NoteBox({
       onChange={(e) => onChange(e.target.value)}
       rows={3}
       placeholder={placeholder}
-      className="resize-y rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-2.5 text-[13px] leading-[1.5] text-fg outline-none placeholder:text-fg-4 focus:border-[rgba(52,211,153,0.55)]"
+      className="resize-y rounded-input border border-line-2 bg-ink-800 px-3 py-2.5 text-[13px] leading-[1.5] text-fg outline-none placeholder:text-fg-4 focus:border-sel-border"
     />
   );
 }

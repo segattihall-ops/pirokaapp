@@ -115,7 +115,7 @@ export default function SupportPage() {
               <button
                 type="button"
                 onClick={() => setNote(CANNED[x.lang] ?? CANNED.EN)}
-                className="self-start rounded-full border border-[rgba(52,211,153,0.5)] px-3 py-1.5 text-[12px] font-medium text-green"
+                className="self-start rounded-chip border border-sel-border px-3 py-1.5 text-[12px] font-medium text-green"
               >
                 Draft reply with AI
               </button>

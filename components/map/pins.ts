@@ -44,7 +44,7 @@ function photoBlur(p: NearbyPerson): number {
 }
 
 /** Head-and-shoulders silhouette the prototype draws when a member has no photo (never an initial). */
-const SILHOUETTE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>`;
+const SILHOUETTE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>`;
 
 const svgPath = (d: string, stroke: string, width = 1.8) =>
   `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
@@ -77,7 +77,7 @@ export function pinElement(p: NearbyPerson, now: number, showLabels: boolean): H
   const disc = document.createElement('span');
   disc.dataset.pinDisc = 'true';
   disc.style.cssText =
-    'position:relative;display:flex;width:100%;height:100%;border-radius:999px;border:2px solid #070707;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#2c2c2c,#121212);align-items:center;justify-content:center';
+    'position:relative;display:flex;width:100%;height:100%;border-radius:999px;border:2px solid #070707;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#1a1a1a,#0a0a0a);align-items:center;justify-content:center';
   const photo = document.createElement('span');
   photo.dataset.pinPhoto = 'true';
   photo.setAttribute('aria-hidden', 'true');
@@ -140,7 +140,7 @@ export function updatePinElement(el: HTMLButtonElement, p: NearbyPerson, now: nu
   if (!shell || !photo || !fallback || !intentBadge || !positionBadge || !desp || !label) return;
 
   const ringColor = desperate ? '#ef4444' : color;
-  shell.style.background = `conic-gradient(${ringColor} ${degrees}deg,rgba(255,255,255,.14) 0deg)`;
+  shell.style.background = `conic-gradient(${ringColor} ${degrees}deg,rgba(255,255,255,.12) 0deg)`;
 
   if (p.photo) {
     photo.style.backgroundImage = `url('${escapeUrl(p.photo)}')`;
@@ -179,7 +179,7 @@ export function youElement(): HTMLElement {
   el.style.cssText = 'position:relative;width:54px;height:54px';
   el.innerHTML = `
     <span data-you-desp hidden style="position:absolute;inset:-6px;border-radius:999px;border:2.5px solid #ef4444;box-shadow:0 0 18px rgba(239,68,68,.8);animation:piBlink .8s ease-in-out infinite;pointer-events:none"></span>
-    <span data-you-ring style="display:flex;width:54px;height:54px;border-radius:999px;padding:3px;background:conic-gradient(#34d399 360deg,rgba(52,211,153,.3) 0deg);animation:piPulse 2.4s infinite;box-shadow:0 0 0 12px rgba(52,211,153,.10),0 6px 16px rgba(0,0,0,.55)">
+    <span data-you-ring style="display:flex;width:54px;height:54px;border-radius:999px;padding:3px;background:conic-gradient(#34d399 360deg,rgba(255,255,255,.12) 0deg);animation:piPulse 2.4s infinite;box-shadow:0 0 30px rgba(52,211,153,0.15),0 6px 16px rgba(0,0,0,.55)">
       <span data-you-photo style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;border:2px solid #070707;background:#151515 center/cover no-repeat;color:#fff;font:700 20px/1 Geist,ui-sans-serif,sans-serif">π</span>
     </span>
     <span data-you-label style="position:absolute;left:50%;bottom:-21px;transform:translateX(-50%);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:#34d399;color:#070707;padding:2px 8px;font:700 10px/1.3 Geist,ui-sans-serif,sans-serif;box-shadow:0 0 0 2px #070707">You</span>`;
@@ -196,7 +196,8 @@ export function updateYouElement(
   const label = el.querySelector<HTMLElement>('[data-you-label]');
   if (!ring || !photo || !desp) return;
   const color = opts.desperate ? '#ef4444' : opts.color;
-  const track = opts.desperate ? 'rgba(239,68,68,.2)' : 'rgba(52,211,153,.18)';
+  // Status rings always sit on the tokens' white .12 track, whatever the ring colour.
+  const track = 'rgba(255,255,255,.12)';
   ring.style.background = `conic-gradient(${color} ${opts.degrees}deg,${track} 0deg)`;
   photo.style.backgroundImage = opts.photo ? `url('${escapeUrl(opts.photo)}')` : 'none';
   photo.textContent = opts.photo ? '' : 'π';

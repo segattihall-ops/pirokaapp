@@ -118,7 +118,7 @@ export function AdminShell({
       <ToastContext.Provider value={pushToast}>
         <div className="flex min-h-dvh bg-[#070707] text-fg">
           <nav
-            className="rail:flex sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[rgba(255,255,255,0.07)] bg-[#0b0b0b] p-[18px_12px]"
+            className="sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line-1 bg-ink-900 p-[18px_12px] rail:flex"
             aria-label="Admin sections"
           >
             <Link
@@ -126,10 +126,7 @@ export function AdminShell({
               className="flex items-center gap-2.5 px-2 pb-[18px] pt-1"
               aria-label="πroka Admin home"
             >
-              <span
-                className="relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.16)] text-[17px] font-bold"
-                style={{ background: 'linear-gradient(160deg,#262626 0%,#070707 65%)' }}
-              >
+              <span className="relative flex h-[34px] w-[34px] items-center justify-center rounded-logo border border-line-3 bg-logo text-[17px] font-bold">
                 π<span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-green" />
               </span>
               <span className="flex flex-col">
@@ -146,11 +143,11 @@ export function AdminShell({
                   key={n.href}
                   href={n.href}
                   aria-current={active ? 'page' : undefined}
-                  className="relative flex h-[38px] items-center justify-between rounded-[10px] px-3 text-[13px] font-medium text-fg hover:bg-white/[0.04]"
+                  className="relative flex h-[38px] items-center justify-between rounded-input px-3 text-[13px] font-medium text-fg hover:bg-ink-800"
                 >
                   {active && (
                     <>
-                      <span className="absolute inset-0 rounded-[10px] bg-white/[0.08]" />
+                      <span className="absolute inset-0 rounded-input bg-ink-750" />
                       <span className="absolute bottom-[9px] left-0 top-[9px] w-[3px] rounded-[3px] bg-green" />
                     </>
                   )}
@@ -172,7 +169,7 @@ export function AdminShell({
 
             <span className="flex-1" />
 
-            <div className="flex flex-col gap-1.5 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-white/[0.03] p-3">
+            <div className="flex flex-col gap-1.5 rounded-input border border-line-1 bg-ink-800 p-3">
               <span className="text-[11px] text-fg-4">Signed in as</span>
               <span className="truncate text-[13px] font-semibold">{who}</span>
               {isAdmin ? (
@@ -182,9 +179,9 @@ export function AdminShell({
                       key={r}
                       type="button"
                       onClick={() => changeRole(r)}
-                      className="h-7 flex-1 rounded-[8px] border text-[11px] font-semibold"
+                      className="h-7 flex-1 rounded-input border text-[11px] font-semibold"
                       style={{
-                        borderColor: role === r ? '#34d399' : 'rgba(255,255,255,0.12)',
+                        borderColor: role === r ? '#34d399' : 'rgba(255,255,255,0.1)',
                         background: role === r ? 'rgba(52,211,153,0.14)' : 'transparent',
                         color: '#f5f5f5',
                       }}
@@ -204,18 +201,15 @@ export function AdminShell({
 
           {/* Mobile top bar with a horizontal nav, since the 232px rail is desktop-only. */}
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="rail:hidden sticky top-0 z-20 flex items-center gap-3 border-b border-[rgba(255,255,255,0.07)] bg-[#0b0b0b]/95 px-4 py-3 backdrop-blur-md">
+            <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-line-1 bg-ink-900/95 px-4 py-3 backdrop-blur-md rail:hidden">
               <Link href="/app/map" aria-label="πroka Admin home" className="flex items-center gap-2">
-                <span
-                  className="relative flex h-8 w-8 items-center justify-center rounded-[9px] border border-[rgba(255,255,255,0.16)] text-[15px] font-bold"
-                  style={{ background: 'linear-gradient(160deg,#262626 0%,#070707 65%)' }}
-                >
+                <span className="relative flex h-8 w-8 items-center justify-center rounded-logo border border-line-3 bg-logo text-[15px] font-bold">
                   π
                 </span>
                 <span className="text-[14px] font-semibold">Admin</span>
               </Link>
             </div>
-            <div className="rail:hidden overflow-x-auto border-b border-[rgba(255,255,255,0.07)] px-3 py-2 [scrollbar-width:none]">
+            <div className="overflow-x-auto border-b border-line-1 px-3 py-2 [scrollbar-width:none] rail:hidden">
               <div className="flex w-max gap-1.5">
                 {NAV.map((n) => {
                   const active = n.href === '/admin' ? path === '/admin' : path.startsWith(n.href);
@@ -244,7 +238,7 @@ export function AdminShell({
               <div
                 key={t.id}
                 role="status"
-                className="rounded-[12px] bg-[#f5f5f5] px-[18px] py-3 text-[13px] font-semibold text-[#070707] shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+                className="rounded-input bg-fg px-[18px] py-3 text-[13px] font-semibold text-ink-950 shadow-float"
               >
                 {t.text}
               </div>

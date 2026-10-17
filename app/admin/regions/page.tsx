@@ -33,7 +33,7 @@ export default function RegionsPage() {
               key={c}
               type="button"
               onClick={() => toggle(c)}
-              className="flex items-center justify-between gap-2.5 rounded-[12px] border px-3.5 py-2.5 text-left text-[13px] font-medium text-fg"
+              className="flex items-center justify-between gap-2.5 rounded-input border px-3.5 py-2.5 text-left text-[13px] font-medium text-fg"
               style={{
                 borderColor: on ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.1)',
                 background: on ? 'rgba(251,191,36,0.06)' : 'transparent',

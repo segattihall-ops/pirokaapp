@@ -226,7 +226,7 @@ export default function ReportsPage() {
                 <select
                   value={rule}
                   onChange={(e) => setRule(e.target.value)}
-                  className="h-10 rounded-[10px] border border-[rgba(255,255,255,0.12)] bg-[#111] px-2.5 text-[13px] text-fg outline-none focus:border-[rgba(52,211,153,0.55)]"
+                  className="h-10 rounded-input border border-line-2 bg-ink-800 px-2.5 text-[13px] text-fg outline-none focus:border-sel-border"
                 >
                   {RULES.map((ro) => (
                     <option key={ro} value={ro}>
