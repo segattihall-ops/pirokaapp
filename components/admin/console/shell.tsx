@@ -118,7 +118,7 @@ export function AdminShell({
       <ToastContext.Provider value={pushToast}>
         <div className="flex min-h-dvh bg-[#070707] text-fg">
           <nav
-            className="md:flex sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[rgba(255,255,255,0.07)] bg-[#0b0b0b] p-[18px_12px]"
+            className="rail:flex sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[rgba(255,255,255,0.07)] bg-[#0b0b0b] p-[18px_12px]"
             aria-label="Admin sections"
           >
             <Link
@@ -204,7 +204,7 @@ export function AdminShell({
 
           {/* Mobile top bar with a horizontal nav, since the 232px rail is desktop-only. */}
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="md:hidden sticky top-0 z-20 flex items-center gap-3 border-b border-[rgba(255,255,255,0.07)] bg-[#0b0b0b]/95 px-4 py-3 backdrop-blur-md">
+            <div className="rail:hidden sticky top-0 z-20 flex items-center gap-3 border-b border-[rgba(255,255,255,0.07)] bg-[#0b0b0b]/95 px-4 py-3 backdrop-blur-md">
               <Link href="/app/map" aria-label="πroka Admin home" className="flex items-center gap-2">
                 <span
                   className="relative flex h-8 w-8 items-center justify-center rounded-[9px] border border-[rgba(255,255,255,0.16)] text-[15px] font-bold"
@@ -215,7 +215,7 @@ export function AdminShell({
                 <span className="text-[14px] font-semibold">Admin</span>
               </Link>
             </div>
-            <div className="md:hidden overflow-x-auto border-b border-[rgba(255,255,255,0.07)] px-3 py-2 [scrollbar-width:none]">
+            <div className="rail:hidden overflow-x-auto border-b border-[rgba(255,255,255,0.07)] px-3 py-2 [scrollbar-width:none]">
               <div className="flex w-max gap-1.5">
                 {NAV.map((n) => {
                   const active = n.href === '/admin' ? path === '/admin' : path.startsWith(n.href);
