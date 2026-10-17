@@ -1,36 +1,22 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
-import { LogoTile } from '@/components/logo';
-import { AdminNav } from '@/components/admin/admin-nav';
+import { AdminShell } from '@/components/admin/console/shell';
 
 export const metadata: Metadata = { title: 'Admin' };
 export const dynamic = 'force-dynamic';
 
+/** Trust & Safety console shell (design_handoff → Piroka_Admin.dc.html). Gates to admins, then renders the
+ *  prototype's sidebar + main around every admin page. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect('/?gate=1&next=%2Fadmin');
   if (!isAdmin(session)) redirect('/app/map');
 
   return (
-    <div className="min-h-dvh bg-ink-950">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line-1 bg-ink-900/95 px-4 py-3 backdrop-blur-md sm:px-6">
-        <Link
-          href="/app/map"
-          aria-label="Back to app"
-          className="tap flex items-center justify-center rounded-logo"
-        >
-          <LogoTile size={32} />
-        </Link>
-        <span className="eyebrow">Admin</span>
-        <span className="ml-auto truncate text-[12px] text-fg-3">{session.email ?? session.userId}</span>
-      </header>
-      <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-5 px-4 py-6 sm:px-6">
-        <AdminNav />
-        {children}
-      </main>
-    </div>
+    <AdminShell isAdmin who={session.email ?? session.userId}>
+      {children}
+    </AdminShell>
   );
 }
