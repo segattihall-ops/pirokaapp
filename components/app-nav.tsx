@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { quickExit } from '@/components/safety/quick-exit';
 import { usePathname } from 'next/navigation';
 import { LogoTile } from '@/components/logo';
 
@@ -115,11 +116,12 @@ export function Rail({ unread = 0 }: { unread?: number }) {
         ))}
       </div>
       <div className="mt-auto flex flex-col items-center gap-2">
-        {/* Quick-exit shield — wired in Phase 7. */}
+        {/* Quick exit: replace this tab with a neutral site so the back button cannot return here. */}
         <button
           type="button"
           aria-label="Quick exit"
-          className="tap flex h-11 w-11 items-center justify-center rounded-[14px] border border-line-2 bg-ink-850 text-fg-3 hover:text-fg"
+          onClick={quickExit}
+          className="tap flex h-11 w-11 items-center justify-center rounded-btn border border-line-2 bg-ink-850 text-fg-3 hover:text-fg"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" {...stroke}>
             <path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z" />

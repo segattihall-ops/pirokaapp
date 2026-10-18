@@ -6,8 +6,14 @@ import { requireUser } from '@/lib/api/guard';
 
 export const dynamic = 'force-dynamic';
 
+const coarse = (v: number) => Math.round(v * 100) / 100;
+
 const RADIUS_M = 5000;
-const Body = z.object({ lat: z.number(), lon: z.number(), content: z.string().min(1).max(500) });
+const Body = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  content: z.string().min(1).max(500),
+});
 
 /** Post a public message to the area. */
 export async function POST(request: Request) {
@@ -21,7 +27,8 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabaseAdmin!
     .from('area_messages')
-    .insert({ author_id: session.userId, lat, lon, content })
+    // The board is public to everyone nearby, so only a ~1 km grid cell is kept, never the exact spot.
+    .insert({ author_id: session.userId, lat: coarse(lat), lon: coarse(lon), content })
     .select('id, author_id, created_at')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -37,7 +44,8 @@ export async function GET(request: Request) {
   const lat = parseFloat(url.searchParams.get('lat') ?? '0');
   const lon = parseFloat(url.searchParams.get('lon') ?? '0');
 
-  if (!lat || !lon) return NextResponse.json({ error: 'lat,lon required' }, { status: 400 });
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180)
+    return NextResponse.json({ error: 'lat,lon required' }, { status: 400 });
 
   const { data, error } = await supabaseAdmin!
     .rpc('nearby_area_messages', { p_lat: lat, p_lon: lon, p_radius_m: RADIUS_M })

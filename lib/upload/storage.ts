@@ -1,8 +1,12 @@
 import 'server-only';
+import { supabaseAdmin } from '@/lib/db/client';
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_BUCKET = process.env.R2_BUCKET || 'piroka-media';
 const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'supabase'; // 'supabase' | 'r2'
+
+/** Signed photo links live this long. Routes re-sign on every request, so short is fine. */
+export const PHOTO_URL_TTL_SECS = 60 * 60;
 
 interface UploadOptions {
   userId: string;
@@ -19,24 +23,44 @@ export function generateStorageKey(opts: UploadOptions): string {
   return `users/${opts.userId}/photos/${opts.slot}.${opts.variant}.${ext}`;
 }
 
-/** Public URL for a stored photo key (Supabase public bucket `photos`, or R2). */
-export function photoUrl(storageKey: string): string {
-  if (STORAGE_PROVIDER === 'r2') return getR2Url(storageKey, 3600);
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${storageKey}`;
+/**
+ * Short-lived signed URL for one photo key. The `photos` bucket is private: keys are predictable
+ * (`users/<id>/photos/<slot>.original.jpg`), so a key alone must never be enough to view a photo —
+ * the route that already decided clear-vs-blur is the only thing that can mint a link.
+ */
+export async function photoUrl(storageKey: string | null | undefined): Promise<string | null> {
+  if (!storageKey) return null;
+  if (STORAGE_PROVIDER === 'r2') return getR2Url(storageKey, PHOTO_URL_TTL_SECS);
+  if (!supabaseAdmin) return null;
+  const { data, error } = await supabaseAdmin.storage
+    .from('photos')
+    .createSignedUrl(storageKey, PHOTO_URL_TTL_SECS);
+  if (error || !data?.signedUrl) {
+    console.error('photo sign failed', error?.message);
+    return null;
+  }
+  return data.signedUrl;
 }
 
-/**
- * Generate a signed URL for photo access (Supabase Storage or R2)
- * For Supabase: uses getPublicUrl() for public bucket, generateSignedUrl() for private
- * For R2: needs presigned URL with expiry
- */
-export async function getPhotoUrl(storageKey: string, expiresIn = 3600): Promise<string> {
+/** Batch variant for lists (nearby, chats, cards): one storage call for every key. */
+export async function photoUrls(keys: (string | null | undefined)[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(keys.filter((k): k is string => Boolean(k)))];
+  if (unique.length === 0) return out;
   if (STORAGE_PROVIDER === 'r2') {
-    return getR2Url(storageKey, expiresIn);
-  } else {
-    // Supabase: will be handled by client with service key
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${storageKey}`;
+    for (const k of unique) out.set(k, getR2Url(k, PHOTO_URL_TTL_SECS));
+    return out;
   }
+  if (!supabaseAdmin) return out;
+  const { data, error } = await supabaseAdmin.storage
+    .from('photos')
+    .createSignedUrls(unique, PHOTO_URL_TTL_SECS);
+  if (error) {
+    console.error('photo batch sign failed', error.message);
+    return out;
+  }
+  for (const d of data ?? []) if (d.path && d.signedUrl) out.set(d.path, d.signedUrl);
+  return out;
 }
 
 /**
@@ -55,19 +79,4 @@ function getR2Url(storageKey: string, expiresIn: number): string {
   // Production: implement presigned URLs with @aws-sdk/client-s3
   const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${storageKey}`;
   return publicUrl;
-}
-
-/**
- * Confirm upload after file is stored
- * Called by API to save storage_key + blur_key to database
- */
-export async function confirmPhotoUpload(
-  userId: string,
-  slot: number,
-  storageKey: string,
-  blurKey: string
-): Promise<{ ok: boolean; error?: string }> {
-  // This will be called from /api/onboarding/photos/confirm
-  // Saves to photos table with metadata
-  return { ok: true };
 }

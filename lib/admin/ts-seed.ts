@@ -34,6 +34,9 @@ export const SEV: Record<string, 1 | 2 | 3> = {
   'Hate or discrimination': 2,
   'Fake or impersonation': 1,
   'Scam or spam': 1,
+  // Public form only (app/api/help/report)
+  'Illegal content': 3,
+  Other: 1,
 };
 
 const H = [
@@ -148,7 +151,11 @@ const detailFor = (i: number) =>
     'Said he knows where I live.',
   ][(i * 3) % 7];
 
+/** Seeded queues are a design aid; a production console must never mix invented cases with real ones. */
+export const SEEDS_ENABLED = process.env.NODE_ENV !== 'production';
+
 export function seedReports(): SeedReport[] {
+  if (!SEEDS_ENABLED) return [];
   return Array.from({ length: 11 }, (_, i): SeedReport => {
     const reason = REASONS[(i * 3) % REASONS.length];
     return {
@@ -167,6 +174,7 @@ export function seedReports(): SeedReport[] {
 }
 
 export function seedAppeals(): SeedAppeal[] {
+  if (!SEEDS_ENABLED) return [];
   return [
     {
       id: 'AP-2093',
@@ -202,6 +210,7 @@ export function seedAppeals(): SeedAppeal[] {
 }
 
 export function seedVerifs(): SeedVerif[] {
+  if (!SEEDS_ENABLED) return [];
   return [
     {
       id: 'VR-8801',
@@ -239,6 +248,7 @@ export function seedVerifs(): SeedVerif[] {
 }
 
 export function seedTickets(): SeedTicket[] {
+  if (!SEEDS_ENABLED) return [];
   return [
     {
       id: 'SP-5520',
@@ -284,6 +294,7 @@ export function seedTickets(): SeedTicket[] {
 }
 
 export function seedAmbassadors(): SeedAmbassador[] {
+  if (!SEEDS_ENABLED) return [];
   return (
     [
       [
@@ -322,6 +333,7 @@ export function seedAmbassadors(): SeedAmbassador[] {
 }
 
 export function seedSites(): SeedSite[] {
+  if (!SEEDS_ENABLED) return [];
   return (
     [
       ['Kind Clinic — Oak Lawn', '75219', true],
@@ -347,6 +359,7 @@ export function seedRegions(): Record<string, boolean> {
 }
 
 export function seedAudit(): SeedAudit[] {
+  if (!SEEDS_ENABLED) return [];
   return (
     [
       [4, 'Rafa (T&S)', 'Warned Plaid (PR-20931) · Guidelines → No hate'],

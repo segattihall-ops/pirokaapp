@@ -279,7 +279,12 @@ export function UsersBrowser() {
             <div className="rounded-card border border-line-1 p-3">
               <p className="mb-2 font-semibold text-fg-2">Moderation ladder</p>
               <div className="flex gap-2">
-                <select value={step} onChange={(e) => setStep(e.target.value)} className="input h-9 py-0">
+                <select
+                  aria-label="Moderation step"
+                  value={step}
+                  onChange={(e) => setStep(e.target.value)}
+                  className="input h-9 py-0"
+                >
                   <option value="warn">Warning</option>
                   <option value="limit">Limited (7 days)</option>
                   <option value="suspend">Suspended</option>

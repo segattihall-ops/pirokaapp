@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rateLimit, tooMany } from '@/lib/api/rate-limit';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { haveConversation, isBlocked } from '@/lib/chat/server';
@@ -15,20 +16,26 @@ export async function GET(request: Request) {
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const userId = new URL(request.url).searchParams.get('userId');
-  if (!userId || !/^[0-9a-f-]{36}$/i.test(userId)) return NextResponse.json({ error: 'userId required' }, { status: 400 });
-  if (userId === session.userId) return NextResponse.json({ error: 'Cannot fetch own bundle' }, { status: 400 });
+  if (!userId || !/^[0-9a-f-]{36}$/i.test(userId))
+    return NextResponse.json({ error: 'userId required' }, { status: 400 });
+  if (userId === session.userId)
+    return NextResponse.json({ error: 'Cannot fetch own bundle' }, { status: 400 });
 
-  if (await isBlocked(session.userId, userId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  if (await isBlocked(session.userId, userId))
+    return NextResponse.json({ error: 'Not available' }, { status: 403 });
   if (!(await haveConversation(session.userId, userId))) {
     return NextResponse.json({ error: 'Start a conversation first' }, { status: 403 });
   }
+  // Each fetch consumes one of the peer's one-time pre-keys; a session needs one, not hundreds.
+  if (!(await rateLimit(`keys-bundle:${session.userId}:${userId}`, 3, 600))) return tooMany();
 
   const { data: identity } = await supabaseAdmin
     .from('signal_identities')
     .select('identity_key, signing_key, signed_prekey_id, signed_prekey, signed_prekey_sig')
     .eq('user_id', userId)
     .maybeSingle();
-  if (!identity) return NextResponse.json({ error: 'This person has not set up encrypted chat yet' }, { status: 404 });
+  if (!identity)
+    return NextResponse.json({ error: 'This person has not set up encrypted chat yet' }, { status: 404 });
 
   const { data: opk } = await supabaseAdmin.rpc('claim_one_time_prekey', { target: userId });
   const one = Array.isArray(opk) && opk.length ? opk[0] : null;

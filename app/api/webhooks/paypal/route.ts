@@ -79,7 +79,20 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
       case 'BILLING.SUBSCRIPTION.ACTIVATED':
       case 'BILLING.SUBSCRIPTION.UPDATED':
       case 'BILLING.SUBSCRIPTION.RE-ACTIVATED': {
-        const userId = (res.custom_id as string | undefined) ?? (await userIdForSubscription(res.id));
+        // custom_id is set client-side at checkout, so it is only trusted for a member who has no
+        // other subscription on file; an existing different subscription id means someone is trying
+        // to attach their subscription to another account.
+        const claimed = res.custom_id as string | undefined;
+        let userId = await userIdForSubscription(res.id);
+        if (!userId && claimed) {
+          const { data: u } = await db
+            .from('users')
+            .select('paypal_subscription_id')
+            .eq('id', claimed)
+            .maybeSingle();
+          if (u && (!u.paypal_subscription_id || u.paypal_subscription_id === res.id)) userId = claimed;
+          else await audit('paypal.custom_id_mismatch', claimed, { subscription: res.id });
+        }
         const active = res.status === 'ACTIVE';
         const plan = active ? planFromPayPalPlanId(res.plan_id) : undefined;
         const patch = {

@@ -1,6 +1,6 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/db/client';
-import { photoUrl } from '@/lib/upload/storage';
+import { photoUrls } from '@/lib/upload/storage';
 
 export type UserCard = {
   id: string;
@@ -21,10 +21,15 @@ export async function userCards(ids: string[]): Promise<Map<string, UserCard>> {
   const [{ data: users }, { data: photos }, { data: statuses }] = await Promise.all([
     supabaseAdmin.from('users').select('id, handle, verified_at, deleted_at').in('id', unique),
     supabaseAdmin.from('photos').select('user_id, blur_key').in('user_id', unique).eq('slot', 0),
-    supabaseAdmin.from('statuses').select('user_id, intent, ends_at').in('user_id', unique).gt('ends_at', now),
+    supabaseAdmin
+      .from('statuses')
+      .select('user_id, intent, ends_at')
+      .in('user_id', unique)
+      .gt('ends_at', now),
   ]);
   const photoOf = new Map((photos ?? []).map((p) => [p.user_id, p.blur_key as string]));
   const statusOf = new Map((statuses ?? []).map((s) => [s.user_id, s]));
+  const urlOf = await photoUrls([...photoOf.values()]);
   for (const u of users ?? []) {
     if (u.deleted_at) continue;
     const blur = photoOf.get(u.id);
@@ -32,7 +37,7 @@ export async function userCards(ids: string[]): Promise<Map<string, UserCard>> {
     out.set(u.id, {
       id: u.id,
       handle: u.handle ?? null,
-      photo: blur ? photoUrl(blur) : null,
+      photo: blur ? (urlOf.get(blur) ?? null) : null,
       verified: Boolean(u.verified_at),
       intent: s?.intent ?? null,
       intentEndsAt: s?.ends_at ?? null,

@@ -12,12 +12,17 @@ const PLAN_IDS: Record<PlanId, string> = {
 };
 
 const PLANS: { id: PlanId; name: string; price: number; features: string[] }[] = [
-  { id: 'plus', name: 'Plus', price: 5, features: ['Album up to 5 photos', 'Saved trips', 'Priority support'] },
+  {
+    id: 'plus',
+    name: 'Plus',
+    price: 5,
+    features: ['SafeMeet check-ins', 'Album up to 5 photos', 'Advanced filters', 'Unlimited favourites'],
+  },
   {
     id: 'premium',
     name: 'Premium',
     price: 10,
-    features: ['Everything in Plus', 'Taste learning & match scoring', 'Smart search', 'Early access'],
+    features: ['Everything in Plus', 'πroka Pulse activity intelligence', 'Desperate mode', 'Early access'],
   },
 ];
 
@@ -146,7 +151,9 @@ export function PayPalCheckout({ userId }: { userId: string }) {
                 type="button"
                 onClick={() => setSelected(p.id)}
                 className={`rounded-card border-2 p-4 text-left transition-colors ${
-                  selected === p.id ? 'border-green bg-white/[0.08]' : 'border-line-2 bg-white/[0.04] hover:border-line-3'
+                  selected === p.id
+                    ? 'border-green bg-white/[0.08]'
+                    : 'border-line-2 bg-white/[0.04] hover:border-line-3'
                 }`}
               >
                 <div className="text-[15px] font-bold text-white">{p.name}</div>
@@ -164,7 +171,8 @@ export function PayPalCheckout({ userId }: { userId: string }) {
             <div ref={buttonsRef} className="min-h-[48px]" />
           ) : (
             <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
-              Billing is not configured yet. Set <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> and the two plan IDs.
+              Billing is not configured yet. Set <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> and the two plan
+              IDs.
             </p>
           )}
         </>

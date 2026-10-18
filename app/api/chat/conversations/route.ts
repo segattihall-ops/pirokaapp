@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { blockedIdsFor } from '@/lib/chat/server';
-import { photoUrl } from '@/lib/upload/storage';
+import { photoUrls } from '@/lib/upload/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +48,7 @@ export async function GET() {
       if (!lastAt.has(m.conversation_id)) lastAt.set(m.conversation_id, m.created_at);
   }
 
+  const urlOf = await photoUrls([...photoOf.values()].flatMap((k) => [k.clear, k.blur]));
   const conversations = visible
     .map((c) => {
       const raw = (c.a_id === me ? c.b : c.a) as unknown;
@@ -60,7 +61,7 @@ export async function GET() {
         peer: {
           id: peerId,
           handle: peer?.handle ?? null,
-          photo: keys ? photoUrl(c.mutual ? keys.clear : keys.blur) : null,
+          photo: keys ? (urlOf.get(c.mutual ? keys.clear : keys.blur) ?? null) : null,
         },
         lastAt: lastAt.get(c.id) ?? null,
       };

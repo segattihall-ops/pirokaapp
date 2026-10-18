@@ -31,9 +31,18 @@ export const POST = withApi('/api/billing/subscribe', async (request: Request) =
     return NextResponse.json({ error: 'Could not look up subscription' }, { status: 502 });
   }
 
-  if (sub.custom_id && sub.custom_id !== session.userId) {
+  // Checkout always stamps custom_id with the buyer; a subscription without it, or with someone
+  // else's id, must not unlock this account. One PayPal subscription unlocks exactly one member.
+  if (sub.custom_id !== session.userId) {
     return NextResponse.json({ error: 'Subscription belongs to another account' }, { status: 403 });
   }
+  const { data: holder } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('paypal_subscription_id', sub.id)
+    .neq('id', session.userId)
+    .maybeSingle();
+  if (holder) return NextResponse.json({ error: 'Subscription is already in use' }, { status: 409 });
   const plan = planFromPayPalPlanId(sub.plan_id);
   if (plan === 'free') return NextResponse.json({ error: 'Unknown plan' }, { status: 400 });
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
-import { photoUrl } from '@/lib/upload/storage';
+import { photoUrls } from '@/lib/upload/storage';
 import { presenceActivity } from '@/lib/geo/presence';
 import { isIntent, type Intent } from '@/lib/intent';
 import { isMissingSchema } from '@/lib/db/schema-errors';
@@ -129,6 +129,10 @@ export async function GET(request: Request) {
   const profileOf = new Map(profiles.map((p) => [p.id, p]));
   const desperateOf = new Map(desperate.map((d) => [d.user_id, d.until as string]));
 
+  const photoOf = await photoUrls([
+    ...(rows ?? []).map((r: any) => r.photo_blur_key),
+    ...(tripRows ?? []).map((t: any) => t.photo_blur_key),
+  ]);
   const people: NearbyPerson[] = (rows ?? [])
     .filter((r: any) => !intent || r.intent === intent)
     .map((r: any) => {
@@ -147,7 +151,7 @@ export async function GET(request: Request) {
         travelMi: live === 'travel' ? (status?.travel_mi ?? null) : null,
         desperateUntil: desperateOf.get(r.id) ?? null,
         activity: presenceActivity(r.presence_at),
-        photo: r.photo_blur_key ? photoUrl(r.photo_blur_key) : null,
+        photo: photoOf.get(r.photo_blur_key) ?? null,
         verified: Boolean(r.verified),
         plan: r.plan,
         attrs: p
@@ -174,7 +178,7 @@ export async function GET(request: Request) {
     city: t.city,
     arriveOn: t.arrive_on,
     nights: t.nights,
-    photo: t.photo_blur_key ? photoUrl(t.photo_blur_key) : null,
+    photo: photoOf.get(t.photo_blur_key) ?? null,
     lat: Number.isFinite(t.lat) ? t.lat : null,
     lon: Number.isFinite(t.lon) ? t.lon : null,
   }));

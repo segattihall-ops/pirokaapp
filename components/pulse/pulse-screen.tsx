@@ -24,7 +24,9 @@ export function PulseScreen() {
       const p = await getPosition();
       // Get city name from reverse geocoding or use coordinates
       setCity(`Area (${p.lat.toFixed(2)}, ${p.lon.toFixed(2)})`);
-      const r = await fetch(`/api/nearby?lat=${p.lat}&lon=${p.lon}&radius=25000`, { cache: 'no-store' }).catch(() => null);
+      const r = await fetch(`/api/nearby?lat=${p.lat}&lon=${p.lon}&radius=25000`, {
+        cache: 'no-store',
+      }).catch(() => null);
       if (!r?.ok) return setPeople([]);
       const j = await r.json();
       setConfigured(j.configured);
@@ -59,12 +61,13 @@ export function PulseScreen() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 rounded-lg border border-line-1 bg-ink-850/50 p-1">
-        {(['people', 'trends', 'heatmap'] as const).map((t) => (
+      <div className="flex gap-1 rounded-input border border-line-1 bg-ink-850/50 p-1">
+        {/* Trends returns when the activity_trends backend ships; it must never show simulated numbers. */}
+        {(['people', 'heatmap'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-md px-3 py-2 text-[12px] font-semibold transition-colors capitalize ${
+            className={`flex-1 rounded-input px-3 py-2 text-[12px] font-semibold capitalize transition-colors ${
               tab === t ? 'bg-ink-950 text-green' : 'text-fg-3 hover:text-fg'
             }`}
           >
@@ -79,7 +82,9 @@ export function PulseScreen() {
           <div className="grid grid-cols-2 gap-2.5">
             {INTENTS.slice(0, 4).map((i) => (
               <div key={i.value} className="glass rounded-card p-4">
-                <div className="text-[26px] font-semibold tracking-[-0.03em]">{people ? count(i.value) : '—'}</div>
+                <div className="text-[26px] font-semibold tracking-[-0.03em]">
+                  {people ? count(i.value) : '—'}
+                </div>
                 <div className="flex items-center gap-1.5 text-[12px] text-fg-3">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: i.color }} />
                   {i.label}
@@ -90,7 +95,8 @@ export function PulseScreen() {
 
           {hotspots.length > 0 && (
             <p className="text-[13px] text-fg-3">
-              {hotspots.length} hotspot{hotspots.length > 1 ? 's' : ''} within 25 mi · busiest has {hotspots[0].count} people.{' '}
+              {hotspots.length} hotspot{hotspots.length > 1 ? 's' : ''} within 25 mi · busiest has{' '}
+              {hotspots[0].count} people.{' '}
               <Link href="/app/map" className="text-green">
                 See the map
               </Link>
@@ -109,7 +115,9 @@ export function PulseScreen() {
         {people === null ? (
           <p className="text-[13px] text-fg-3">Loading…</p>
         ) : live.length === 0 ? (
-          <p className="text-[13px] text-fg-3">Nobody has set an intent nearby yet. Be the first from the map.</p>
+          <p className="text-[13px] text-fg-3">
+            Nobody has set an intent nearby yet. Be the first from the map.
+          </p>
         ) : (
           live.map((p) => {
             const meta = intentMeta(p.intent);
@@ -131,7 +139,10 @@ export function PulseScreen() {
                   <span className="block text-[12px] text-fg-3">{distanceLabel(p.distanceM)}</span>
                 </span>
                 {meta && (
-                  <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: meta.color }}>
+                  <span
+                    className="text-[11px] font-bold uppercase tracking-[0.1em]"
+                    style={{ color: meta.color }}
+                  >
                     {meta.label}
                   </span>
                 )}
@@ -140,7 +151,9 @@ export function PulseScreen() {
           })
         )}
       </div>
-      {selected && <ProfileSheet userId={selected.id} distanceM={selected.distanceM} onClose={() => setSelected(null)} />}
+      {selected && (
+        <ProfileSheet userId={selected.id} distanceM={selected.distanceM} onClose={() => setSelected(null)} />
+      )}
     </section>
   );
 }

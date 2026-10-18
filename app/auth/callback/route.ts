@@ -16,7 +16,16 @@ export async function GET(req: Request) {
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type') as EmailOtpType | null;
   const nextRaw = url.searchParams.get('next') ?? '/';
-  const next = nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/';
+  // Same-origin paths only. `/\\evil.com` parses as a different host, so resolve and compare origins.
+  const next = (() => {
+    if (!nextRaw.startsWith('/') || nextRaw.startsWith('//') || /[\\]/.test(nextRaw)) return '/';
+    try {
+      const u = new URL(nextRaw, url.origin);
+      return u.origin === url.origin ? `${u.pathname}${u.search}` : '/';
+    } catch {
+      return '/';
+    }
+  })();
   const fail = (message: string) =>
     NextResponse.redirect(new URL(`/?auth_error=${encodeURIComponent(message)}`, url.origin));
 
