@@ -69,7 +69,8 @@ function dayLabel(iso: string): { day: string; time: string } {
 
 /** Public, shareable event page. Reads only public fields; the guest list and locations stay inside the app. */
 async function loadEvent(id: string): Promise<EventView | null> {
-  if (SAMPLE[id]) return SAMPLE[id];
+  // Prototype samples are a design aid; production only serves real events.
+  if (process.env.NODE_ENV !== 'production' && SAMPLE[id]) return SAMPLE[id];
   if (!isUuid(id) || !supabaseAdmin) return null;
   const [{ data: ev }, { count }] = await Promise.all([
     supabaseAdmin

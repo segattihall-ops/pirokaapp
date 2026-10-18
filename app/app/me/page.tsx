@@ -21,8 +21,8 @@ export const metadata: Metadata = { title: 'Me' };
 export const dynamic = 'force-dynamic';
 
 const ROWS: { label: string; href: string }[] = [
-  { label: 'Trust signals', href: '/help/trust' },
-  { label: 'SafeMeet', href: '/help/safemeet' },
+  { label: 'Safety Center & SafeMeet', href: '/help/safety' },
+  { label: 'Community Guidelines', href: '/help/guidelines' },
   { label: 'Privacy & safety', href: '/help/privacy' },
 ];
 
@@ -42,7 +42,7 @@ export default async function MePage() {
       ])
     : [{ data: null }, { data: null }];
   const handle = me?.handle ?? null;
-  const mainPhoto = photo?.storage_key ? photoUrl(photo.storage_key) : null;
+  const mainPhoto = await photoUrl(photo?.storage_key);
 
   return (
     <section className="mx-auto flex w-full max-w-[560px] animate-in flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
@@ -85,7 +85,9 @@ export default async function MePage() {
 
       <TripsList />
 
-      <PayPalCheckout userId={session.userId} />
+      <div id="billing" className="scroll-mt-4">
+        <PayPalCheckout userId={session.userId} />
+      </div>
 
       <PushToggle />
 

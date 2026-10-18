@@ -16,8 +16,12 @@ const unb64u = (s: string) =>
   Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
 
 async function key() {
-  const secret =
-    process.env.NEXTAUTH_SECRET || process.env.DEMO_AUTH_SECRET || 'piroka-demo-secret-change-me';
+  const configured = process.env.DEMO_AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  // A production build must never sign demo sessions with a known default: anyone could forge one.
+  if (!configured && process.env.NODE_ENV === 'production') {
+    throw new Error('DEMO_AUTH_SECRET is required to use demo auth in production.');
+  }
+  const secret = configured || 'piroka-demo-secret-change-me';
   return crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
     'sign',
     'verify',

@@ -51,10 +51,10 @@ export function MyCardSheet({
         <Link href="/app/me/edit" className="btn-secondary h-11">
           Edit profile
         </Link>
-        <Link href="/help/safemeet" className="btn-secondary h-11">
-          Health card
+        <Link href="/help/safety" className="btn-secondary h-11">
+          Safety Center
         </Link>
-        <Link href="/account?tab=billing" className="btn-secondary h-11">
+        <Link href="/app/me#billing" className="btn-secondary h-11">
           Plan &amp; billing
         </Link>
       </div>

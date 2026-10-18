@@ -66,7 +66,9 @@ export async function GET() {
       verified: Boolean(u.verified_at),
       memberSince: u.created_at,
     },
-    photos: (photos ?? []).map((p) => ({ slot: p.slot, url: `${photoUrl(p.storage_key)}?v=${Date.now()}` })),
+    photos: await Promise.all(
+      (photos ?? []).map(async (p) => ({ slot: p.slot, url: await photoUrl(p.storage_key) })),
+    ),
     photoLimit: photoLimit(u.plan, u.auth_provider),
   });
 }

@@ -18,14 +18,30 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const [{ data: u }, { data: photos }, { data: status }, { data: grant }, conversation, { data: request }, { data: fav }, { data: trips }] = await Promise.all([
+  const [
+    { data: u },
+    { data: photos },
+    { data: status },
+    { data: grant },
+    conversation,
+    { data: request },
+    { data: fav },
+    { data: trips },
+  ] = await Promise.all([
     supabaseAdmin
       .from('users')
-      .select('id, handle, pronouns, gender, orientation, communities, bio, verified_at, plan, visibility, deleted_at, mod_step')
+      .select(
+        'id, handle, pronouns, gender, orientation, communities, bio, verified_at, plan, visibility, deleted_at, mod_step',
+      )
       .eq('id', id)
       .maybeSingle(),
     supabaseAdmin.from('photos').select('slot, storage_key, blur_key').eq('user_id', id).order('slot'),
-    supabaseAdmin.from('statuses').select('intent, ends_at').eq('user_id', id).gt('ends_at', new Date().toISOString()).maybeSingle(),
+    supabaseAdmin
+      .from('statuses')
+      .select('intent, ends_at')
+      .eq('user_id', id)
+      .gt('ends_at', new Date().toISOString())
+      .maybeSingle(),
     supabaseAdmin
       .from('album_grants')
       .select('granted_at')
@@ -34,9 +50,25 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       .is('revoked_at', null)
       .maybeSingle(),
     haveConversation(session.userId, id),
-    supabaseAdmin.from('album_requests').select('status').eq('from_id', session.userId).eq('to_id', id).maybeSingle(),
-    supabaseAdmin.from('favorites').select('alerts').eq('user_id', session.userId).eq('fav_id', id).maybeSingle(),
-    supabaseAdmin.from('trips').select('city, arrive_on, nights').eq('user_id', id).gte('arrive_on', new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10)).order('arrive_on').limit(3),
+    supabaseAdmin
+      .from('album_requests')
+      .select('status')
+      .eq('from_id', session.userId)
+      .eq('to_id', id)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('favorites')
+      .select('alerts')
+      .eq('user_id', session.userId)
+      .eq('fav_id', id)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('trips')
+      .select('city, arrive_on, nights')
+      .eq('user_id', id)
+      .gte('arrive_on', new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10))
+      .order('arrive_on')
+      .limit(3),
   ]);
 
   if (!u || u.deleted_at || (u.mod_step && ['suspended', 'removed'].includes(u.mod_step))) {
@@ -61,10 +93,12 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     plan: u.plan,
     intent: status?.intent ?? null,
     intentEndsAt: status?.ends_at ?? null,
-    photos: (photos ?? []).map((p) => {
-      const clear = p.slot === 0 ? mainClear : unlocked;
-      return { slot: p.slot, url: photoUrl(clear ? p.storage_key : p.blur_key), blurred: !clear };
-    }),
+    photos: await Promise.all(
+      (photos ?? []).map(async (p) => {
+        const clear = p.slot === 0 ? mainClear : unlocked;
+        return { slot: p.slot, url: await photoUrl(clear ? p.storage_key : p.blur_key), blurred: !clear };
+      }),
+    ),
     albumUnlocked: unlocked,
     albumRequest: self ? 'self' : grant ? 'unlocked' : (request?.status ?? 'none'),
     favorite: Boolean(fav),

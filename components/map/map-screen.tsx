@@ -137,7 +137,8 @@ export function MapScreen({ userId }: { userId: string }) {
   const promoSeenRef = useRef<Set<string>>(new Set());
   const ethnicityEnabled = useFlag('ethnicity_filter', true);
   const params = useSearchParams();
-  const forceDemo = params.get('demo') === '1';
+  // Simulated presence is a development aid; production never paints fake people over the live map.
+  const forceDemo = process.env.NODE_ENV !== 'production' && params.get('demo') === '1';
 
   const scrubbed = scrub > 0;
   const T = now + scrub * 60_000;
@@ -1289,7 +1290,7 @@ export function MapScreen({ userId }: { userId: string }) {
             <span className="text-[12px] leading-snug text-fg-2">{promo.sub}</span>
           </span>
           <a
-            href={promo.go === 'testing' ? '/app/places?tab=testing' : '/account?tab=billing'}
+            href={promo.go === 'testing' ? '/app/places?tab=testing' : '/app/me#billing'}
             className="shrink-0 rounded-[10px] bg-white px-3 py-2 text-[12px] font-semibold text-ink-950"
             onClick={() => setPromo(null)}
           >

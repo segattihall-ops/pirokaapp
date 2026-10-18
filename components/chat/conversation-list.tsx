@@ -30,7 +30,7 @@ export function ConversationList() {
 
   useEffect(() => {
     fetch('/api/chat/conversations', { cache: 'no-store' })
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : { configured: true, conversations: [] }))
       .then(setState)
       .catch(() => setState({ configured: false, conversations: [] }));
   }, []);

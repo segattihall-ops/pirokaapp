@@ -36,7 +36,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How do I hide πroka on my phone?',
-    a: 'In ME → Privacy, switch the app icon to Calculator, Weather or Notes, and add a PIN. Quick exit (press Esc twice or tap the shield) instantly shows a decoy screen.',
+    a: 'In ME → Privacy, switch the app icon to Calculator, Weather or Notes. Quick exit (press Esc twice or tap the shield) instantly shows a decoy screen.',
   },
   {
     q: 'Is πroka free?',

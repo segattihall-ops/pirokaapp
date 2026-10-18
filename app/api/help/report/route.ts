@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { opsAlert, opsAlertsConfigured } from '@/lib/alerts/server';
+import { clientIp, rateLimit, tooMany } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,18 +26,6 @@ const Body = z.object({
   email: z.string().trim().email().max(200).optional().or(z.literal('')),
 });
 
-// Light per-IP throttle (per instance): the form needs no account, so this is the only brake on abuse.
-const WINDOW_MS = 60 * 60_000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, number[]>();
-function throttled(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > MAX_PER_WINDOW;
-}
-
 /**
  * Public "Report or request removal" intake (design: Piroka_Help → Report content). No account needed.
  * The report is stored in the same `reports` table the Trust & Safety queue reads (target unknown until a
@@ -44,9 +33,8 @@ function throttled(ip: string): boolean {
  * database nor the alert channel exists do we answer 503 — never pretend a safety report was received.
  */
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  if (throttled(ip))
-    return NextResponse.json({ error: 'Too many reports, try again later' }, { status: 429 });
+  // The form needs no account, so a per-IP limit (shared across instances) is the only brake on abuse.
+  if (!(await rateLimit(`help-report:${clientIp(request)}`, 5, 3600))) return tooMany();
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success)

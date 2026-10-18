@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
+import { rateLimit, tooMany } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!supabaseAdmin) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+  if (!(await rateLimit(`chat-start:${session.userId}`, 30, 3600))) return tooMany();
 
   const body = (await request.json().catch(() => ({}))) as { userId?: string; handle?: string };
   let peerId = body.userId?.trim();

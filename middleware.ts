@@ -10,6 +10,36 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 /** Routes that need a signed-in AND age-verified user. Everything else is public. */
 const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/];
 
+/**
+ * API routes a signed-in but not-yet-verified member may call: the gate itself, auth, telemetry,
+ * public intake, account hygiene, webhooks and jobs. Every other /api/* route answers 403 until the
+ * age check passes, so the 18+ rule holds for direct API calls, not just for pages.
+ */
+const API_PREGATE = [
+  '/api/auth',
+  '/api/consent',
+  '/api/age',
+  '/api/analytics',
+  '/api/errors',
+  '/api/help',
+  '/api/status',
+  '/api/piroka',
+  '/api/announcements',
+  '/api/flags',
+  '/api/feedback',
+  '/api/unsubscribe',
+  '/api/webhooks',
+  '/api/cron',
+  '/api/safe',
+  '/api/push',
+  '/api/me/account',
+  '/api/me/export',
+  '/api/me/security',
+  '/api/me/language',
+  '/api/me/marketing',
+];
+const apiPreGate = (p: string) => API_PREGATE.some((x) => p === x || p.startsWith(`${x}/`));
+
 export async function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
@@ -52,6 +82,10 @@ export async function middleware(req: NextRequest) {
     const s = await verifySession(req.cookies.get(DEMO_COOKIE)?.value);
     signedIn = Boolean(s);
     ageVerified = Boolean(s?.ageVerified);
+  }
+
+  if (pathname.startsWith('/api/') && signedIn && !ageVerified && !apiPreGate(pathname)) {
+    return NextResponse.json({ error: 'Age verification required', gate: GATE_PATH }, { status: 403 });
   }
 
   if (gated && !(signedIn && ageVerified)) {

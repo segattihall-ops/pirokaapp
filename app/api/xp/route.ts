@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 
 const RecordXPSchema = z.object({
   action: z.enum(['profile_complete', 'message_sent', 'photo_verified', 'referral_bonus']),
-  amount: z.number().int().positive(),
+  /** Ignored: the server owns XP amounts. Kept optional so older clients still validate. */
+  amount: z.number().int().positive().optional(),
   relatedId: z.string().uuid().optional(),
 });
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not configured' }, { status: 503 });
     }
 
-    const xpAmount = parsed.data.amount || XP_AMOUNTS[parsed.data.action] || 0;
+    const xpAmount = XP_AMOUNTS[parsed.data.action] ?? 0;
 
     // Record XP
     const { data: xpRecord, error: xpError } = await supabaseAdmin

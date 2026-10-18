@@ -25,13 +25,7 @@ export function hasFeature(plan: Plan, feature: Feature): boolean {
 
 export const PLAN_FEATURES: Record<Plan, Feature[]> = {
   free: ['travel_mode'],
-  plus: [
-    'safemeet',
-    'advanced_filters',
-    'unlimited_favorites',
-    'custom_status',
-    'travel_mode',
-  ],
+  plus: ['safemeet', 'advanced_filters', 'unlimited_favorites', 'custom_status', 'travel_mode'],
   premium: [
     'safemeet',
     'pulse',
@@ -50,12 +44,12 @@ export const PLAN_NAMES: Record<Plan, string> = {
 };
 
 export const PLAN_PRICES: Record<Exclude<Plan, 'free'>, { monthly: number; yearly: number }> = {
-  plus: { monthly: 9.99, yearly: 79.99 },
-  premium: { monthly: 19.99, yearly: 159.99 },
+  plus: { monthly: 5, yearly: 50 },
+  premium: { monthly: 10, yearly: 100 },
 };
 
 export const PLAN_DESCRIPTIONS: Record<Plan, string> = {
   free: 'Core features for safe discovery',
-  plus: 'SafeMeet + advanced filters + priority support coming soon',
+  plus: 'SafeMeet + advanced filters + unlimited favourites',
   premium: 'Everything + Pulse analytics + priority support',
 };

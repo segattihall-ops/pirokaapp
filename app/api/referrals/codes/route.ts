@@ -6,9 +6,13 @@ import { requireUser } from '@/lib/api/guard';
 export const dynamic = 'force-dynamic';
 
 const CreateReferralCodeSchema = z.object({
-  code: z.string().min(6).max(12).regex(/^[A-Z0-9]+$/),
-  rewardCredits: z.number().int().min(10).max(10000).optional(),
-  maxUses: z.number().int().min(1).optional(),
+  code: z
+    .string()
+    .min(6)
+    .max(12)
+    .regex(/^[A-Z0-9]+$/),
+  rewardCredits: z.number().int().min(10).max(100).optional(),
+  maxUses: z.number().int().min(1).max(100).optional(),
   expiresAt: z.string().datetime().optional(),
 });
 

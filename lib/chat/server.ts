@@ -35,7 +35,7 @@ export async function getPeerCard(
       .eq('slot', 0)
       .maybeSingle(),
   ]);
-  return { handle: u?.handle ?? null, photo: p ? photoUrl(mutual ? p.storage_key : p.blur_key) : null };
+  return { handle: u?.handle ?? null, photo: p ? await photoUrl(mutual ? p.storage_key : p.blur_key) : null };
 }
 
 export async function getHandle(userId: string): Promise<string | null> {
