@@ -39,8 +39,9 @@ function throttled(ip: string): boolean {
 
 /**
  * Public "Report or request removal" intake (design: Piroka_Help → Report content). No account needed.
- * Delivery is the ops alert channel the moderation queue already uses; when that isn't configured we say
- * so with a 503 rather than pretend a safety report was received. Signed-in reporters also get an audit row.
+ * The report is stored in the same `reports` table the Trust & Safety queue reads (target unknown until a
+ * moderator identifies it), and the ops alert channel is pinged when configured. Only when neither the
+ * database nor the alert channel exists do we answer 503 — never pretend a safety report was received.
  */
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
@@ -52,21 +53,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Choose a reason and describe what happened.' }, { status: 400 });
   const { type, link, text, email } = parsed.data;
 
-  if (!opsAlertsConfigured()) {
+  if (!supabaseAdmin && !opsAlertsConfigured()) {
     return NextResponse.json(
       { error: 'Reporting is temporarily unavailable. Please use Talk to a person.' },
       { status: 503 },
     );
   }
 
-  const id = 'TS-' + (40000 + Math.floor(Math.random() * 9999));
+  const session = await getSession().catch(() => null);
   const urgent = type === 'Someone under 18' || type === 'Shared without consent';
+
+  let id = 'TS-' + (40000 + Math.floor(Math.random() * 9999));
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin
+      .from('reports')
+      .insert({
+        reporter_id: session?.userId ?? null,
+        reason: type,
+        details: text,
+        evidence: { source: 'public_form', link: link || null, contact_email: email || null, urgent },
+        status: 'open',
+      })
+      .select('id')
+      .single();
+    if (error || !data) {
+      console.error('public report insert failed', error);
+      if (!opsAlertsConfigured())
+        return NextResponse.json(
+          { error: 'Reporting is temporarily unavailable. Please use Talk to a person.' },
+          { status: 503 },
+        );
+    } else {
+      id = data.id as string;
+    }
+  }
+
   await opsAlert(
     'report',
     `${urgent ? 'URGENT ' : ''}public report ${id} · ${type}${link ? ` · ${link}` : ''}\n${text}${email ? `\nupdates → ${email}` : ''}`,
   );
 
-  const session = await getSession().catch(() => null);
   if (session?.userId && supabaseAdmin) {
     await supabaseAdmin
       .from('audit_log')

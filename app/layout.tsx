@@ -1,15 +1,25 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { appUrl } from '@/lib/app-url';
 
 export const metadata: Metadata = {
   title: { default: 'πroka — Know who’s ready.', template: '%s · πroka' },
   description: 'An intent-first live map for queer adults. Know who’s ready.',
   applicationName: 'πroka',
-  robots: { index: false, follow: false }, // pre-launch
+  metadataBase: new URL(appUrl()),
+  openGraph: {
+    type: 'website',
+    siteName: 'πroka',
+    title: 'πroka — Know who’s ready.',
+    description: 'An intent-first live map for queer adults. Know who’s ready.',
+  },
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }, { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'πroka' },
