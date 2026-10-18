@@ -34,6 +34,9 @@ export const SEV: Record<string, 1 | 2 | 3> = {
   'Hate or discrimination': 2,
   'Fake or impersonation': 1,
   'Scam or spam': 1,
+  // Public form only (app/api/help/report)
+  'Illegal content': 3,
+  Other: 1,
 };
 
 const H = [

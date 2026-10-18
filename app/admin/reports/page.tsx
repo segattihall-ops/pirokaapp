@@ -28,6 +28,7 @@ type Report = {
   sev: 1 | 2 | 3;
   details: string;
   evidence: boolean;
+  publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
   priors: string[];
   status: string;
 };
@@ -66,6 +67,7 @@ export default function ReportsPage() {
           details: string | null;
           status: string;
           createdAt: string;
+          publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
         }[];
       };
       setConfigured(true);
@@ -80,6 +82,7 @@ export default function ReportsPage() {
           sev: SEV[x.reason] ?? 1,
           details: x.details ?? '—',
           evidence: false,
+          publicForm: x.publicForm ?? null,
           priors: [],
           status: x.status === 'open' || x.status === 'under_review' ? 'open' : x.status,
         })),
@@ -216,6 +219,18 @@ export default function ReportsPage() {
                   </span>
                 )}
               </DetailBlock>
+              {x.publicForm && (
+                <DetailBlock label="Filed from the public form (no account)">
+                  <span className="text-[13px] leading-[1.5] text-fg-2">
+                    Reported: {x.publicForm.link || '— no link given —'}
+                  </span>
+                  <span className="text-[13px] leading-[1.5] text-fg-3">
+                    {x.publicForm.contactEmail
+                      ? `Reply to: ${x.publicForm.contactEmail}`
+                      : 'No contact email left.'}
+                  </span>
+                </DetailBlock>
+              )}
               {x.priors.length > 0 && (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[12px] font-semibold text-fg-3">History</span>

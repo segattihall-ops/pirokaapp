@@ -6,6 +6,17 @@ export const dynamic = 'force-dynamic';
 
 const STATUSES = ['open', 'under_review', 'resolved', 'dismissed'] as const;
 
+type PublicForm = { link: string | null; contactEmail: string | null; label: string | null } | null;
+function publicForm(evidence: unknown): PublicForm {
+  const e = evidence as Record<string, unknown> | null;
+  if (!e || e.source !== 'public_form') return null;
+  return {
+    link: typeof e.link === 'string' ? e.link : null,
+    contactEmail: typeof e.contact_email === 'string' ? e.contact_email : null,
+    label: typeof e.public_label === 'string' ? e.public_label : null,
+  };
+}
+
 export async function GET(request: Request) {
   const g = await requireAdmin();
   if ('response' in g) return g.response;
@@ -14,7 +25,9 @@ export async function GET(request: Request) {
   const status = new URL(request.url).searchParams.get('status');
   let q = supabaseAdmin
     .from('reports')
-    .select('id, reporter_id, target_id, reason, details, status, created_at, resolved_at, target:users!reports_target_id_fkey(handle), reporter:users!reports_reporter_id_fkey(handle)')
+    .select(
+      'id, reporter_id, target_id, reason, details, evidence, status, created_at, resolved_at, target:users!reports_target_id_fkey(handle), reporter:users!reports_reporter_id_fkey(handle)',
+    )
     .order('created_at', { ascending: false })
     .limit(200);
   if (status && (STATUSES as readonly string[]).includes(status)) q = q.eq('status', status);
@@ -35,6 +48,8 @@ export async function GET(request: Request) {
       status: r.status,
       createdAt: r.created_at,
       resolvedAt: r.resolved_at,
+      // Public-form reports carry what moderators need to find the content and reply.
+      publicForm: publicForm(r.evidence),
     })),
   });
 }

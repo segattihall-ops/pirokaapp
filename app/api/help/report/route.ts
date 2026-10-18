@@ -19,6 +19,18 @@ const PUBLIC_REPORT_TYPES = [
   'Other',
 ] as const;
 
+/** Public labels → the Trust & Safety queue's canonical reasons (lib/admin/ts-seed REASONS/SEV). */
+const QUEUE_REASON: Record<(typeof PUBLIC_REPORT_TYPES)[number], string> = {
+  'Someone under 18': 'Underage',
+  'Shared without consent': 'Shared my photos',
+  Impersonation: 'Fake or impersonation',
+  'Harassment or threats': 'Harassment',
+  'Hate or discrimination': 'Hate or discrimination',
+  'Scam or spam': 'Scam or spam',
+  'Illegal content': 'Illegal content',
+  Other: 'Other',
+};
+
 const Body = z.object({
   type: z.enum(PUBLIC_REPORT_TYPES),
   link: z.string().trim().max(300).optional(),
@@ -57,9 +69,15 @@ export async function POST(request: Request) {
       .from('reports')
       .insert({
         reporter_id: session?.userId ?? null,
-        reason: type,
+        reason: QUEUE_REASON[type],
         details: text,
-        evidence: { source: 'public_form', link: link || null, contact_email: email || null, urgent },
+        evidence: {
+          source: 'public_form',
+          public_label: type,
+          link: link || null,
+          contact_email: email || null,
+          urgent,
+        },
         status: 'open',
       })
       .select('id')

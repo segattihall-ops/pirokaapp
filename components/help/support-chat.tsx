@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 type Lang = 'pt' | 'en';
@@ -9,24 +10,35 @@ type Msg = { me: boolean; text: string };
 // a human team would send; it never pretends a person has already read the message.
 const REPLY: Record<
   Lang,
-  { hi: string; ack: string; tag: string; ph: string; send: string; status: string; topics: string[] }
+  {
+    hi: string;
+    ack: string;
+    tag: string;
+    ph: string;
+    send: string;
+    status: string;
+    cta: string;
+    topics: string[];
+  }
 > = {
   en: {
-    hi: 'Hi, I’m Ana from πroka Support. What’s going on?',
-    ack: 'Thanks — I’m looking into it now. If anyone is in immediate danger, contact local emergency services first.',
-    tag: 'Human support in English and Portuguese · replies in under 24h',
+    hi: 'Hi, I’m Ana, πroka’s guided helper. Tell me what’s going on and I’ll point you the right way.',
+    ack: 'Thanks. For anything that needs a person — safety, your account, or a removal — send it through Report content below so it reaches our Trust & Safety team. If anyone is in immediate danger, contact local emergency services first.',
+    tag: 'Answers common questions · routes anything urgent to a person',
     ph: 'Write to Ana…',
     send: 'Send',
-    status: 'Online · usually replies in 5 min',
+    status: 'Guided help',
+    cta: 'Reach a person → Report content',
     topics: ['My account was hacked', 'Someone is harassing me', 'I was banned', 'Billing question'],
   },
   pt: {
-    hi: 'Oi, eu sou a Ana do suporte πroka. Como posso ajudar?',
-    ack: 'Obrigada — já estou verificando. Se alguém estiver em perigo imediato, ligue primeiro para os serviços de emergência.',
-    tag: 'Suporte humano em português e inglês · resposta em menos de 24h',
+    hi: 'Oi, eu sou a Ana, a ajudante guiada do πroka. Conta o que está acontecendo que eu te direciono.',
+    ack: 'Obrigada. Para qualquer coisa que precise de uma pessoa — segurança, sua conta ou uma remoção — envie por Denunciar conteúdo abaixo, assim chega à nossa equipe de Confiança e Segurança. Se alguém estiver em perigo imediato, ligue primeiro para a emergência.',
+    tag: 'Responde dúvidas comuns · encaminha o urgente para uma pessoa',
     ph: 'Escreva para a Ana…',
     send: 'Enviar',
-    status: 'Online · costuma responder em 5 min',
+    status: 'Ajuda guiada',
+    cta: 'Falar com uma pessoa → Denunciar conteúdo',
     topics: ['Minha conta foi invadida', 'Estou sendo assediado(a)', 'Fui banido(a)', 'Dúvida de pagamento'],
   },
 };
@@ -86,7 +98,7 @@ export function SupportChat() {
           </span>
           <span className="flex flex-col gap-0.5">
             <span className="text-[14px] font-semibold">Ana · πroka Support</span>
-            <span className="text-[12px] text-green">{L.status}</span>
+            <span className="text-[12px] text-fg-3">{L.status}</span>
           </span>
         </div>
         <div
@@ -150,9 +162,15 @@ export function SupportChat() {
           </button>
         </div>
       </div>
+      <Link
+        href="/help/report"
+        className="tap-link flex items-center gap-1.5 text-[13px] font-medium text-green"
+      >
+        {L.cta}
+      </Link>
       <span className="text-[12px] text-fg-4">
-        Real people, 7 days a week. Safety reports are answered first. Premium members get a reply within 4
-        hours.
+        Ana answers from πroka’s help articles. Messages here are not a live chat — anything that needs a
+        person goes through Report content, which reaches our team.
       </span>
     </>
   );

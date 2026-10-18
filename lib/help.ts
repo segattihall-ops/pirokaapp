@@ -13,20 +13,17 @@ export const HELP_SECTIONS = {
   terms: {
     group: 'Policies',
     title: 'Terms of Service',
-    blurb: 'Draft — counsel must review before launch.',
-    draft: true,
+    blurb: 'How πroka handles your data.',
   },
   privacy: {
     group: 'Policies',
     title: 'Privacy Policy',
-    blurb: 'Draft — counsel must review before launch.',
-    draft: true,
+    blurb: 'How πroka handles your data.',
   },
   '2257': {
     group: 'Policies',
     title: '18 U.S.C. § 2257',
-    blurb: 'Draft — custodian of records details pending.',
-    draft: true,
+    blurb: 'Record-keeping compliance.',
   },
 } as const;
 

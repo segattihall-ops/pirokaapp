@@ -176,6 +176,11 @@ $$;
 revoke all on function public.nearby_area_messages(float8, float8, int) from public, anon, authenticated;
 grant execute on function public.nearby_area_messages(float8, float8, int) to service_role;
 
+-- 035 · Couchless intent + travel radius on statuses (the API answers 503 `schemaPending` without them)
+alter type intent_t add value if not exists 'couchless';
+alter table public.statuses add column if not exists travel_mi smallint
+  check (travel_mi is null or travel_mi between 1 and 15);
+
 -- 035 · Desperate mode
 create table if not exists public.desperate_alerts (
   user_id  uuid primary key references public.users(id) on delete cascade,
@@ -191,11 +196,25 @@ declare t text;
 begin
   foreach t in array array[
     'taste_vectors','match_scores','referral_codes','referral_signups','user_xp','user_stats',
-    'leaderboard_snapshots','saved_filters','area_heatmaps','saved_trips','travel_mode',
+    'leaderboard_snapshots','saved_filters','area_heatmaps','saved_trips',
     'area_messages','desperate_alerts','trips','room_messages','places'
   ] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all privileges on table public.%I from anon, authenticated', t);
     execute format('grant all privileges on table public.%I to service_role', t);
   end loop;
+end $$;
+
+-- travel_mode is the one table read through the user-scoped client (/api/piroka/status), so the
+-- owner-only policy from 027 and the matching grants must exist alongside RLS.
+alter table public.travel_mode enable row level security;
+grant select, insert, update, delete on table public.travel_mode to authenticated;
+grant all privileges on table public.travel_mode to service_role;
+revoke all privileges on table public.travel_mode from anon;
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'travel_mode' and policyname = 'users_manage_travel_mode') then
+    create policy "users_manage_travel_mode" on public.travel_mode
+      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
 end $$;

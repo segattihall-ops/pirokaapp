@@ -87,7 +87,7 @@ export const HELP_CONTENT: Record<string, Content> = {
   terms: {
     title: 'Terms of Service',
     meta: 'Effective September 2026',
-    draft: true,
+    draft: false,
     sections: [
       {
         heading: 'Eligibility',
@@ -118,7 +118,7 @@ export const HELP_CONTENT: Record<string, Content> = {
   privacy: {
     title: 'Privacy Policy',
     meta: 'Effective September 2026',
-    draft: true,
+    draft: false,
     sections: [
       {
         heading: 'What we collect',
@@ -173,7 +173,7 @@ export const HELP_CONTENT: Record<string, Content> = {
   '2257': {
     title: '18 U.S.C. § 2257 Statement',
     meta: 'Record-keeping compliance',
-    draft: true,
+    draft: false,
     sections: [
       {
         heading: 'Exemption',

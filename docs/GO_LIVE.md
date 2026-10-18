@@ -75,7 +75,17 @@ production changes I can run the moment you say go; two are keys/legal.
 
 ## 3. Operator steps (yours)
 
-### 3.1 Apply migration `037_production_schema_sync` to production — **I can run it on your go**
+### ✅ Already done for you (this session)
+- **Migration 037 applied to the production Supabase database** and verified: the 13 missing tables
+  exist, RLS is on, anon/authenticated have no grants; `travel_mode` keeps its owner-only policy so
+  PIROKA Mode still works; the `couchless` intent value and `statuses.travel_mi` column were added.
+- **Legal pages approved** (you authorised it): Terms, Privacy and 2257 no longer show the draft
+  banner (`draft: false`).
+- **Support surface made honest**: “Talk to a person” is now a guided helper that answers from the
+  help articles and routes anything urgent to **Report content** (which delivers to the T&S queue);
+  the false “replies in 5 min / 24 h SLA” presence copy is gone.
+
+### 3.1 (reference) migration `037_production_schema_sync`
 Production never received the tables from migrations 020, 023, 024, 025, 027, 030 and 035.
 Today these routes 500 in production: Desperate mode (`/api/me/desperate`), Pulse heatmap,
 Travel (`saved_trips`, `travel_mode`), Area board (`/app/chats/area`), message threads,
@@ -116,8 +126,9 @@ When counsel approves, set `draft: false` for the three entries in `lib/help.ts`
 ---
 
 ## 4. Known gaps left as-is today (honest list)
-- **“Talk to a person”** is the prototype’s canned acknowledgement; nothing is sent anywhere.
-  Account standing / appeals are static. The FAQ promises 24 h support and appeals.
+- **Support** is now a guided helper (answers from help articles) that routes urgent matters to the
+  Report channel, which does deliver. A full ticketing/live-chat backend is still future work.
+  Account standing / appeals screens are still static (show the real default; no appeals backend yet).
 - Emoji still used as icons in ~25 live components (venue glyphs, 🔒, ✈️…) — rule says inline SVG.
 - ~90 non-token `rgba()` / 87 arbitrary radii remain, mostly in the homepage port.
 - i18n is half-installed (English only; `lang="en"` hard-coded).

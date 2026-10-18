@@ -1,15 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { quickExit } from '@/components/safety/quick-exit';
 import { usePathname } from 'next/navigation';
 import { LogoTile } from '@/components/logo';
 
 type Item = { href: string; label: string; icon: React.ReactNode };
-
-/** Leaves πroka for a neutral page without a history entry. Also bound to Esc pressed twice. */
-export function quickExit() {
-  window.location.replace('https://www.google.com/search?q=weather');
-}
 
 const stroke = {
   fill: 'none',
