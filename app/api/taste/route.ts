@@ -1,86 +1,90 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
+import { supabaseAdmin } from '@/lib/db/client';
+import { SIGNAL_WEIGHT, flagsFor, learnedWeights, traitLabel, type Signal } from '@/lib/taste/learn';
+import { ensureUserRow } from '@/lib/db/users';
+import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
-const RecordTasteSchema = z.object({
-  targetId: z.string().uuid(),
-  action: z.enum(['like', 'pass', 'message']),
-  confidence: z.number().min(0).max(1).optional(),
+const SignalBody = z.object({
+  userId: z.string().uuid(),
+  kind: z.enum(['open', 'interest', 'chat', 'skip']),
+});
+const Flag = z.object({
+  trait: z.string().min(3).max(80).regex(/^[a-z]+:[^\n]{1,60}$/),
+  flag: z.enum(['like', 'avoid']),
 });
 
+/** Record a behaviour signal. Free members record too, so learning starts from day one. */
 export async function POST(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
-  const userId = g.session.userId;
-
-  try {
-    const body = await request.json();
-    const parsed = RecordTasteSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
-    }
-
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Not configured' }, { status: 503 });
-    }
-
-    const { targetId, action, confidence = 0.7 } = parsed.data;
-
-    // Prevent self-targeting
-    if (userId === targetId) {
-      return NextResponse.json({ error: 'Cannot rate yourself' }, { status: 400 });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('taste_vectors')
-      .upsert([{ user_id: userId, target_id: targetId, action, confidence }], {
-        onConflict: 'user_id,target_id,action',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: 'Failed to record preference' }, { status: 500 });
-    }
-
-    return NextResponse.json({ taste: data });
-  } catch (err) {
-    console.error('taste record error:', err);
-    return NextResponse.json({ error: 'Failed to record taste preference' }, { status: 500 });
+  const parsed = SignalBody.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid signal' }, { status: 400 });
+  const { userId, kind } = parsed.data;
+  if (userId === g.session.userId) return NextResponse.json({ ok: true });
+  await ensureUserRow(g.session);
+  const { error } = await supabaseAdmin!.from('taste_events').insert({
+    user_id: g.session.userId,
+    target_id: userId,
+    kind,
+    weight: SIGNAL_WEIGHT[kind as Signal],
+  });
+  if (error) {
+    if (isMissingSchema(error)) return NextResponse.json(schemaPendingResponse('020_phase13_taste_favorites'), { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  return NextResponse.json({ ok: true });
 }
 
-export async function GET(request: Request) {
+/** Premium: the learned traits, strongest first, with the member's ✓ / ✕ overrides. */
+export async function GET() {
   const g = await requireUser();
   if (g.error) return g.error;
-  const userId = g.session.userId;
+  const { data: me } = await supabaseAdmin!.from('users').select('plan').eq('id', g.session.userId).maybeSingle();
+  if (me?.plan !== 'premium') return NextResponse.json({ locked: true, traits: [] });
+  const [weights, flags] = await Promise.all([learnedWeights(g.session.userId), flagsFor(g.session.userId)]);
+  const keys = new Set<string>([...weights.keys(), ...flags.keys()]);
+  const traits = [...keys]
+    .map((k) => ({
+      key: k,
+      label: traitLabel(k),
+      weight: Math.round((weights.get(k) ?? 0) * 10) / 10,
+      flag: flags.get(k) ?? null,
+    }))
+    .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight) || a.label.localeCompare(b.label))
+    .slice(0, 40);
+  return NextResponse.json({ locked: false, traits });
+}
 
-  try {
-    const url = new URL(request.url);
-    const action = url.searchParams.get('action');
+/** ✓ like / ✕ avoid on one trait. */
+export async function PUT(request: Request) {
+  const g = await requireUser();
+  if (g.error) return g.error;
+  const parsed = Flag.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid trait' }, { status: 400 });
+  const { error } = await supabaseAdmin!
+    .from('taste_flags')
+    .upsert({ user_id: g.session.userId, trait: parsed.data.trait, flag: parsed.data.flag }, { onConflict: 'user_id,trait' });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
 
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Not configured' }, { status: 503 });
-    }
-
-    let query = supabaseAdmin.from('taste_vectors').select('*').eq('user_id', userId);
-
-    if (action && ['like', 'pass', 'message'].includes(action)) {
-      query = query.eq('action', action);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch taste vectors' }, { status: 500 });
-    }
-
-    return NextResponse.json({ vectors: data || [] });
-  } catch (err) {
-    console.error('taste fetch error:', err);
-    return NextResponse.json({ error: 'Failed to fetch taste vectors' }, { status: 500 });
+/** Clear one trait's override (?trait=) or, without it, reset everything the model learned. */
+export async function DELETE(request: Request) {
+  const g = await requireUser();
+  if (g.error) return g.error;
+  const trait = new URL(request.url).searchParams.get('trait');
+  const db = supabaseAdmin!;
+  if (trait) {
+    await db.from('taste_flags').delete().eq('user_id', g.session.userId).eq('trait', trait);
+  } else {
+    await Promise.all([
+      db.from('taste_flags').delete().eq('user_id', g.session.userId),
+      db.from('taste_events').delete().eq('user_id', g.session.userId),
+    ]);
   }
+  return NextResponse.json({ ok: true });
 }

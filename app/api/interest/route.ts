@@ -8,6 +8,7 @@ import { notify } from '@/lib/notify/server';
 import { userCards, displayName } from '@/lib/users/cards';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 import { track } from '@/lib/analytics/server';
+import { SIGNAL_WEIGHT } from '@/lib/taste/learn';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,13 @@ export async function POST(request: Request) {
   if (!t || t.deleted_at || (t.mod_step && ['suspended', 'removed'].includes(t.mod_step)))
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (await isBlocked(me, target)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  await db.from('taste_events').insert({
+    user_id: me,
+    target_id: target,
+    kind: 'interest',
+    weight: SIGNAL_WEIGHT.interest,
+  });
 
   const { error: insErr } = await db
     .from('interests')

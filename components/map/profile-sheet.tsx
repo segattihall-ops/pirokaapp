@@ -61,6 +61,19 @@ export function ProfileSheet({
     if (j.mutual) setReveal(j.reveal?.name ?? 'Someone');
   };
 
+  const [match, setMatch] = useState<{ locked: boolean; score?: number | null; reasons?: string[] } | null>(null);
+  useEffect(() => {
+    fetch('/api/match?userId=' + encodeURIComponent(userId), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j && setMatch(j))
+      .catch(() => null);
+    fetch('/api/taste', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, kind: 'open' }),
+    }).catch(() => null);
+  }, [userId]);
+
   useEffect(() => {
     fetch(`/api/users/${userId}`, { cache: 'no-store' })
       .then(async (r) =>
@@ -177,6 +190,31 @@ export function ProfileSheet({
               <SafetyMenu peerUserId={p.id} peerHandle={p.handle} onBlocked={onClose} />
             </div>
           </div>
+
+          {match && !match.locked && match.score != null && (
+            <div className="flex items-center gap-3 rounded-card border border-line-2 px-3.5 py-3">
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[13px] font-bold text-green"
+                style={{
+                  background: `conic-gradient(#34d399 ${Math.round((match.score / 100) * 360)}deg, rgba(255,255,255,0.12) 0)`,
+                }}
+                aria-label={`${match.score}% your type`}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink-900">{match.score}</span>
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold">★ {match.score}% your type</p>
+                {match.reasons && match.reasons.length > 0 && (
+                  <p className="truncate text-[12px] text-fg-3">{match.reasons.join(' · ')}</p>
+                )}
+              </div>
+            </div>
+          )}
+          {match?.locked && (
+            <p className="rounded-card border border-dashed border-line-2 px-3.5 py-2.5 text-[12px] text-fg-3">
+              ★ See how well they match your type. Premium.
+            </p>
+          )}
 
           {p.bio && <p className="text-[14px] leading-relaxed text-fg-2">{p.bio}</p>}
 

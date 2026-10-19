@@ -5,6 +5,7 @@ import { ensureUserRow } from '@/lib/db/users';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { rateLimit, tooMany } from '@/lib/api/rate-limit';
+import { SIGNAL_WEIGHT } from '@/lib/taste/learn';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   }
   if (!peerId) return NextResponse.json({ error: 'User not found' }, { status: 404 });
   if (peerId === session.userId) return NextResponse.json({ error: 'That is you' }, { status: 400 });
+  void supabaseAdmin.from('taste_events').insert({ user_id: session.userId, target_id: peerId, kind: 'chat', weight: SIGNAL_WEIGHT.chat });
 
   const me = session.userId;
   const { data: blocked } = await supabaseAdmin

@@ -7,6 +7,7 @@ import { NotifPrefs } from '@/components/me/notif-prefs';
 import { SignOutButton } from '@/components/account/sign-out-button';
 import { AlbumInbox } from '@/components/me/album-inbox';
 import { FavoritesList } from '@/components/me/favorites-list';
+import { YourType } from '@/components/me/your-type';
 import { TripsList } from '@/components/me/trips-list';
 import { DeleteAccount } from '@/components/me/delete-account';
 import { AccountData } from '@/components/me/account-data';
@@ -79,6 +80,8 @@ export default async function MePage() {
       <SafeMeetMe />
 
       <AlbumInbox />
+
+      <YourType />
 
       <FavoritesList />
 
