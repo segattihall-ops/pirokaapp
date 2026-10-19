@@ -71,7 +71,7 @@
   }
 
   .btn-primary {
-    @apply tap inline-flex items-center justify-center rounded-btn bg-white px-4.5 text-[14px] font-semibold text-ink-950 transition-colors hover:bg-fg disabled:cursor-not-allowed disabled:opacity-40;
+    @apply tap inline-flex items-center justify-center rounded-btn bg-green px-4.5 text-[14px] font-semibold text-ink-950 transition-colors hover:bg-green-hover disabled:cursor-not-allowed disabled:opacity-40;
   }
   .btn-secondary {
     @apply tap inline-flex items-center justify-center rounded-btn border border-line-2 bg-ink-850 px-4.5 text-[14px] font-medium text-fg transition-colors hover:border-line-3;
