@@ -33,4 +33,4 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
-      - run: npx playwright test e2e/presence.spec.ts e2e/map-presence-navigation.spec.ts e2e/design-icons.spec.ts --project=chromium
+      - run: npx playwright test e2e/presence.spec.ts e2e/map-presence-navigation.spec.ts e2e/design-icons.spec.ts e2e/pin-anatomy.spec.ts --project=chromium
