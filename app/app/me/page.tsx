@@ -24,6 +24,7 @@ const ROWS: { label: string; href: string }[] = [
   { label: 'Safety Center & SafeMeet', href: '/help/safety' },
   { label: 'Community Guidelines', href: '/help/guidelines' },
   { label: 'Privacy & safety', href: '/help/privacy' },
+  { label: 'For partners', href: '/partners' },
 ];
 
 export default async function MePage() {

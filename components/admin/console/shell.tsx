@@ -38,6 +38,7 @@ const NAV: NavItem[] = [
   { href: '/admin/ambassadors', label: 'Ambassadors' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/places', label: 'Places & testing' },
+  { href: '/admin/partners', label: 'Partners' },
   { href: '/admin/regions', label: 'Risk regions' },
   { href: '/admin/audit', label: 'Audit log' },
 ];
