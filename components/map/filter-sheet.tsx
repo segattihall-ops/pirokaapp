@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Sheet } from './status-sheet';
+import { POSITION_MARKS } from '@/lib/design/icon-paths';
 import {
   EMPTY_FILTERS,
   FILTER_GROUPS,
@@ -14,7 +15,7 @@ import {
   type Filters,
 } from './filters';
 
-const POSITION_LEGEND = (['top', 'versatile', 'bottom'] as const).map((id) => ({
+const POSITION_LEGEND = POSITION_MARKS.map(({ id }) => ({
   id,
   label: POSITION_LABEL[id],
   d: POSITION_GLYPH[id],
