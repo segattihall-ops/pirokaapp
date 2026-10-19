@@ -3,9 +3,20 @@
 alter table public.trips add column if not exists arrival_time time without time zone;
 alter table public.trips add column if not exists departure_on date;
 alter table public.trips add column if not exists departure_time time without time zone;
-alter table public.trips drop constraint if exists trip_departure_after_arrival;
-alter table public.trips add constraint trip_departure_after_arrival
-  check (departure_on is null or departure_on > arrive_on);
+-- Add-only (never remove a live constraint). Existing date-only rows remain valid.
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'trip_departure_after_arrival'
+      and conrelid = 'public.trips'::regclass
+  ) then
+    alter table public.trips
+      add constraint trip_departure_after_arrival
+      check (departure_on is null or departure_on > arrive_on);
+  end if;
+end
+$;
 
 -- City-only traveler pins: add itinerary and optional user-provided origin code.
 -- The search remains scoped to the requested city, subject to block and moderation rules.
@@ -26,7 +37,8 @@ returns table (
 language sql stable security definer set search_path = public as $$
   select
     t.id, t.user_id, u.handle, t.city, t.arrive_on, t.nights, p.blur_key,
-    st_y(t.geo::geometry), st_x(t.geo::geometry),
+    round(st_y(t.geo::geometry)::numeric, 2)::double precision,
+    round(st_x(t.geo::geometry)::numeric, 2)::double precision,
     t.arrival_time, t.departure_on, t.departure_time, u.origin
   from public.trips t
   join public.users u on u.id = t.user_id
@@ -36,6 +48,8 @@ language sql stable security definer set search_path = public as $$
     and t.arrive_on <= current_date + 30
     and t.user_id <> requester_id
     and u.deleted_at is null
+    and u.age_verified = true
+    and u.visibility <> 'hidden'::public.visibility_t
     and (u.mod_step is null or u.mod_step not in ('suspended', 'removed'))
     and not exists (
       select 1 from public.blocks b
