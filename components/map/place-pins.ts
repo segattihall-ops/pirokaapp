@@ -1,6 +1,7 @@
 import type { DemoArrival, DemoEvent, DemoPlace } from '@/lib/demo/presence';
 import { escapeUrl } from './pins';
 import { PLACE_ICON_PATHS, MAP_ICON_PATHS } from '@/lib/design/icon-paths';
+import { heatOf, heatLabel } from '@/lib/map/pin-anatomy';
 
 /**
  * Non-person map markers from the prototype: neutral white place pins (ring fills with activity, kind glyph,
@@ -31,8 +32,9 @@ function baseButton(title: string): HTMLButtonElement {
 
 /** Place pin: white activity ring, dark glyph disc, headcount badge, flame badge when popping. */
 export function placePinElement(p: DemoPlace): HTMLButtonElement {
-  const deg = Math.max(24, Math.round(Math.min(1, (p.here + p.arriving * 1.5) / 45) * 360));
-  const el = baseButton(`${p.name} · ${p.here} here`);
+  const activity = heatOf(p);
+  const deg = Math.max(24, Math.round(activity * 360));
+  const el = baseButton(`${p.name} · ${heatLabel(activity)} · ${p.here} here${p.arriving ? ` · ${p.arriving} on the way` : ''}`);
   el.innerHTML = `
     ${p.popping ? `<span aria-hidden style="position:absolute;left:-7px;top:-7px;z-index:2;width:20px;height:20px;border-radius:999px;background:#f5f5f5;box-shadow:0 0 0 2px #070707;display:flex;align-items:center;justify-content:center">${svg(FLAME_GLYPH, '#ef4444', '#ef4444', 12, 1.5)}</span>` : ''}
     <span style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#f5f5f5 ${deg}deg,rgba(255,255,255,.12) 0deg);box-shadow:0 6px 16px rgba(0,0,0,.55)"></span>
@@ -44,8 +46,6 @@ export function placePinElement(p: DemoPlace): HTMLButtonElement {
 /** Tonight's event pin: calendar glyph with a time badge. */
 export function eventPinElement(e: DemoEvent): HTMLButtonElement {
   const el = baseButton(`${e.name} · ${e.time} · ${e.going} going`);
-  el.style.width = '40px';
-  el.style.height = '40px';
   el.innerHTML = `
     <span style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);border:1.5px solid rgba(245,245,245,.75);display:flex;align-items:center;justify-content:center;color:#f5f5f5;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(EVENT_GLYPH, 'currentColor', 'none', 18)}</span>
     <span style="position:absolute;top:-6px;right:-10px;height:17px;padding:0 5px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${e.time}</span>`;
@@ -68,9 +68,7 @@ export function arrivalPinElement(
   a: DemoArrival | { handle: string | null; originCode: string | null; when: string },
 ): HTMLButtonElement {
   const el = baseButton(`${a.handle ?? 'Traveler'} · ${a.when}`);
-  el.style.width = '40px';
-  el.style.height = '40px';
-  const flag = a.originCode
+  const flag = a.originCode && /^(?:[a-z]{2}|us-[a-z]{2})$/i.test(a.originCode)
     ? `<span aria-hidden style="position:absolute;right:-7px;bottom:-3px;width:20px;height:14px;border-radius:3px;box-shadow:0 0 0 1.5px #070707;background:#222 center/cover no-repeat;background-image:url('${escapeUrl(flagUrl(a.originCode))}')"></span>`
     : '';
   el.innerHTML = `
@@ -91,5 +89,5 @@ export function hotspotLabelElement(count: number, up: boolean): HTMLElement {
 
 /** Self-hosted flag image for an ISO code or us-xx (flagcdn, like the prototype). */
 export function flagUrl(code: string): string {
-  return `https://flagcdn.com/${code}.svg`;
+  return `https://flagcdn.com/${/^(?:[a-z]{2}|us-[a-z]{2})$/i.test(code) ? code.toLowerCase() : 'un'}.svg`;
 }
