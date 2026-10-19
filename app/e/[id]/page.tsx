@@ -75,7 +75,7 @@ async function loadEvent(id: string): Promise<EventView | null> {
   const [{ data: ev }, { count }] = await Promise.all([
     supabaseAdmin
       .from('events')
-      .select('title,description,location_name,starts_at,category')
+      .select('title,description,location_name,starts_at,category,review_status')
       .eq('id', id)
       .maybeSingle(),
     supabaseAdmin
@@ -83,7 +83,8 @@ async function loadEvent(id: string): Promise<EventView | null> {
       .select('user_id', { count: 'exact', head: true })
       .eq('event_id', id),
   ]);
-  if (!ev) return null;
+  // Partner-posted events are public only once an ambassador or admin approved them.
+  if (!ev || ((ev as { review_status?: string | null }).review_status ?? 'approved') !== 'approved') return null;
   const { day, time } = dayLabel(ev.starts_at);
   return {
     name: ev.title,

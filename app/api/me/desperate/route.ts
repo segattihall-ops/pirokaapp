@@ -89,6 +89,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Auto-post to the local board (FEATURES §7): only when we have a fix to anchor it to.
+  if (hasFix) {
+    await db.from('area_messages').insert({
+      author_id: me,
+      // Same ~1 km grid the board uses everywhere; the exact fix never reaches a public row.
+      lat: Math.round(lat * 100) / 100,
+      lon: Math.round(lng * 100) / 100,
+      content: 'Desperate right now. If you are nearby, say hi.',
+    });
+  }
+
   void track({ userId: me, event: 'desperate_sent', props: { reached: nearby.length } });
   if (nearby.length) {
     userCards([me])
