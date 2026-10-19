@@ -22,6 +22,7 @@ Source of truth: `design/Piroka App v2.dc.html` + `DESIGN_TOKENS.md`. Implementa
 - Heat formula: `min(1, (here + arriving×1.5 + (going ? 1.5 : 0) + (checked ? 1 : 0)) / 45)`. Do not double count check-ins already included in `here`.
 - Labels: Chill (<.35), Lively (≥.35), Busy (≥.6), Packed (≥.8). Place pin has white type glyph and real current headcount. Event pin has neutral calendar + time; testing pin neutral shield/cross + cost (Free when genuinely free).
 - Popping: red flame badge only after 5 **distinct active on-site** taps on “It's popping!”; do not fabricate votes.
+- Voting requires an active **here** check-in and a fresh server-only proximity check (300 m, last 15 min). It returns only allowed/denied, never raw GPS. Location spoofing remains possible without trusted device attestation; this is not proof of physical presence.
 
 ## Your pin
 - 54px main photo, green shrinking time ring, You/current-status pill, approximate dashed location-fog halo; red blinking outside ring in Desperate.
