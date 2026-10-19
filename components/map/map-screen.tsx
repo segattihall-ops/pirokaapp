@@ -20,7 +20,7 @@ import { AssistantPanel } from './assistant-panel';
 import { EMPTY_FILTERS, POSITION_LABEL, activeFilterCount, matchesFilters, type Filters } from './filters';
 import { distanceLabel } from '@/lib/geo/client';
 import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
-import { approx, tripText } from '@/lib/map/pin-anatomy';
+import { approx, tripText, isPopping, isSelfPinVisible } from '@/lib/map/pin-anatomy';
 import {
   pinElement,
   updatePinElement,
@@ -284,7 +284,7 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: x.lon,
               here: x.here,
               arriving: x.going,
-              popping: (x.popVotes ?? 0) >= 5,
+              popping: isPopping(x.popVotes ?? 0),
               popCount: x.popVotes ?? 0,
               peak: '',
             })),
@@ -468,7 +468,7 @@ export function MapScreen({ userId }: { userId: string }) {
   useEffect(() => {
     const el = youRef.current?.getElement();
     if (!el) return;
-    el.style.display = selfCard.visibility && selfCard.visibility !== 'hidden' ? '' : 'none';
+    el.style.display = isSelfPinVisible(selfCard.visibility) ? '' : 'none';
     const meta = intentMeta(status?.intent);
     const degrees = status
       ? pinRingDegrees(
