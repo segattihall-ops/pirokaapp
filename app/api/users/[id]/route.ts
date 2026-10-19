@@ -129,6 +129,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     bio: u.bio ?? null,
     verified: Boolean(u.verified_at),
     plan: u.plan,
+    visibility: self ? (u.visibility ?? 'hidden') : null,
     originCode: u.origin ?? null,
     intent: status?.intent ?? null,
     intentEndsAt: status?.ends_at ?? null,
