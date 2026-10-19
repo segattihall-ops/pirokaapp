@@ -20,6 +20,7 @@ import { AssistantPanel } from './assistant-panel';
 import { EMPTY_FILTERS, POSITION_LABEL, activeFilterCount, matchesFilters, type Filters } from './filters';
 import { distanceLabel } from '@/lib/geo/client';
 import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
+import { approx, tripText } from '@/lib/map/pin-anatomy';
 import {
   pinElement,
   updatePinElement,
@@ -245,8 +246,8 @@ export function MapScreen({ userId }: { userId: string }) {
             handle: v.handle ?? '',
             lat: v.lat as number,
             lon: v.lon as number,
-            originCode: null,
-            when: 'Arriving soon',
+            originCode: v.originCode ?? null,
+            when: tripText({ arriveOn: v.arriveOn, nights: v.nights, arrivalTime: v.arrivalTime, departOn: v.departOn, departureTime: v.departureTime }),
           })),
       );
       setNow(Date.now());
@@ -1113,7 +1114,7 @@ export function MapScreen({ userId }: { userId: string }) {
             <span className="flex min-w-0 flex-col">
               <span className="text-[13px] font-bold">Someone nearby is interested</span>
               <span className="text-[12px] text-fg-3">
-                ~{(interested.distanceM / 1609).toFixed(1)} mi · they&apos;ll see you if you like them back
+                {approx(interested.distanceM)} · they&apos;ll see you if you like them back
               </span>
             </span>
             <span className="shrink-0 text-[12px] font-semibold text-green">See →</span>
@@ -1477,7 +1478,7 @@ function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: {
           )}
         </div>
         <span className="text-[12px] text-fg-2">
-          {[position, person.body, distanceLabel(person.distanceM)].filter(Boolean).join(' · ')}
+          {[position, person.body, approx(person.distanceM)].filter(Boolean).join(' · ')}
         </span>
         {typeof person.responseMinutes === 'number' && person.responseMinutes >= 0 && (
           <span className="text-[11px] text-fg-3">
