@@ -19,7 +19,7 @@ const original = readFileSync(
 );
 
 function originalPath(path: string) {
-  return original.includes(`'${path}'`);
+  return original.includes(`'${path}'`) || original.includes(`d="${path}"`);
 }
 
 test('prototype path data is the source of truth for the navigational and map glyphs', () => {
