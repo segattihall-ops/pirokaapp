@@ -113,3 +113,13 @@ export function heatLabel(heat: number): 'Chill' | 'Lively' | 'Busy' | 'Packed' 
   if (heat >= 0.35) return 'Lively';
   return 'Chill';
 }
+
+/** Popping is based on distinct active on-site votes returned by the server, never headcount. */
+export function isPopping(activeOnSiteVotes: number): boolean {
+  return Number.isInteger(activeOnSiteVotes) && activeOnSiteVotes >= 5;
+}
+
+/** Even the owner's pin must not appear when the owner selected Hidden visibility. */
+export function isSelfPinVisible(visibility: string | null | undefined): boolean {
+  return visibility === 'neighborhood' || visibility === 'area';
+}
