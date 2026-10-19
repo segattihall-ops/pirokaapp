@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   let trip = saved.data;
   // Old production schemas still support date-only trips. Never silently discard a selected time.
   if (saved.error && isMissingSchema(saved.error)) {
-    if (arrivalTime || departOn || departureTime) return NextResponse.json({ error: 'Timed trips require database migration 039', schemaPending: true }, { status: 503 });
+    if (arrivalTime || departOn || departureTime) return NextResponse.json({ error: 'Timed trips require database migration 040', schemaPending: true }, { status: 503 });
     const legacy = await db.from('trips').insert(row).select('id, city, arrive_on, nights, created_at').single();
     if (legacy.error) return NextResponse.json({ error: legacy.error.message }, { status: 500 });
     trip = legacy.data ? { ...legacy.data, arrival_time: null, departure_on: null, departure_time: null } : null;

@@ -1,4 +1,4 @@
--- 039: Travel pin itinerary / origin. All values are destination-city calendar times,
+-- 040: Travel pin itinerary / origin. All values are destination-city calendar times,
 -- not private GPS. Backwards compatible with existing date-only trips.
 alter table public.trips add column if not exists arrival_time time without time zone;
 alter table public.trips add column if not exists departure_on date;

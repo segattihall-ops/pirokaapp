@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     place_id: placeId, user_id: session.userId, expires_at: checkin.expires_at,
   }, { onConflict: 'place_id,user_id' });
   if (error && isMissingSchema(error)) {
-    return NextResponse.json({ error: 'Popping votes require database migration 040', schemaPending: true }, { status: 503 });
+    return NextResponse.json({ error: 'Popping votes require database migration 041', schemaPending: true }, { status: 503 });
   }
   if (error) return NextResponse.json({ error: 'Could not record vote' }, { status: 500 });
   const { count } = await supabaseAdmin.from('place_pop_votes')

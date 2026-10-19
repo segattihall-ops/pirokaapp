@@ -1,4 +1,4 @@
--- 040: authentic on-site "It's popping!" votes. A vote expires with the user's live check-in.
+-- 041: authentic on-site "It's popping!" votes. A vote expires with the user's live check-in.
 -- Never infer a flame from crowd size alone. Five distinct active on-site votes are required.
 create table if not exists public.place_pop_votes (
   place_id uuid not null references public.places(id) on delete cascade,
