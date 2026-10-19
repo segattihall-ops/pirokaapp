@@ -5,6 +5,7 @@ import { photoUrls } from '@/lib/upload/storage';
 import { presenceActivity } from '@/lib/geo/presence';
 import { isIntent, type Intent } from '@/lib/intent';
 import { isMissingSchema } from '@/lib/db/schema-errors';
+import { addTripDays } from '@/lib/map/pin-anatomy';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'lat and lon required' }, { status: 400 });
   }
 
-  const [{ data: rows, error }, { data: spots }, { data: tripRows }] = await Promise.all([
+  const [{ data: rows, error }, { data: spots }, tripResult] = await Promise.all([
     supabaseAdmin.rpc('nearby_users', {
       user_lat: lat,
       user_lon: lon,
@@ -94,6 +95,7 @@ export async function GET(request: Request) {
     }),
   ]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const tripRows = tripResult.error ? [] : (tripResult.data ?? []);
 
   // nearby_users intentionally exposes only public_geo. Everything else about a person is fetched by id
   // from tables that hold no location at all, so widening the pins never widens the location RPC.
@@ -259,6 +261,10 @@ export async function GET(request: Request) {
     city: t.city,
     arriveOn: t.arrive_on,
     nights: t.nights,
+    arrivalTime: t.arrival_time ? String(t.arrival_time).slice(0, 5) : null,
+    departOn: t.departure_on ?? addTripDays(t.arrive_on, t.nights),
+    departureTime: t.departure_time ? String(t.departure_time).slice(0, 5) : null,
+    originCode: t.origin_code ?? null,
     photo: photoOf.get(t.photo_blur_key) ?? null,
     lat: Number.isFinite(t.lat) ? t.lat : null,
     lon: Number.isFinite(t.lon) ? t.lon : null,
@@ -272,6 +278,10 @@ export type Visitor = {
   city: string;
   arriveOn: string;
   nights: number;
+  arrivalTime?: string | null;
+  departOn?: string | null;
+  departureTime?: string | null;
+  originCode?: string | null;
   photo: string | null;
   /** The announced city point, so the map can place an arrival pin (null on older DBs without the column). */
   lat: number | null;
