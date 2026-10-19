@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,12 @@ export type Place = {
   peakHint: string | null;
   here: number;
   going: number;
-  my: { kind: 'here' | 'going'; expiresAt: string } | null;
+  /** Members here now whose active status is "Visiting". */
+  visitors: number;
+  /** "It's popping!" votes in the last 90 minutes; 5+ lights the red flame. */
+  votes: number;
+  popping: boolean;
+  my: { kind: 'here' | 'going'; expiresAt: string; etaAt: string | null } | null;
 };
 
 /** Venues within `radius` metres with live check-in counts. */
@@ -36,6 +42,9 @@ export async function GET(request: Request) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     return NextResponse.json({ error: 'lat and lon required' }, { status: 400 });
   }
+
+  // Expire stale rows and account no-shows first so the counts below are current (040).
+  await supabaseAdmin.rpc('record_no_shows').then(() => undefined, () => undefined);
 
   const { data, error } = await supabaseAdmin.rpc('nearby_places', {
     user_lat: lat,
@@ -57,7 +66,10 @@ export async function GET(request: Request) {
     peakHint: r.peak_hint ?? null,
     here: Number(r.here_count ?? 0),
     going: Number(r.going_count ?? 0),
-    my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at } : null,
+    visitors: Number(r.visitors ?? 0),
+    votes: Number(r.votes ?? 0),
+    popping: Boolean(r.popping),
+    my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at, etaAt: r.my_eta_at ?? null } : null,
   }));
   return NextResponse.json({ configured: true, places });
 }
@@ -94,6 +106,9 @@ export async function POST(request: Request) {
     .insert({ name, kind, address: address || null, geo: `POINT(${lng} ${lat})`, verified: false, created_by: session.userId })
     .select('id')
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (isMissingSchema(error)) return NextResponse.json(schemaPendingResponse('012_places'), { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ id: data.id });
 }

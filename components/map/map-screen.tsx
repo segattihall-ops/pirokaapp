@@ -280,8 +280,8 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: x.lon,
               here: x.here,
               arriving: x.going,
-              popping: false,
-              peak: '',
+              popping: Boolean((x as { popping?: boolean }).popping),
+              peak: (x as { peakHint?: string | null }).peakHint ?? '',
             })),
           );
         } else {
