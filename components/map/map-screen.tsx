@@ -838,7 +838,7 @@ export function MapScreen({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={() => setShowStatus(true)}
-            className="tap pointer-events-auto flex min-w-0 items-center gap-2.5 whitespace-nowrap rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
+            className="tap pointer-events-auto flex min-w-0 items-center gap-2.5 whitespace-nowrap rounded-btn border border-line-2 bg-ink-850/90 px-4 text-[13px] font-semibold backdrop-blur-md"
           >
             <span
               className="h-2 w-2 shrink-0 rounded-full"
@@ -1166,7 +1166,16 @@ export function MapScreen({ userId }: { userId: string }) {
       </div>
 
       {/* Desktop hover preview */}
-      {hovered && <HoverPreview person={hovered} now={now} premium={premium} />}
+      {hovered && (
+        <HoverPreview
+          person={hovered}
+          now={now}
+          premium={premium}
+          anchor={mapRef.current?.project([hovered.lon, hovered.lat]) ?? null}
+          mapWidth={containerRef.current?.clientWidth ?? 0}
+          mapHeight={containerRef.current?.clientHeight ?? 0}
+        />
+      )}
 
       {/* Bottom pills: scrubber + counts + visitors */}
       <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 px-3">
@@ -1386,12 +1395,16 @@ function freeRing(lon: number, lat: number, radiusM: number): GeoJSON.Feature {
 }
 
 /** Desktop-only large preview shown while hovering a pin (prototype hover card). */
-function HoverPreview({ person, now, premium }: { person: NearbyPerson; now: number; premium: boolean }) {
+function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: { person: NearbyPerson; now: number; premium: boolean; anchor: { x: number; y: number } | null; mapWidth: number; mapHeight: number }) {
   const meta = intentMeta(person.intent);
   const left = person.intentEndsAt ? fmtDur((new Date(person.intentEndsAt).getTime() - now) / 60_000) : '';
   return (
-    <div className="pointer-events-none absolute left-1/2 top-[120px] z-30 hidden w-[224px] -translate-x-1/2 overflow-hidden rounded-card border border-line-2 bg-ink-850 shadow-float rail:block">
-      <div className="relative flex h-[180px] items-center justify-center bg-ink-800">
+    <div className="pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-2 bg-ink-850 shadow-float rail:block"
+      style={{
+        left: Math.max(12, Math.min((anchor?.x ?? 0) + 28, mapWidth - 236)),
+        top: Math.max(112, Math.min((anchor?.y ?? 0) - 190, mapHeight - 325)),
+      }}>
+      <div className="relative flex h-[210px] items-center justify-center bg-ink-800">
         {person.photo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
