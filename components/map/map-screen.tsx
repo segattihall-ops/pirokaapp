@@ -355,7 +355,19 @@ export function MapScreen({ userId }: { userId: string }) {
     };
 
     (async () => {
-      const p = await locate(false);
+      // First load after sign-in: prompt for location when the user hasn't decided yet (state
+      // 'prompt', or no Permissions API — Safari). If already granted, locate(false) still reads the
+      // device; if denied, we don't re-prompt. The periodic republish below always stays silent.
+      let askOnLoad = true;
+      try {
+        if (navigator.permissions) {
+          const st = (await navigator.permissions.query({ name: 'geolocation' })).state;
+          askOnLoad = st !== 'denied' && st !== 'granted';
+        }
+      } catch {
+        askOnLoad = true;
+      }
+      const p = await locate(askOnLoad);
       if (!alive) return;
       currentPosition = p;
       await refresh(p);
