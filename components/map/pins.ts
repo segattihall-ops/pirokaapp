@@ -178,6 +178,7 @@ export function youElement(): HTMLElement {
   // Fixed 54×54 box so MapLibre keeps the pin centred on your location; the label hangs below absolutely.
   el.style.cssText = 'position:relative;width:54px;height:54px';
   el.innerHTML = `
+    <span data-you-fog aria-hidden="true" style="position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);border:1px dashed rgba(52,211,153,0.5);border-radius:999px;background:radial-gradient(circle,rgba(52,211,153,0.06),transparent 72%);box-shadow:0 0 30px rgba(52,211,153,0.15);pointer-events:none"></span>
     <span data-you-desp hidden style="position:absolute;inset:-6px;border-radius:999px;border:2.5px solid #ef4444;box-shadow:0 0 18px rgba(239,68,68,.8);animation:piBlink .8s ease-in-out infinite;pointer-events:none"></span>
     <span data-you-ring style="display:flex;width:54px;height:54px;border-radius:999px;padding:3px;background:conic-gradient(#34d399 360deg,rgba(255,255,255,.12) 0deg);animation:piPulse 2.4s infinite;box-shadow:0 0 30px rgba(52,211,153,0.15),0 6px 16px rgba(0,0,0,.55)">
       <span data-you-photo style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;border:2px solid #070707;background:#151515 center/cover no-repeat;color:#fff;font:700 20px/1 Geist,ui-sans-serif,sans-serif">π</span>
