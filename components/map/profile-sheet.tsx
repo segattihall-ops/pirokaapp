@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { distanceLabel, intentMeta, timeLeft } from '@/lib/geo/client';
+import { intentMeta, timeLeft } from '@/lib/geo/client';
 import { SafetyMenu } from '@/components/chat/safety-menu';
 import { Sheet } from './status-sheet';
+import { approx, tripText } from '@/lib/map/pin-anatomy';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 
 type Profile = {
   id: string;
@@ -21,12 +23,9 @@ type Profile = {
   albumRequest: 'self' | 'unlocked' | 'none' | 'pending' | 'accepted' | 'declined';
   favorite: boolean;
   favoriteAlerts: boolean;
-  trips: { city: string; arriveOn: string; nights: number }[];
+  trips: { city: string; arriveOn: string; nights: number; arrivalTime?: string | null; departOn?: string | null; departureTime?: string | null }[];
   conversation: boolean;
 };
-
-const fmtDate = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 export function ProfileSheet({
   userId,
@@ -129,7 +128,7 @@ export function ProfileSheet({
               </div>
               <p className="text-[12px] text-fg-3">
                 {p.pronouns.length ? p.pronouns.join(' / ') : 'no pronouns set'}
-                {distanceM !== null ? ` · ${distanceLabel(distanceM)}` : ''}
+                {distanceM !== null ? ` · ${approx(distanceM)}` : ''}
               </p>
               {meta && (
                 <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-chip border border-line-2 px-2.5 py-1 text-[12px] font-semibold">
@@ -163,11 +162,11 @@ export function ProfileSheet({
 
           {p.trips.length > 0 && (
             <p className="rounded-input border border-line-2 px-3 py-2 text-[12px] text-fg-2">
-              ✈️{' '}
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline-block align-[-3px]"><path d={MAP_ICON_PATHS.plane} /></svg>{' '}
               {p.trips
                 .map(
                   (t) =>
-                    `${t.city.split(',')[0]} from ${fmtDate(t.arriveOn)} (${t.nights} night${t.nights === 1 ? '' : 's'})`,
+                    `${t.city.split(',')[0]} · ${tripText(t)} (${t.nights} night${t.nights === 1 ? '' : 's'})`,
                 )
                 .join(' · ')}
             </p>
