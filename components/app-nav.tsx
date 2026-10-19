@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { quickExit } from '@/components/safety/quick-exit';
 import { usePathname } from 'next/navigation';
 import { LogoTile } from '@/components/logo';
+import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
 
 type Item = { href: string; label: string; icon: React.ReactNode };
 
@@ -16,54 +17,20 @@ const stroke = {
 } as const;
 
 const ITEMS: Item[] = [
-  {
-    href: '/app/map',
-    label: 'MAP',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" />
-        <circle cx="12" cy="10" r="2.2" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/pulse',
-    label: 'PULSE',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M3 12h4l2.5-6 4 12 2.5-6H21" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/chats',
-    label: 'CHATS',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-5 4z" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/places',
-    label: 'PLACES',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M3 21h18M5 21V9l7-5 7 5v12M10 21v-6h4v6" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/me',
-    label: 'ME',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <circle cx="12" cy="8" r="3.5" />
-        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-      </svg>
-    ),
-  },
+  { href: '/app/map', label: 'MAP', icon: <NavIcon path={NAV_ICON_PATHS.map} /> },
+  { href: '/app/pulse', label: 'PULSE', icon: <NavIcon path={NAV_ICON_PATHS.pulse} /> },
+  { href: '/app/chats', label: 'CHATS', icon: <NavIcon path={NAV_ICON_PATHS.chats} /> },
+  { href: '/app/places', label: 'PLACES', icon: <NavIcon path={NAV_ICON_PATHS.places} /> },
+  { href: '/app/me', label: 'ME', icon: <NavIcon path={NAV_ICON_PATHS.me} /> },
 ];
+
+function NavIcon({ path }: { path: string }) {
+  return (
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+      <path d={path} />
+    </svg>
+  );
+}
 
 export function useActive(href: string) {
   const path = usePathname();
