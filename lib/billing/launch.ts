@@ -1,24 +1,27 @@
 /**
- * Launch all-access window.
+ * Launch all-access.
  *
- * For the first days after launch, every member — free, anonymous, or paid — gets every paid
- * feature, no subscription required. This only affects FEATURE and LIMIT checks; it never touches
- * billing records (a free member stays "Free" on the billing screen and still sees upgrade CTAs),
- * so when the window closes everyone simply reverts to the plan they actually hold.
+ * While this is open, every member — free, anonymous, or paid — gets every paid feature, no
+ * subscription required. It only affects FEATURE and LIMIT checks; it never touches billing records
+ * (a free member stays "Free" on the billing screen and still sees upgrade CTAs), so whenever we
+ * close it everyone simply reverts to the plan they actually hold.
  *
- * To change or end the promo, move this timestamp (or set it to a past date to switch the window off).
+ * It is currently OPEN-ENDED ("premium for everyone, for now"): it stays on until we turn it off.
+ * To end it, set OPEN_ENDED to false — access then follows LAUNCH_ALL_ACCESS_UNTIL (set that to a
+ * past date to switch it off entirely, or a future date to time-box it again).
  */
-// 7 days from launch on 2026-10-19: open through the end of 2026-10-26 in US Central (the app's home
-// region), i.e. 2026-10-27 05:00 UTC, so no one in the primary audience is cut off early.
+const OPEN_ENDED = true;
 export const LAUNCH_ALL_ACCESS_UNTIL = Date.parse('2026-10-27T05:00:00.000Z');
 
-/** True while the launch all-access window is open. */
+/** True while all-access is open. */
 export function launchAllAccess(now: number = Date.now()): boolean {
+  if (OPEN_ENDED) return true;
   return Number.isFinite(LAUNCH_ALL_ACCESS_UNTIL) && now < LAUNCH_ALL_ACCESS_UNTIL;
 }
 
-/** ISO instant the window closes, or null when it is not open. */
+/** ISO instant access closes, or null when it is open-ended or not open. */
 export function launchAllAccessUntil(now: number = Date.now()): string | null {
+  if (OPEN_ENDED) return null;
   return launchAllAccess(now) ? new Date(LAUNCH_ALL_ACCESS_UNTIL).toISOString() : null;
 }
 
