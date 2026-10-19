@@ -61,9 +61,9 @@ export function TravelSheet({
   );
   const [arriveOn, setArriveOn] = useState(today());
   const [nights, setNights] = useState(3);
-  const [arrivalTime, setArrivalTime] = useState('15:00');
+  const [arrivalTime, setArrivalTime] = useState('');
   const [departOn, setDepartOn] = useState(() => addTripDays(today(), 3));
-  const [departureTime, setDepartureTime] = useState('11:00');
+  const [departureTime, setDepartureTime] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -102,7 +102,10 @@ export function TravelSheet({
     const r = await fetch('/api/trips', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city: picked.name, lat: picked.lat, lon: picked.lon, arriveOn, nights: count, arrivalTime, departOn, departureTime }),
+      body: JSON.stringify({ city: picked.name, lat: picked.lat, lon: picked.lon, arriveOn, nights: count, departOn,
+          ...(arrivalTime ? { arrivalTime } : {}),
+          ...(departureTime ? { departureTime } : {}),
+        }),
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
