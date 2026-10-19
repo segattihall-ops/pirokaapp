@@ -80,10 +80,13 @@ function NavLink({ item, variant, badge }: { item: Item; variant: 'rail' | 'tab'
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      className={`${base} tap transition-colors ${active ? 'text-green' : 'text-fg-3 hover:text-fg'} ${
-        active && variant === 'rail' ? 'bg-sel-fill' : ''
+      className={`${base} tap transition-colors ${active ? 'text-fg' : 'text-fg-3 hover:text-fg'} ${
+        active && variant === 'rail' ? 'bg-white/[0.09] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : ''
       }`}
     >
+      {active && variant === 'tab' && (
+        <span aria-hidden className="absolute left-[28%] right-[28%] top-0 h-[2px] rounded-full bg-green" />
+      )}
       {active && variant === 'rail' && (
         <span aria-hidden className="absolute -left-[10px] top-3 h-[34px] w-[3px] rounded-full bg-green" />
       )}
