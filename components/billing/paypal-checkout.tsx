@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 type PlanId = 'plus' | 'premium';
-type Status = { configured: boolean; plan: 'free' | 'plus' | 'premium' | 'anonymous'; status: string | null };
+type Status = {
+  configured: boolean;
+  plan: 'free' | 'plus' | 'premium' | 'anonymous';
+  status: string | null;
+  allAccess?: boolean;
+  allAccessUntil?: string | null;
+};
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? '';
 const PLAN_IDS: Record<PlanId, string> = {
@@ -154,6 +160,19 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
 
   return (
     <div className="flex flex-col gap-5 rounded-hero border border-line-1 bg-ink-900 p-5 sm:p-6">
+      {status?.allAccess && (
+        <div className="rounded-card border border-sel-border bg-sel-fill px-4 py-3">
+          <p className="text-[14px] font-semibold text-green">All features unlocked</p>
+          <p className="mt-0.5 text-[13px] text-fg-2">
+            Everyone gets every feature free
+            {status.allAccessUntil
+              ? ` until ${new Date(status.allAccessUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`
+              : ' right now'}
+            . Subscribe any time to keep them later.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[18px] font-bold text-white">Your plan</h2>

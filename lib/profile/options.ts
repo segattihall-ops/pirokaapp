@@ -1,4 +1,6 @@
 /** Shared pick-lists for onboarding and profile editing. Free text is never accepted for these fields. */
+import { launchAllAccess } from '@/lib/billing/launch';
+
 export const PRONOUNS = ['he/him', 'she/her', 'they/them', 'he/they', 'she/they', 'any pronouns', 'ask me'];
 export const GENDER = [
   'Man',
@@ -99,9 +101,10 @@ export const PHOTO_LIMIT: Record<string, number> = { anonymous: 6, free: 3, plus
 
 /**
  * Plan used for feature limits. While πroka is in testing, anonymous members get every tier's
- * limits so the whole product can be exercised without a subscription.
+ * limits so the whole product can be exercised without a subscription; during the launch all-access
+ * window every member does.
  */
 export const effectivePlan = (plan: string | null | undefined, authProvider?: string | null) =>
-  authProvider === 'anonymous' ? 'premium' : (plan ?? 'free');
+  authProvider === 'anonymous' || launchAllAccess() ? 'premium' : (plan ?? 'free');
 export const photoLimit = (plan: string | null | undefined, authProvider?: string | null) =>
   PHOTO_LIMIT[effectivePlan(plan, authProvider)] ?? 3;

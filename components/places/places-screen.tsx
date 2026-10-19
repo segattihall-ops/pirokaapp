@@ -6,6 +6,7 @@ import { distanceLabel, getPosition, timeLeft, type Position } from '@/lib/geo/c
 import type { Place } from '@/app/api/places/route';
 import { Sheet } from '@/components/map/status-sheet';
 import EventCard from '@/components/events/event-card';
+import EventSheet from '@/components/events/event-sheet';
 import { TestingDirectory } from '@/components/health/testing-directory';
 import { GroupsList } from '@/components/groups/list';
 import { CreateGroupForm } from '@/components/groups/create';
@@ -34,6 +35,7 @@ export function PlacesScreen() {
   const [configured, setConfigured] = useState(true);
   const [suggest, setSuggest] = useState(false);
   const [newGroup, setNewGroup] = useState(false);
+  const [showEvent, setShowEvent] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const [goingFor, setGoingFor] = useState<Place | null>(null);
@@ -132,6 +134,15 @@ export function PlacesScreen() {
             aria-expanded={newGroup}
           >
             {newGroup ? 'Cancel' : '+ New group'}
+          </button>
+        )}
+        {tab === 'events' && (
+          <button
+            type="button"
+            onClick={() => setShowEvent(true)}
+            className="btn-secondary h-10 shrink-0 text-[13px]"
+          >
+            + Create event
           </button>
         )}
       </div>
@@ -330,6 +341,16 @@ export function PlacesScreen() {
             setSuggest(false);
             load(pos);
           }}
+        />
+      )}
+
+      {showEvent && pos && (
+        <EventSheet
+          lat={pos.lat}
+          lon={pos.lon}
+          locationName=""
+          onClose={() => setShowEvent(false)}
+          onCreated={() => loadEvents(pos)}
         />
       )}
     </section>

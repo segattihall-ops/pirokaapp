@@ -4,42 +4,34 @@ import { requireUser } from '@/lib/api/guard';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Live activity heatmap: real current density around the member, from nearby_hotspots (operates on
+ * fuzzed public_geo only). No stored table, no stale/empty data — it reflects who is active now.
+ */
 export async function GET(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
+  if (!supabaseAdmin) return NextResponse.json({ cells: [] });
 
-  try {
-    const { searchParams } = new URL(request.url);
-    const city = searchParams.get('city');
-    const radius = parseInt(searchParams.get('radius') || '5000'); // meters
-
-    if (!supabaseAdmin || !city) {
-      return NextResponse.json({ error: 'City required' }, { status: 400 });
-    }
-
-    // Get current hour's heatmap
-    const now = new Date();
-    now.setMinutes(0, 0, 0);
-
-    const { data: heatmaps, error } = await supabaseAdmin
-      .from('area_heatmaps')
-      .select('location, active_profiles, activity_score, trend')
-      .eq('city', city)
-      .eq('hour_bucket', now.toISOString())
-      .order('activity_score', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch heatmap' }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      city,
-      timestamp: now.toISOString(),
-      hotspots: heatmaps
-    });
-  } catch (err) {
-    console.error('Heatmap error:', err);
-    return NextResponse.json({ error: 'Failed to fetch heatmap' }, { status: 500 });
+  const sp = new URL(request.url).searchParams;
+  const lat = Number(sp.get('lat'));
+  const lon = Number(sp.get('lon'));
+  const radius = Math.min(Math.max(Number(sp.get('radius')) || 25000, 1000), 50000);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return NextResponse.json({ error: 'lat and lon are required' }, { status: 400 });
   }
+
+  const { data, error } = await supabaseAdmin.rpc('nearby_hotspots', {
+    center_lat: lat,
+    center_lon: lon,
+    radius_m: radius,
+  });
+  if (error) return NextResponse.json({ error: 'Query failed' }, { status: 500 });
+
+  const cells = ((data ?? []) as { lat: number; lon: number; count: number }[]).map((c) => ({
+    lat: c.lat,
+    lon: c.lon,
+    count: Number(c.count),
+  }));
+  return NextResponse.json({ cells });
 }

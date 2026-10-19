@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { SIGNAL_WEIGHT, flagsFor, learnedWeights, traitLabel, type Signal } from '@/lib/taste/learn';
 import { ensureUserRow } from '@/lib/db/users';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
+import { effectivePlanNow } from '@/lib/billing/launch';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,7 @@ export async function GET() {
   const g = await requireUser();
   if (g.error) return g.error;
   const { data: me } = await supabaseAdmin!.from('users').select('plan').eq('id', g.session.userId).maybeSingle();
-  if (me?.plan !== 'premium') return NextResponse.json({ locked: true, traits: [] });
+  if (effectivePlanNow(me?.plan) !== 'premium') return NextResponse.json({ locked: true, traits: [] });
   const [weights, flags] = await Promise.all([learnedWeights(g.session.userId), flagsFor(g.session.userId)]);
   const keys = new Set<string>([...weights.keys(), ...flags.keys()]);
   const traits = [...keys]
