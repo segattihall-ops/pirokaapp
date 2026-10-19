@@ -16,6 +16,7 @@ import { FeedbackButton } from '@/components/growth/feedback-button';
 import { SafeMeetMe } from '@/components/meet/safemeet-me';
 import { HealthCardMe } from '@/components/me/health-card-me';
 import { AmbassadorApply } from '@/components/me/ambassador-apply';
+import { Admirers } from '@/components/me/admirers';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
 
@@ -87,6 +88,8 @@ export default async function MePage() {
       <AlbumInbox />
 
       <YourType />
+
+      <Admirers />
 
       <FavoritesList />
 

@@ -78,6 +78,18 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  // Record the view for the viewee's premium "Who viewed you" list. Fire-and-forget: never let a
+  // missing table or a write error affect the profile response. Self-views are not recorded.
+  if (id !== session.userId) {
+    void supabaseAdmin
+      .from('profile_views')
+      .upsert(
+        { viewer_id: session.userId, viewee_id: id, viewed_at: new Date().toISOString() },
+        { onConflict: 'viewer_id,viewee_id' },
+      )
+      .then(() => undefined, () => undefined);
+  }
+
   let trips = initialTrips.data ?? [];
   if (initialTrips.error && isMissingSchema(initialTrips.error)) {
     const legacy = await supabaseAdmin.from('trips').select('city, arrive_on, nights')
