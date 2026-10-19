@@ -117,7 +117,7 @@ export function ProfileSheet({
               )}
               {main?.blurred && (
                 <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[10px] font-semibold text-fg-2">
-                  clears when you chat
+                  Blurred until mutual
                 </span>
               )}
             </div>
