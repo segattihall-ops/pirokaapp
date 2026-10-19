@@ -107,9 +107,10 @@ export function Rail({ unread = 0 }: { unread?: number }) {
       aria-label="Primary"
       className="fixed inset-y-0 left-0 z-40 hidden w-rail flex-col items-center border-r border-line-1 bg-rail pb-4 pt-4 rail:flex"
     >
-      <Link href="/app/map" className="mb-5 rounded-logo" aria-label="πroka home">
-        <LogoTile size={44} />
+      <Link href="/app/map" className="mb-3 rounded-logo" aria-label="πroka home">
+        <LogoTile size={50} />
       </Link>
+      <span aria-hidden className="mb-3 h-px w-[30px] bg-line-3" />
       <div className="flex flex-col gap-1">
         {ITEMS.map((it) => (
           <NavLink key={it.href} item={it} variant="rail" badge={it.href === '/app/chats' ? unread : 0} />
@@ -137,7 +138,7 @@ export function TabBar({ unread = 0 }: { unread?: number }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(66px+var(--safe-bottom))] border-t border-line-1 bg-ink-900/95 pb-[var(--safe-bottom)] backdrop-blur-md rail:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(66px+var(--safe-bottom))] border-t border-line-1 bg-ink-850/95 pb-[var(--safe-bottom)] backdrop-blur-md rail:hidden"
     >
       {ITEMS.map((it) => (
         <NavLink key={it.href} item={it} variant="tab" badge={it.href === '/app/chats' ? unread : 0} />
