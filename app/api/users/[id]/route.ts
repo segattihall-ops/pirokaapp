@@ -5,6 +5,7 @@ import { haveConversation, isBlocked } from '@/lib/chat/server';
 import { photoUrl } from '@/lib/upload/storage';
 import { addTripDays } from '@/lib/map/pin-anatomy';
 import { isMissingSchema } from '@/lib/db/schema-errors';
+import { canRevealMainPhoto } from '@/lib/profile/photo-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,8 +92,31 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   }
   const self = id === session.userId;
   const unlocked = self || Boolean(grant);
-  // Main photo clears once you are talking; the album (slots 1-5) needs an explicit grant.
-  const mainClear = unlocked || conversation;
+  // An album grant is not equivalent to consent to reveal the original main photo.
+  // Chat only reduces the rendered blur; only mutual/accepted active Meet can reveal it.
+  let mainClear = self;
+  if (!self) {
+    const pair = `and(a_id.eq.${session.userId},b_id.eq.${id}),and(a_id.eq.${id},b_id.eq.${session.userId})`;
+    const nowIso = new Date().toISOString();
+    const [mutual, meet, risk] = await Promise.all([
+      supabaseAdmin.from('conversations').select('id').or(pair).eq('mutual', true).limit(1),
+      supabaseAdmin.from('meets').select('id').or(pair)
+        .not('accepted_at', 'is', null).gt('ends_at', nowIso).eq('status', 'active').limit(1),
+      supabaseAdmin.from('locations').select('user_id, risk_region')
+        .in('user_id', [session.userId, id]),
+    ]);
+    // Missing location safety information or query errors must never reveal a clear photo.
+    if (!mutual.error && !meet.error && !risk.error) {
+      const riskOf = new Map((risk.data ?? []).map((r) => [r.user_id, Boolean(r.risk_region)]));
+      mainClear = canRevealMainPhoto({
+        self: false,
+        mutual: (mutual.data?.length ?? 0) > 0,
+        activeAcceptedMeet: (meet.data?.length ?? 0) > 0,
+        viewerRisk: riskOf.get(session.userId) ?? null,
+        peerRisk: riskOf.get(id) ?? null,
+      });
+    }
+  }
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = (trips ?? []).filter((t) => (t.departure_on ?? addTripDays(t.arrive_on, t.nights)) >= today);
   return NextResponse.json({
