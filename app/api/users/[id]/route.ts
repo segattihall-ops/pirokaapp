@@ -77,14 +77,18 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  let tripRows = initialTrips;
-  if (tripRows.error && isMissingSchema(tripRows.error)) {
-    tripRows = await supabaseAdmin.from('trips').select('city, arrive_on, nights')
+  let trips = initialTrips.data ?? [];
+  if (initialTrips.error && isMissingSchema(initialTrips.error)) {
+    const legacy = await supabaseAdmin.from('trips').select('city, arrive_on, nights')
       .eq('user_id', id)
       .gte('arrive_on', new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10))
       .order('arrive_on').limit(3);
+    if (!legacy.error) {
+      trips = (legacy.data ?? []).map((t) => ({
+        ...t, arrival_time: null, departure_on: null, departure_time: null,
+      }));
+    }
   }
-  const trips = tripRows.data;
   const self = id === session.userId;
   const unlocked = self || Boolean(grant);
   // Main photo clears once you are talking; the album (slots 1-5) needs an explicit grant.
