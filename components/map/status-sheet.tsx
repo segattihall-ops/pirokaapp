@@ -179,7 +179,7 @@ export function Sheet({
         className="absolute inset-0 bg-black/50"
       />
       <section
-        className={`relative flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-sheet border border-b-0 border-line-2 bg-ink-850/95 shadow-sheet backdrop-blur-xl rail:max-h-[88dvh] ${side ? 'rail:h-dvh rail:max-h-dvh rail:max-w-[400px] rail:rounded-none rail:border-t-0 rail:border-r-0 rail:shadow-panel' : ''}`}
+        className={`relative flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-sheet border border-b-0 border-line-2 bg-ink-850/95 shadow-sheet backdrop-blur-xl ${side ? 'h-dvh max-h-dvh rounded-none border-t-0 rail:max-w-[400px] rail:border-r-0 rail:shadow-panel' : 'rail:max-h-[88dvh]'}`}
       >
         <div className="relative flex shrink-0 items-center justify-between px-5 pb-2 pt-4">
           <div className="flex min-w-0 items-center gap-3">
