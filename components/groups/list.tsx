@@ -54,7 +54,7 @@ export function GroupsList({ lat, lng, radius = 50 }: GroupsListProps) {
       {groups.map(group => (
         <Link
           key={group.id}
-          href={`/groups/${group.id}`}
+          href={`/app/groups/${group.id}`}
           className="block p-4 rounded-lg border border-line-1 bg-ink-900 hover:border-green transition-colors"
         >
           <div className="flex gap-3">

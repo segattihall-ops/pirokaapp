@@ -72,7 +72,8 @@ export async function saveLocation(
   fuzzSeed: Buffer,
   publicLat: number,
   publicLng: number,
-  countryCode?: string
+  countryCode?: string,
+  riskRegion?: boolean
 ) {
   if (!supabaseAdmin) return { data: null, error: new Error('Supabase not configured') };
 
@@ -87,6 +88,9 @@ export async function saveLocation(
         // PostgREST bytea input uses PostgreSQL hex format; store the actual 16 bytes.
         fuzz_seed: `\\x${fuzzSeed.toString('hex')}`,
         country_code: countryCode,
+        // Whether this publish is from an admin-configured risk region (drives area-level photo
+        // protection on the map and profile). Only written when resolved, never cleared blindly.
+        ...(riskRegion === undefined ? {} : { risk_region: riskRegion }),
         // updated_at is strictly the coordinate capture/24h-retention clock.
         updated_at: capturedAt,
         // A fresh coordinate capture also proves current map presence.

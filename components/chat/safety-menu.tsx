@@ -31,7 +31,31 @@ export function SafetyMenu({
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
   const name = peerHandle ? `@${peerHandle}` : 'this person';
+
+  const shareHealth = async () => {
+    setBusy(true);
+    setErr('');
+    setShareMsg('');
+    const r = await fetch('/api/health/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ granteeId: peerUserId }),
+    });
+    setBusy(false);
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      return setErr(
+        r.status === 403
+          ? 'Verify your health card in Me before sharing it.'
+          : typeof j.error === 'string'
+            ? j.error
+            : 'Could not share your health card.',
+      );
+    }
+    setShareMsg(`Your health card is now visible to ${name}.`);
+  };
 
   const report = async () => {
     setBusy(true);
@@ -90,6 +114,14 @@ export function SafetyMenu({
         <div className="glass absolute right-0 top-11 z-30 w-[280px] rounded-card p-3 text-[13px] shadow-float">
           {mode === 'menu' && (
             <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={shareHealth}
+                disabled={busy}
+                className="rounded-input px-3 py-2.5 text-left text-green hover:bg-white/5"
+              >
+                Share my health card
+              </button>
               <button
                 type="button"
                 onClick={() => setMode('report')}
@@ -175,6 +207,7 @@ export function SafetyMenu({
               {err}
             </p>
           )}
+          {shareMsg && <p className="mt-2 text-[12px] text-green">{shareMsg}</p>}
         </div>
       )}
     </div>
