@@ -7,6 +7,7 @@ import { ensureUserRow } from '@/lib/db/users';
 import { fuzzLocation } from '@/lib/geo/fuzz';
 import { stableFuzzSeedHex } from '@/lib/geo/fuzz-session';
 import { ACTIVE_PRESENCE_MS } from '@/lib/geo/presence';
+import { isRiskRegion } from '@/lib/geo/risk';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,20 @@ export async function POST(request: Request) {
   const seedHex = stableFuzzSeedHex(existing?.fuzz_seed, crypto.randomBytes(16).toString('hex'));
   const seed = Buffer.from(seedHex, 'hex');
   const pub = fuzzLocation(lat, lng, seed);
-  const { error } = await saveLocation(session.userId, lat, lng, seed, pub.lat, pub.lng, countryCode);
+  // Resolve the member's country from the edge geo header (Vercel sets x-vercel-ip-country), falling
+  // back to a client-supplied code, and flag the location when it is an admin-configured risk region.
+  const resolvedCode = request.headers.get('x-vercel-ip-country') ?? countryCode ?? undefined;
+  const risky = await isRiskRegion(resolvedCode);
+  const { error } = await saveLocation(
+    session.userId,
+    lat,
+    lng,
+    seed,
+    pub.lat,
+    pub.lng,
+    resolvedCode,
+    risky,
+  );
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ public: { lat: pub.lat, lng: pub.lng } });
 }
