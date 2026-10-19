@@ -57,6 +57,30 @@ export async function GET(request: Request) {
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
+    // `?owner=<uuid>`: fetch that member's verified health card, but only if they have shared it with
+    // me. Used to surface a shared card to the recipient inside a chat thread.
+    const ownerParam = new URL(request.url).searchParams.get('owner');
+    if (ownerParam) {
+      const owner = z.string().uuid().safeParse(ownerParam);
+      if (!owner.success) return NextResponse.json({ error: 'Invalid owner' }, { status: 400 });
+
+      const { data: share } = await supabaseAdmin
+        .from('health_shares')
+        .select('owner_id')
+        .eq('owner_id', owner.data)
+        .eq('grantee_id', userId)
+        .maybeSingle();
+      if (!share) return NextResponse.json({ card: null });
+
+      const { data: card } = await supabaseAdmin
+        .from('health_cards')
+        .select('status, hiv_month, sti_month, prevention')
+        .eq('user_id', owner.data)
+        .eq('status', 'verified')
+        .maybeSingle();
+      return NextResponse.json({ card: card ?? null }, { headers: { 'Cache-Control': 'private, no-store' } });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('health_shares')
       .select('owner_id, grantee_id, shared_at')
