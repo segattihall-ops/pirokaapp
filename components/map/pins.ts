@@ -164,7 +164,7 @@ export function updatePinElement(el: HTMLButtonElement, p: NearbyPerson, now: nu
   desp.hidden = !desperate;
 
   label.hidden = !showLabels;
-  const travel = p.travelMi ? ` · ${p.travelMi} mi` : '';
+  const travel = p.travelMi ? ` · up to ${p.travelMi} mi` : '';
   label.textContent = [meta ? meta.label + travel : null, activityLabel(p.activity)]
     .filter(Boolean)
     .join(' · ');
