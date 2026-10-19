@@ -24,7 +24,14 @@ export async function POST(request: Request) {
 
   await ensureUserRow(session);
   const expiresAt = new Date(Date.now() + TTL_MIN[kind] * 60_000).toISOString();
-  if (kind === 'here') await supabaseAdmin.from('checkins').delete().eq('user_id', session.userId).eq('kind', 'here');
+  if (kind === 'here') {
+    await supabaseAdmin.from('checkins').delete().eq('user_id', session.userId).eq('kind', 'here');
+    await supabaseAdmin.from('place_pop_votes').delete().eq('user_id', session.userId)
+      .neq('place_id', placeId);
+  } else {
+    await supabaseAdmin.from('place_pop_votes').delete().eq('user_id', session.userId)
+      .eq('place_id', placeId);
+  }
   const { error } = await supabaseAdmin
     .from('checkins')
     .upsert({ user_id: session.userId, place_id: placeId, kind, expires_at: expiresAt }, { onConflict: 'user_id,place_id' });
@@ -39,5 +46,6 @@ export async function DELETE(request: Request) {
   const { placeId } = (await request.json().catch(() => ({}))) as { placeId?: string };
   if (!placeId) return NextResponse.json({ error: 'placeId required' }, { status: 400 });
   await supabaseAdmin.from('checkins').delete().eq('user_id', session.userId).eq('place_id', placeId);
+  await supabaseAdmin.from('place_pop_votes').delete().eq('user_id', session.userId).eq('place_id', placeId);
   return NextResponse.json({ ok: true });
 }
