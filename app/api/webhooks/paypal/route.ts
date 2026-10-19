@@ -123,9 +123,20 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
       case 'BILLING.SUBSCRIPTION.SUSPENDED': {
         const userId = (res.custom_id as string | undefined) ?? (await userIdForSubscription(res.id));
         const status = res.status ?? event.event_type.split('.').pop();
+        // A member who cancelled in the app keeps the plan until cancel_at; lifecycle ends it then.
+        const { data: pending } = await db
+          .from('users')
+          .select('cancel_at')
+          .eq('paypal_subscription_id', res.id)
+          .maybeSingle();
+        const keepsAccess = Boolean(pending?.cancel_at && new Date(pending.cancel_at).getTime() > Date.now());
         const { error } = await db
           .from('users')
-          .update({ plan: 'free', subscription_status: status, cancelled_at: new Date().toISOString() })
+          .update({
+            ...(keepsAccess ? {} : { plan: 'free' }),
+            subscription_status: status,
+            cancelled_at: new Date().toISOString(),
+          })
           .eq('paypal_subscription_id', res.id);
         if (error) throw error;
         await audit(`paypal.${event.event_type}`, userId ?? res.id, { subscription: res.id });

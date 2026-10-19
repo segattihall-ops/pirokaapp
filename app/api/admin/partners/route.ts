@@ -5,6 +5,21 @@ import { requireAdmin } from '@/lib/admin/guard';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 import { MIGRATION } from '@/lib/partners/server';
 
+/**
+ * Adds a manager to a listing unless they are already on it. Uses a lookup, not an upsert, because the
+ * membership indexes are partial and PostgREST cannot target a partial unique index in ON CONFLICT.
+ */
+async function ensureMembership(
+  db: NonNullable<typeof supabaseAdmin>,
+  match: { user_id: string; place_id?: string; testing_site_id?: string },
+  row: Record<string, unknown>,
+): Promise<string | null> {
+  const { data: existing } = await db.from('partner_members').select('user_id').match(match).maybeSingle();
+  if (existing) return null;
+  const { error } = await db.from('partner_members').insert(row);
+  return error?.message ?? null;
+}
+
 export const dynamic = 'force-dynamic';
 
 /** Partner queue: events awaiting review and listing claims. Staff never see attendee identities. */
@@ -103,6 +118,36 @@ export async function PATCH(request: Request) {
     if (!claim) return NextResponse.json({ error: 'Claim not found' }, { status: 404 });
     if (claim.status !== 'pending') return NextResponse.json({ error: 'Claim already reviewed' }, { status: 409 });
 
+    if (claim.kind === 'clinic') {
+      // A clinic is a testing site, not a venue: attach to the directory listing it matches by name.
+      const { data: sites } = await db
+        .from('testing_sites')
+        .select('id')
+        .ilike('name', claim.listing_name)
+        .limit(2);
+      if (!sites?.length)
+        return NextResponse.json(
+          { error: 'No testing site matches this clinic. Add it to the testing directory, then approve.' },
+          { status: 409 },
+        );
+      if (sites.length > 1)
+        return NextResponse.json({ error: 'More than one testing site matches this name. Resolve it first.' }, { status: 409 });
+      const siteId = String(sites[0].id);
+      await db.from('testing_sites').update({ partner_verified: true }).eq('id', siteId);
+      const sErr = await ensureMembership(
+        db,
+        { user_id: claim.user_id, testing_site_id: siteId },
+        { user_id: claim.user_id, listing_kind: 'testing_site', testing_site_id: siteId, role: 'owner' },
+      );
+      if (sErr) return NextResponse.json({ error: sErr }, { status: 500 });
+      await db
+        .from('partner_claims')
+        .update({ status: 'approved', reviewed_by: me, reviewed_at: now })
+        .eq('id', body.id);
+      await db.from('audit_log').insert({ actor_id: me, action: `partner.${body.action}`, target: body.id, details: null });
+      return NextResponse.json({ ok: true });
+    }
+
     // Attach to a place: the one picked by staff, the one named in the claim, or a fresh listing that
     // appears on the map once a member suggests / staff verify its position (0,0 keeps it off-map).
     let placeId = body.placeId ?? claim.place_id ?? null;
@@ -111,7 +156,7 @@ export async function PATCH(request: Request) {
         .from('places')
         .insert({
           name: claim.listing_name,
-          kind: claim.kind === 'clinic' ? 'other' : 'venue',
+          kind: 'venue',
           address: claim.address,
           geo: 'POINT(0 0)',
           verified: false,
@@ -124,10 +169,12 @@ export async function PATCH(request: Request) {
     } else {
       await db.from('places').update({ partner_verified: true }).eq('id', placeId);
     }
-    const { error: mErr } = await db
-      .from('partner_members')
-      .upsert({ user_id: claim.user_id, listing_kind: 'place', place_id: placeId, role: 'owner' }, { onConflict: 'user_id,place_id', ignoreDuplicates: true });
-    if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
+    const mErr = await ensureMembership(
+      db,
+      { user_id: claim.user_id, place_id: placeId },
+      { user_id: claim.user_id, listing_kind: 'place', place_id: placeId, role: 'owner' },
+    );
+    if (mErr) return NextResponse.json({ error: mErr }, { status: 500 });
     await db
       .from('partner_claims')
       .update({ status: 'approved', reviewed_by: me, reviewed_at: now, place_id: placeId })
