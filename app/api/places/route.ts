@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { isMissingSchema } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export type Place = {
   peakHint: string | null;
   here: number;
   going: number;
+  popVotes: number;
   my: { kind: 'here' | 'going'; expiresAt: string } | null;
 };
 
@@ -45,6 +47,14 @@ export async function GET(request: Request) {
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const ids: string[] = (data ?? []).map((p: { id: string }) => p.id);
+  const popOf = new Map<string, number>();
+  if (ids.length) {
+    const response = await supabaseAdmin.from('place_pop_votes').select('place_id').in('place_id', ids)
+      .gt('expires_at', new Date().toISOString());
+    if (response.error && !isMissingSchema(response.error)) console.error('places: votes lookup failed', response.error.message);
+    for (const row of response.data ?? []) popOf.set(row.place_id, (popOf.get(row.place_id) ?? 0) + 1);
+  }
   const places: Place[] = (data ?? []).map((r: any) => ({
     id: r.id,
     name: r.name,
@@ -57,6 +67,7 @@ export async function GET(request: Request) {
     peakHint: r.peak_hint ?? null,
     here: Number(r.here_count ?? 0),
     going: Number(r.going_count ?? 0),
+    popVotes: popOf.get(r.id) ?? 0,
     my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at } : null,
   }));
   return NextResponse.json({ configured: true, places });
