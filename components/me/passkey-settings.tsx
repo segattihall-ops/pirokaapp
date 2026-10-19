@@ -65,7 +65,7 @@ export function PasskeySettings() {
           <p className="text-[12px] text-fg-3">
             {list && list.length > 0
               ? `On for ${list.length} device${list.length > 1 ? 's' : ''}. No password, no email link.`
-              : 'No password, no email link. Your face never leaves your phone.'}
+              : 'No password, no email link. Your face or fingerprint never leaves your device.'}
           </p>
         </div>
         {supported ? (
