@@ -207,3 +207,25 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden({ timeout: 10_000 });
 });
+
+
+test('homepage primary CTA respects design tokens and stays accessible at 390px', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const cta = page.getByRole('button', { name: 'Start chatting' });
+  await expect(cta).toBeVisible();
+  const bounds = await cta.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  expect(await cta.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(52, 211, 153)');
+
+  for (const label of ['With Google', 'With my email', 'Stay anonymous']) {
+    const button = page.getByRole('button', { name: label });
+    const hit = await button.boundingBox();
+    expect(hit).not.toBeNull();
+    expect(hit!.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
