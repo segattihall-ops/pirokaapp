@@ -192,8 +192,8 @@ export function AssistantPanel({
           aria-label="Message πroka"
           className="input h-11 min-w-0 flex-1 rounded-chip"
         />
-        <button type="button" aria-label="Send" onClick={() => send(draft)} disabled={!draft.trim() || busy} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green text-ink-950 transition-colors hover:bg-green-hover disabled:opacity-50">
-          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg>
+        <button type="button" aria-label="Send" onClick={() => send(draft)} disabled={!draft.trim() || busy} className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green text-ink-950 transition-colors group-hover:bg-green-hover"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg></span>
         </button>
       </div>
     </section>
