@@ -47,7 +47,7 @@ function loadPayPalSdk() {
   return sdkPromise;
 }
 
-export function PayPalCheckout({ userId }: { userId: string }) {
+export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode?: 'full' | 'checkout' }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [selected, setSelected] = useState<PlanId>('plus');
   const [busy, setBusy] = useState(false);
@@ -114,6 +114,43 @@ export function PayPalCheckout({ userId }: { userId: string }) {
     setBusy(false);
     refresh();
   };
+
+  if (mode === 'checkout') {
+    return (
+      <div className="flex flex-col gap-3">
+        {!subscribed && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {PLANS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelected(p.id)}
+                  aria-pressed={selected === p.id}
+                  className={`rounded-card border-2 p-4 text-left transition-colors ${
+                    selected === p.id ? 'border-sel-border bg-sel-fill' : 'border-line-2 hover:border-line-3'
+                  }`}
+                >
+                  <div className="text-[15px] font-bold text-white">{p.name}</div>
+                  <div className="mt-1 text-[20px] font-bold text-green">${p.price}/mo</div>
+                </button>
+              ))}
+            </div>
+            {configured ? (
+              <div ref={buttonsRef} className="min-h-[48px]" />
+            ) : (
+              <p className="text-[13px] text-fg-3">Billing is not configured yet.</p>
+            )}
+          </>
+        )}
+        {msg && (
+          <p role="status" className="text-[13px] text-fg-2">
+            {msg}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5 rounded-hero border border-line-1 bg-ink-900 p-5 sm:p-6">

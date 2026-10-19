@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { runLifecycle } from '@/lib/lifecycle/server';
+import { runBillingLifecycle } from '@/lib/billing/server';
+import { activatePayPalSubscription, paypalConfigured } from '@/lib/billing/paypal';
 import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
@@ -12,5 +14,8 @@ export const GET = withApi('/api/cron/lifecycle', async (request: Request) => {
   if (!secret || auth !== `Bearer ${secret}`)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const result = await runLifecycle();
-  return NextResponse.json({ ok: true, ...result });
+  const billing = paypalConfigured()
+    ? await runBillingLifecycle((id) => activatePayPalSubscription(id, 'Pause ended'))
+    : {};
+  return NextResponse.json({ ok: true, ...result, ...billing });
 });

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
-import { PayPalCheckout } from '@/components/billing/paypal-checkout';
 import { PushToggle } from '@/components/push/push-toggle';
 import { NotifPrefs } from '@/components/me/notif-prefs';
 import { SignOutButton } from '@/components/account/sign-out-button';
@@ -85,9 +84,14 @@ export default async function MePage() {
 
       <TripsList />
 
-      <div id="billing" className="scroll-mt-4">
-        <PayPalCheckout userId={session.userId} />
-      </div>
+      <Link
+        id="billing"
+        href="/app/me/plan"
+        className="glass flex items-center justify-between rounded-card px-4 py-3.5 text-[14px] font-medium scroll-mt-4"
+      >
+        Plan &amp; billing
+        <span className="text-fg-4">›</span>
+      </Link>
 
       <PushToggle />
 

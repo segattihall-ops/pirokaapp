@@ -126,3 +126,34 @@ export async function verifyPayPalWebhook(headers: WebhookHeaders, event: unknow
   );
   return r.verification_status === 'SUCCESS';
 }
+
+/** Pause billing. PayPal keeps the subscription but stops charging until `activatePayPalSubscription`. */
+export function suspendPayPalSubscription(id: string, reason = 'Paused by member') {
+  return paypalFetch<void>(`/v1/billing/subscriptions/${encodeURIComponent(id)}/suspend`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function activatePayPalSubscription(id: string, reason = 'Resumed by member') {
+  return paypalFetch<void>(`/v1/billing/subscriptions/${encodeURIComponent(id)}/activate`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export type ReviseResult = { plan_id?: string; links?: { href: string; rel: string }[] };
+
+/**
+ * Switch an active subscription to another plan. PayPal may need the buyer to approve the new
+ * price; when it does, the result carries an `approve` link the client opens.
+ */
+export function revisePayPalSubscription(id: string, planId: string, returnUrl: string) {
+  return paypalFetch<ReviseResult>(`/v1/billing/subscriptions/${encodeURIComponent(id)}/revise`, {
+    method: 'POST',
+    body: JSON.stringify({
+      plan_id: planId,
+      application_context: { return_url: returnUrl, cancel_url: returnUrl },
+    }),
+  });
+}
