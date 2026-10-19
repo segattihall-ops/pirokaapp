@@ -361,7 +361,18 @@ export function MapScreen({ userId }: { userId: string }) {
     };
 
     (async () => {
-      const p = await locate(false);
+      // Prompt on first entry if location permission has not been decided.
+      // Do not reprompt denied locations or during background refresh.
+      let askOnLoad = true;
+      try {
+        if (navigator.permissions) {
+          const st = (await navigator.permissions.query({ name: 'geolocation' })).state;
+          askOnLoad = st !== 'denied' && st !== 'granted';
+        }
+      } catch {
+        askOnLoad = true;
+      }
+      const p = await locate(askOnLoad);
       if (!alive) return;
       currentPosition = p;
       await refresh(p);

@@ -8,6 +8,7 @@ import { heatOf, heatLabel } from '@/lib/map/pin-anatomy';
 import { MAP_ICON_PATHS, PLACE_ICON_PATHS } from '@/lib/design/icon-paths';
 import { Sheet } from '@/components/map/status-sheet';
 import EventCard from '@/components/events/event-card';
+import EventSheet from '@/components/events/event-sheet';
 import { TestingDirectory } from '@/components/health/testing-directory';
 import type { Event } from '@/lib/events/types';
 
@@ -45,6 +46,7 @@ export function PlacesScreen() {
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [configured, setConfigured] = useState(true);
   const [suggest, setSuggest] = useState(false);
+  const [showEvent, setShowEvent] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const params = useSearchParams();
@@ -130,6 +132,11 @@ export function PlacesScreen() {
             className="btn-secondary h-10 shrink-0 text-[13px]"
           >
             + Suggest a place
+          </button>
+        )}
+        {tab === 'events' && (
+          <button type="button" onClick={() => setShowEvent(true)} className="btn-secondary h-10 shrink-0 text-[13px]">
+            + Create event
           </button>
         )}
       </div>
@@ -269,6 +276,9 @@ export function PlacesScreen() {
             load(pos);
           }}
         />
+      )}
+      {showEvent && pos && (
+        <EventSheet lat={pos.lat} lon={pos.lon} locationName="" onClose={() => setShowEvent(false)} onCreated={() => loadEvents(pos)} />
       )}
     </section>
   );

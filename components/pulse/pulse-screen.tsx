@@ -16,14 +16,13 @@ export function PulseScreen() {
   const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number }[]>([]);
   const [configured, setConfigured] = useState(true);
   const [selected, setSelected] = useState<NearbyPerson | null>(null);
-  const [city, setCity] = useState('');
+  const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null);
   const [tab, setTab] = useState<'people' | 'trends' | 'heatmap'>('people');
 
   useEffect(() => {
     (async () => {
       const p = await getPosition();
-      // Get city name from reverse geocoding or use coordinates
-      setCity(`Area (${p.lat.toFixed(2)}, ${p.lon.toFixed(2)})`);
+      setPos({ lat: p.lat, lon: p.lon });
       const r = await fetch(`/api/nearby?lat=${p.lat}&lon=${p.lon}&radius=25000`, {
         cache: 'no-store',
       }).catch(() => null);
@@ -62,8 +61,7 @@ export function PulseScreen() {
 
       {/* Tab Navigation */}
       <div className="flex gap-1 rounded-input border border-line-1 bg-ink-850/50 p-1">
-        {/* Trends returns when the activity_trends backend ships; it must never show simulated numbers. */}
-        {(['people', 'heatmap'] as const).map((t) => (
+        {(['people', 'trends', 'heatmap'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -106,10 +104,20 @@ export function PulseScreen() {
       )}
 
       {/* Trends Tab */}
-      {tab === 'trends' && <ActivityTrends city={city} />}
+      {tab === 'trends' &&
+        (pos ? (
+          <ActivityTrends lat={pos.lat} lon={pos.lon} />
+        ) : (
+          <p className="text-center text-[13px] text-fg-3">Finding your area…</p>
+        ))}
 
       {/* Heatmap Tab */}
-      {tab === 'heatmap' && <ActivityHeatmap city={city} />}
+      {tab === 'heatmap' &&
+        (pos ? (
+          <ActivityHeatmap lat={pos.lat} lon={pos.lon} />
+        ) : (
+          <p className="text-center text-[13px] text-fg-3">Finding your area…</p>
+        ))}
 
       <div className="flex flex-col gap-1.5">
         {people === null ? (
