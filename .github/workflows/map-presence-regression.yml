@@ -6,6 +6,13 @@ on:
     paths:
       - 'app/api/me/location/route.ts'
       - 'app/api/nearby/route.ts'
+      - 'app/api/users/**'
+      - 'app/api/trips/**'
+      - 'app/api/places/**'
+      - 'components/me/**'
+      - 'lib/map/**'
+      - 'lib/profile/**'
+      - 'supabase/migrations/**'
       - 'components/map/**'
       - 'lib/geo/**'
       - 'lib/db/migrations/**'
