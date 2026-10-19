@@ -99,7 +99,7 @@ export function AssistantPanel({
   return (
     <section
       aria-label="πroka assistant"
-      className="glass fixed inset-x-0 bottom-[calc(66px+var(--safe-bottom))] z-50 flex h-[calc(100dvh-66px-var(--safe-bottom))] w-full flex-col overflow-hidden rounded-none shadow-panel rail:inset-x-auto rail:bottom-4 rail:right-4 rail:h-[min(560px,70dvh)] rail:w-[390px] rail:rounded-sheet"
+      className="glass fixed inset-0 z-50 flex h-dvh w-full flex-col overflow-hidden rounded-none shadow-panel rail:inset-x-auto rail:bottom-4 rail:right-4 rail:top-auto rail:h-[min(560px,70dvh)] rail:w-[390px] rail:rounded-sheet"
     >
       <div className="flex items-center justify-between border-b border-line-1 px-4 py-3.5">
         <span className="flex items-center gap-2.5">
