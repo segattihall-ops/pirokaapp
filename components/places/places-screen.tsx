@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { distanceLabel, getPosition, timeLeft, type Position } from '@/lib/geo/client';
 import type { Place } from '@/app/api/places/route';
+import { heatOf, heatLabel } from '@/lib/map/pin-anatomy';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 import { Sheet } from '@/components/map/status-sheet';
 import EventCard from '@/components/events/event-card';
 import { TestingDirectory } from '@/components/health/testing-directory';
@@ -87,6 +89,19 @@ export function PlacesScreen() {
     if (pos) load(pos);
   };
 
+  const votePopping = async (place: Place) => {
+    setBusy(place.id);
+    setErr('');
+    const response = await fetch('/api/places/pop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placeId: place.id }),
+    }).catch(() => null);
+    setBusy(null);
+    if (!response?.ok) return setErr((await response?.json().catch(() => ({})))?.error ?? 'Could not vote');
+    if (pos) load(pos);
+  };
+
   return (
     <section className="mx-auto flex w-full max-w-[560px] animate-in flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
       <div className="flex items-end justify-between gap-3 pr-14 rail:pr-16">
@@ -167,6 +182,7 @@ export function PlacesScreen() {
                           <span className="text-[10px] uppercase tracking-[0.1em] text-fg-4">suggested</span>
                         )}
                       </p>
+                      <p className="text-[12px] text-fg-3">{heatLabel(heatOf({ here: p.here, arriving: p.going }))} · {p.popVotes ?? 0}/5 popping votes</p>
                       <p className="text-[12px] text-fg-3">
                         {distanceLabel(p.distanceM)}
                         {p.address ? ` · ${p.address}` : ''}
@@ -196,6 +212,17 @@ export function PlacesScreen() {
                       {mine === 'going' ? `Going · ${timeLeft(p.my!.expiresAt)}` : 'Going later'}
                     </button>
                   </div>
+                  {mine === 'here' && (
+                    <button
+                      type="button"
+                      disabled={busy === p.id}
+                      onClick={() => votePopping(p)}
+                      className="tap flex min-h-11 items-center justify-center gap-2 rounded-btn border border-line-2 text-[12px] font-semibold text-fg-2 hover:text-fg"
+                    >
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.flame} /></svg>
+                      It&apos;s popping! · {p.popVotes ?? 0}/5
+                    </button>
+                  )}
                 </div>
               );
             })
