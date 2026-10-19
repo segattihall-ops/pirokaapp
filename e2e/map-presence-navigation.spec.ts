@@ -148,6 +148,18 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await expect(page.getByText('Approximate locations')).toBeVisible();
   await expect(pin).toBeVisible();
 
+  // Preview exists only when a desktop pointer hovers a member, never as a static overlay.
+  await pin.hover();
+  const hoverCard = page.getByTestId('person-hover-card');
+  await expect(hoverCard).toBeVisible();
+  await expect(hoverCard).toHaveCSS('width', '224px');
+  await expect(hoverCard).toContainText('Click to open profile');
+  await expect(hoverCard).not.toContainText('% your type'); // Free: no invented match score.
+  const hoverPhoto = hoverCard.locator('img');
+  await expect(hoverPhoto).toHaveCount(0); // Fixture has no image: no fake photograph.
+  await page.mouse.move(700, 550);
+  await expect(hoverCard).toHaveCount(0);
+
   // App v2 desktop: map tools float at top-right, with the left rail at 80px.
   const layersDesktop = await page.getByRole('button', { name: /^Layers/ }).boundingBox();
   const filterDesktop = await page.getByRole('button', { name: /^Filter/ }).boundingBox();
