@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Sheet } from './status-sheet';
+import { addTripDays, tripNights, tripText } from '@/lib/map/pin-anatomy';
 
 export type TravelView = { lat: number; lon: number; label: string };
 type Hit = { name: string; lat: number; lon: number };
@@ -60,6 +61,9 @@ export function TravelSheet({
   );
   const [arriveOn, setArriveOn] = useState(today());
   const [nights, setNights] = useState(3);
+  const [arrivalTime, setArrivalTime] = useState('15:00');
+  const [departOn, setDepartOn] = useState(() => addTripDays(today(), 3));
+  const [departureTime, setDepartureTime] = useState('11:00');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -93,10 +97,12 @@ export function TravelSheet({
     setBusy(true);
     setErr('');
     setMsg('');
+    const count = tripNights(arriveOn, departOn);
+    if (count < 1 || count > 30) return setErr('Departure must be 1–30 nights after arrival');
     const r = await fetch('/api/trips', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city: picked.name, lat: picked.lat, lon: picked.lon, arriveOn, nights }),
+      body: JSON.stringify({ city: picked.name, lat: picked.lat, lon: picked.lon, arriveOn, nights: count, arrivalTime, departOn, departureTime }),
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
@@ -183,22 +189,47 @@ export function TravelSheet({
                   type="date"
                   min={today()}
                   value={arriveOn}
-                  onChange={(e) => setArriveOn(e.target.value)}
+                  onChange={(e) => { const value = e.target.value; setArriveOn(value); setDepartOn(addTripDays(value, nights)); }}
                   className="input h-11 normal-case tracking-normal"
                 />
               </label>
               <label className="flex w-[110px] flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-3">
-                Nights
+                Arrival time
                 <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={nights}
-                  onChange={(e) => setNights(Math.min(30, Math.max(1, Number(e.target.value) || 1)))}
+                  type="time"
+                  value={arrivalTime}
+                  onChange={(e) => setArrivalTime(e.target.value)}
                   className="input h-11 normal-case tracking-normal"
                 />
               </label>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <label className="flex min-w-[145px] flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-3">
+                Depart
+                <input
+                  type="date"
+                  min={addTripDays(arriveOn, 1)}
+                  value={departOn}
+                  onChange={(e) => {
+                    setDepartOn(e.target.value);
+                    setNights(Math.max(1, tripNights(arriveOn, e.target.value)));
+                  }}
+                  className="input h-11 normal-case tracking-normal"
+                />
+              </label>
+              <label className="flex w-[110px] flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-3">
+                Departure time
+                <input
+                  type="time"
+                  value={departureTime}
+                  onChange={(e) => setDepartureTime(e.target.value)}
+                  className="input h-11 normal-case tracking-normal"
+                />
+              </label>
+            </div>
+            <p className="text-[12px] text-fg-3">
+              {tripText({ arriveOn, nights, arrivalTime, departOn, departureTime })} · {tripNights(arriveOn, departOn)} nights
+            </p>
             {err && (
               <p role="alert" className="text-[12px] text-danger">
                 {err}
