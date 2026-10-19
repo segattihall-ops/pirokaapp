@@ -1,3 +1,4 @@
+import { POPPING_VOTES } from '@/lib/places/popping';
 import { NextResponse } from 'next/server';
 import { isUuid, requireUser } from '@/lib/api/guard';
 import { supabaseAdmin } from '@/lib/db/client';
@@ -6,7 +7,6 @@ import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 export const dynamic = 'force-dynamic';
 
 /** 5+ on-site votes in the last 90 minutes light the red flame on the place pin. */
-export const POPPING_VOTES = 5;
 const VOTE_WINDOW_MIN = 90;
 
 async function tally(placeId: string) {
