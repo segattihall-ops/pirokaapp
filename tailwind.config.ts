@@ -30,7 +30,7 @@ export default {
       borderRadius: { chip: '999px', btn: '14px', input: '13px', card: '20px', sheet: '26px', hero: '28px', logo: '15px' },
       boxShadow: {
         float: '0 18px 50px rgba(0,0,0,0.5)',
-        panel: '-30px 0 80px rgba(0,0,0,0.55)',
+        panel: '30px 0 80px rgba(0,0,0,0.55)',
         sheet: '0 -30px 80px rgba(0,0,0,0.6)',
         pin: '0 6px 16px rgba(0,0,0,0.55)',
         glow: '0 0 30px rgba(52,211,153,0.15)',
