@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar } from '@/components/people/user-row';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 import { decodeEnvelope, encodeEnvelope } from '@/lib/chat/envelope';
 import { fromB64 } from '@/lib/encryption/primitives';
 import {
@@ -204,7 +205,8 @@ export function SignalChat({
             {peerHandle ? `@${peerHandle}` : 'Anonymous'}
           </h1>
           <p className="truncate text-[12px] text-fg-3">
-            🔒 End-to-end encrypted{peerTyping ? ' · typing…' : ''}
+            <svg aria-hidden="true" className="mr-1 inline-block align-[-2px]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+            End-to-end encrypted{peerTyping ? ' · typing…' : ''}
           </p>
         </button>
         <VideoCall conversationId={conversationId} userId={userId} peerHandle={peerHandle} />
@@ -242,7 +244,7 @@ export function SignalChat({
               } ${m.failed ? 'opacity-60' : ''}`}
             >
               <p className="whitespace-pre-wrap break-words">
-                {m.text ?? (m.failed ? '🔒 Could not decrypt this message' : '🔒 Sent from another device')}
+                {m.text ?? (m.failed ? 'Could not decrypt this message' : 'Sent from another device')}
               </p>
               <p className={`mt-0.5 text-[10px] ${m.mine ? 'text-ink-950/60' : 'text-fg-4'}`}>
                 {new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -270,12 +272,12 @@ export function SignalChat({
           value={input}
           onChange={(e) => onType(e.target.value)}
           placeholder="Message"
-          className="input h-11"
+          className="input h-11 min-w-0 flex-1 rounded-chip"
           disabled={sending}
           autoComplete="off"
         />
-        <button type="submit" disabled={sending || !input.trim()} className="btn-primary h-11 shrink-0">
-          {sending ? '…' : 'Send'}
+        <button type="submit" aria-label="Send" disabled={sending || !input.trim()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green text-ink-950 transition-colors hover:bg-green-hover disabled:opacity-50">
+          {sending ? <span aria-hidden="true">…</span> : <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg>}
         </button>
       </form>
     </div>
