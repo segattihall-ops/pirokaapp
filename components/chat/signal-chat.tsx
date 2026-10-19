@@ -22,6 +22,7 @@ import {
 } from '@/lib/realtime/messages';
 import { SafetyMenu } from './safety-menu';
 import { HealthSharedBanner } from './health-shared-banner';
+import { MeetPropose } from './meet-propose';
 import { VideoCall } from './video-call';
 import { SafeMeetBar } from '@/components/meet/safemeet-bar';
 
@@ -217,6 +218,8 @@ export function SignalChat({
       <SafeMeetBar conversationId={conversationId} peerHandle={peerHandle} />
 
       <HealthSharedBanner peerUserId={peerUserId} peerHandle={peerHandle} />
+
+      <MeetPropose conversationId={conversationId} meId={userId} peerHandle={peerHandle} />
 
       {showSafety && (
         <div className="border-b border-line-1 bg-ink-900 px-4 py-3 text-[12px] text-fg-3">
