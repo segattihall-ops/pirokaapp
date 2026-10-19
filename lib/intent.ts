@@ -1,4 +1,5 @@
 import { INTENT_ICON_PATHS } from '@/lib/design/icon-paths';
+import { launchAllAccess } from '@/lib/billing/launch';
 
 // Intent, availability, pin rings, and Smart Inbox buckets — ported from the prototype logic
 // (design_handoff/design/Piroka App v2.dc.html). Shared by the server routes and the client.
@@ -99,5 +100,5 @@ export function photoBlur(o: { mutual: boolean; inMeet: boolean; chatted: boolea
 }
 
 /** Album limit by plan. */
-export const albumLimit = (plan: 'anonymous' | 'free' | 'plus' | 'premium') =>
-  plan === 'plus' || plan === 'premium' ? 5 : 2;
+export const albumLimit = (plan: 'anonymous' | 'free' | 'plus' | 'premium', now: number = Date.now()) =>
+  launchAllAccess(now) || plan === 'plus' || plan === 'premium' ? 5 : 2;
