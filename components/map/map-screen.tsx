@@ -892,6 +892,9 @@ export function MapScreen({ userId }: { userId: string }) {
               </svg>
             )}
           </button>
+          <span className="pointer-events-none hidden min-h-11 items-center gap-2 rounded-btn border border-line-2 bg-ink-850/90 px-3 text-[12px] text-fg-3 backdrop-blur-md rail:flex">
+            Near you <strong className="font-semibold text-green">{liveCount} ready</strong>
+          </span>
           <button
             type="button"
             onClick={() => setShowTravel(true)}
