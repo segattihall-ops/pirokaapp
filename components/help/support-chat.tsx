@@ -49,6 +49,7 @@ export function SupportChat() {
   const [draft, setDraft] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const openedRef = useRef(false);
   const L = REPLY[lang];
 
   useEffect(() => {
@@ -62,6 +63,15 @@ export function SupportChat() {
     setMsgs((m) => [...m, { me: true, text: t }]);
     setDraft('');
     setTyping(true);
+    // Open one real support ticket for the conversation so the team can follow up (fire-and-forget).
+    if (!openedRef.current) {
+      openedRef.current = true;
+      void fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: t.slice(0, 120), body: t, lang: lang.toUpperCase() }),
+      }).catch(() => {});
+    }
     setTimeout(() => {
       setTyping(false);
       setMsgs((m) => [...m, { me: false, text: L.ack }]);
