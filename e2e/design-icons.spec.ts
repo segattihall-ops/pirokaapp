@@ -14,6 +14,7 @@ import {
 import { FILTER_OPTIONS, parseSmartQuery } from '../components/map/filters';
 import { albumLimit } from '../lib/intent';
 import { LAUNCH_ALL_ACCESS_UNTIL } from '../lib/billing/launch';
+import { approx, exact, dur, tripText, tripDateTime, tripNights, heatOf, heatLabel } from '../lib/map/pin-anatomy';
 
 const original = readFileSync(
   join(process.cwd(), 'design_handoff/design/Piroka App v2.dc.html'),
@@ -71,4 +72,30 @@ test('launch all-access promotion expires back to official plan photo limits', (
   expect(albumLimit('plus', afterPromo)).toBe(5);
   expect(albumLimit('premium', afterPromo)).toBe(5);
   expect(albumLimit('free', LAUNCH_ALL_ACCESS_UNTIL - 1000)).toBe(5);
+});
+
+test('pin anatomy keeps personal distances approximate outside accepted Meet Mode', () => {
+  expect(approx(1930)).toBe('~1.2 mi');
+  expect(exact(1930)).toBe('~1.2 mi');
+  expect(exact(1930, true)).toBe('1.20 mi');
+  expect(dur(135)).toBe('2h 15m');
+  expect(dur(40)).toBe('40m');
+});
+
+test('traveler dates and clock render real arrival/departure without inventing legacy hours', () => {
+  const timed = { arriveOn: '2026-10-23', departOn: '2026-10-26',
+    arrivalTime: '15:00', departureTime: '11:00', nights: 3 };
+  expect(tripText(timed)).toBe('Arrives Fri 3 PM → Mon 11 AM');
+  expect(tripDateTime(timed.arriveOn, timed.arrivalTime)).toBe('Fri, Oct 23, 3:00 PM');
+  expect(tripText({ arriveOn: timed.arriveOn, nights: 3 })).toBe('Arrives Fri → Mon');
+  expect(tripNights(timed.arriveOn, timed.departOn)).toBe(3);
+  expect(tripNights(timed.departOn, timed.arriveOn)).toBe(-3);
+});
+
+test('place heat stays neutral white and popping threshold is five active onsite votes', () => {
+  expect(heatOf({ here: 5, arriving: 10 })).toBeCloseTo(20 / 45, 5);
+  expect(heatLabel(heatOf({ here: 5, arriving: 10 }))).toBe('Lively');
+  expect(heatLabel(0)).toBe('Chill');
+  expect(heatLabel(0.6)).toBe('Busy');
+  expect(heatLabel(0.8)).toBe('Packed');
 });
