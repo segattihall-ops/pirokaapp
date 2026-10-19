@@ -56,8 +56,8 @@ export function eventPinElement(e: DemoEvent): HTMLButtonElement {
   el.style.width = '40px';
   el.style.height = '40px';
   el.innerHTML = `
-    <span style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);border:1.5px solid rgba(52,211,153,.75);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(EVENT_GLYPH, 'currentColor', 'none', 18)}</span>
-    <span style="position:absolute;top:-6px;right:-10px;height:17px;padding:0 5px;border-radius:999px;background:#34d399;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${e.time}</span>`;
+    <span style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);border:1.5px solid rgba(245,245,245,.75);display:flex;align-items:center;justify-content:center;color:#f5f5f5;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(EVENT_GLYPH, 'currentColor', 'none', 18)}</span>
+    <span style="position:absolute;top:-6px;right:-10px;height:17px;padding:0 5px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${e.time}</span>`;
   return el;
 }
 
@@ -67,7 +67,7 @@ export function testingPinElement(t: { name: string; cost: string }): HTMLButton
   el.style.width = '40px';
   el.style.height = '40px';
   el.innerHTML = `
-    <span style="position:absolute;inset:0;border-radius:999px;background:rgba(52,211,153,.14);border:1.5px solid rgba(52,211,153,.75);display:flex;align-items:center;justify-content:center;color:#34d399;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(TEST_GLYPH, 'currentColor', 'none', 18)}</span>
+    <span style="position:absolute;inset:0;border-radius:999px;background:rgba(245,245,245,.06);border:1.5px solid rgba(245,245,245,.75);display:flex;align-items:center;justify-content:center;color:#f5f5f5;box-shadow:0 6px 16px rgba(0,0,0,.55)">${svg(TEST_GLYPH, 'currentColor', 'none', 18)}</span>
     <span style="position:absolute;top:-6px;right:-8px;height:17px;padding:0 6px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 9px/17px Geist,sans-serif;box-shadow:0 0 0 2px #070707;white-space:nowrap">${t.cost}</span>`;
   return el;
 }
