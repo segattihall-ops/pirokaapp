@@ -2,6 +2,7 @@ import type { NearbyPerson } from '@/app/api/nearby/route';
 import { INTENT_BADGE_PATH, ringDegrees, type Intent, type Status } from '@/lib/intent';
 import { intentMeta } from '@/lib/geo/client';
 import { positionMarkPath } from '@/lib/design/icon-paths';
+import { dur } from '@/lib/map/pin-anatomy';
 
 /** Strip the characters that would break out of a CSS url('…') literal. */
 export function escapeUrl(url: string): string {
@@ -24,8 +25,7 @@ export function timeLeftLabel(iso: string | null | undefined, now: number): stri
   const ms = new Date(iso).getTime() - now;
   if (!Number.isFinite(ms) || ms <= 0) return 'ending';
   const minutes = Math.max(1, Math.ceil(ms / 60_000));
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.ceil(minutes / 60)}h`;
+  return dur(minutes);
 }
 
 export function activityLabel(activity: NearbyPerson['activity']): string {
@@ -59,12 +59,12 @@ export function pinElement(p: NearbyPerson, now: number, showLabels: boolean): H
   el.type = 'button';
   el.className = 'tap';
   el.style.cssText =
-    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:46px';
+    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:44px';
 
   const shell = document.createElement('span');
   shell.dataset.pinShell = 'true';
   shell.style.cssText =
-    'position:relative;width:46px;height:46px;border-radius:999px;padding:3px;box-shadow:0 6px 16px rgba(0,0,0,.55);display:block;animation:pinIn .35s ease-out both';
+    'position:relative;width:44px;height:44px;border-radius:999px;padding:3px;box-shadow:0 6px 16px rgba(0,0,0,.55);display:block;animation:pinIn .35s ease-out both';
 
   const desp = document.createElement('span');
   desp.dataset.pinDesp = 'true';
