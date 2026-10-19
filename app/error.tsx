@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { reportClientError } from '@/lib/errors/client';
+import { maybeRecoverFromChunkError } from '@/lib/errors/chunk';
 
-/** Route-segment error boundary: reports once, offers retry. */
+/** Route-segment error boundary: reports once, offers retry. A stale chunk after a deploy self-heals with a reload. */
 export default function ErrorPage({
   error,
   reset,
@@ -14,6 +15,7 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     reportClientError(error.message, error.stack, { digest: error.digest, boundary: 'route' });
+    maybeRecoverFromChunkError(error);
   }, [error]);
 
   return (

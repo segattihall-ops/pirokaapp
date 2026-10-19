@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { reportClientError } from '@/lib/errors/client';
+import { maybeRecoverFromChunkError } from '@/lib/errors/chunk';
 
 /** Root boundary (replaces the root layout when it crashes). Must render its own <html>/<body>. */
 export default function GlobalError({
@@ -13,6 +14,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     reportClientError(error.message, error.stack, { digest: error.digest, boundary: 'global' });
+    maybeRecoverFromChunkError(error);
   }, [error]);
 
   return (
