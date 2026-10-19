@@ -148,8 +148,22 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await expect(page.getByText('Approximate locations')).toBeVisible();
   await expect(pin).toBeVisible();
 
+  // App v2 desktop: map tools float at top-right, with the left rail at 80px.
+  const layersDesktop = await page.getByRole('button', { name: /^Layers/ }).boundingBox();
+  const filterDesktop = await page.getByRole('button', { name: /^Filter/ }).boundingBox();
+  const intentDesktop = await page.getByRole('button', { name: /Set your intent|You: / }).boundingBox();
+  expect(layersDesktop).not.toBeNull();
+  expect(filterDesktop).not.toBeNull();
+  expect(intentDesktop).not.toBeNull();
+  expect(layersDesktop!.x).toBeGreaterThan(900);
+  expect(filterDesktop!.x).toBeGreaterThan(layersDesktop!.x);
+  expect(Math.abs(layersDesktop!.y - intentDesktop!.y)).toBeLessThan(12);
+
   await page.setViewportSize({ width: 430, height: 932 });
   await expect(pin).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Primary' }).last()).toBeVisible();
+  // Mobile still exposes travel despite moving the desktop action into Layers.
+  await expect(page.getByRole('button', { name: 'Travel mode' })).toBeVisible();
 
   const layersTrigger = page.getByRole('button', { name: /^Layers/ });
   await layersTrigger.focus();
