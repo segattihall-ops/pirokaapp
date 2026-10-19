@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { distanceLabel, intentMeta } from '@/lib/geo/client';
 import { parseSmartQuery, type Filters } from './filters';
@@ -189,10 +190,10 @@ export function AssistantPanel({
           onKeyDown={(e) => e.key === 'Enter' && send(draft)}
           placeholder="Ask anything — who’s around, an opener, safety…"
           aria-label="Message πroka"
-          className="input h-11"
+          className="input h-11 min-w-0 flex-1 rounded-chip"
         />
-        <button type="button" onClick={() => send(draft)} className="btn-primary h-11 px-4">
-          Send
+        <button type="button" aria-label="Send" onClick={() => send(draft)} disabled={!draft.trim() || busy} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green text-ink-950 transition-colors hover:bg-green-hover disabled:opacity-50">
+          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg>
         </button>
       </div>
     </section>
