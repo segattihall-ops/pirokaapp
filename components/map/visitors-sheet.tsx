@@ -4,7 +4,6 @@ import type { Visitor } from '@/app/api/nearby/route';
 import { UserRow } from '@/components/people/user-row';
 import { Sheet } from './status-sheet';
 import { tripText } from '@/lib/map/pin-anatomy';
-import { flagUrl } from './place-pins';
 
 /** People who announced a trip to the area you are looking at. */
 export function VisitorsSheet({
