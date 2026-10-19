@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   let q = supabaseAdmin
     .from('reports')
     .select(
-      'id, reporter_id, target_id, reason, details, evidence, status, created_at, resolved_at, target:users!reports_target_id_fkey(handle), reporter:users!reports_reporter_id_fkey(handle)',
+      'id, reporter_id, target_id, reason, details, evidence, reporter_ip, status, created_at, resolved_at, target:users!reports_target_id_fkey(handle), reporter:users!reports_reporter_id_fkey(handle)',
     )
     .order('created_at', { ascending: false })
     .limit(200);
@@ -48,6 +48,8 @@ export async function GET(request: Request) {
       status: r.status,
       createdAt: r.created_at,
       resolvedAt: r.resolved_at,
+      // Moderator-only: best-effort IP captured when the report was filed (null if unavailable).
+      reporterIp: r.reporter_ip ?? null,
       // Public-form reports carry what moderators need to find the content and reply.
       publicForm: publicForm(r.evidence),
     })),
@@ -70,6 +72,8 @@ export async function PATCH(request: Request) {
       status,
       resolved_at: closing ? new Date().toISOString() : null,
       resolved_by: closing ? g.session.userId : null,
+      // Privacy: the reporter's IP exists only to triage an open report — drop it once the report closes.
+      ...(closing ? { reporter_ip: null } : {}),
     })
     .eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
