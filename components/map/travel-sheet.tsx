@@ -109,7 +109,7 @@ export function TravelSheet({
       {picked && (
         <>
           <div className="flex items-center justify-between rounded-input border border-sel-border bg-sel-fill px-3.5 py-2.5 text-[14px]">
-            <span className="truncate">📍 {picked.name}</span>
+            <span className="truncate">{picked.name}</span>
             <button
               type="button"
               onClick={() => {
