@@ -50,7 +50,7 @@ export const FILTER_GROUPS: { key: FilterKey; title: string }[] = [
   { key: 'looking', title: 'Looking for' },
 ];
 
-/** Position marks: the profile stores top / versatile / bottom; the pin draws the prototype glyph for each. */
+/** The seven prototype position marks, including the three legacy values. */
 export const POSITION_GLYPH: Record<string, string> = Object.fromEntries(
   POSITION_MARKS.flatMap((p) => [[p.id, p.path], [p.label, p.path]]),
 );
@@ -153,6 +153,10 @@ export function parseSmartQuery(text: string): SmartResult {
     [/\btrans (women|girls?)\b/, 'show', 'Trans women'],
     [/\btrans (men|guys?)\b/, 'show', 'Trans men'],
     [/\b(enby|enbies|non-?binary)\b/, 'show', 'Non-binary people'],
+    [/\bvers(?:atile)?[ _-]?tops?\b/, 'position', 'Vers Top'],
+    [/\bvers(?:atile)?[ _-]?bottoms?\b/, 'position', 'Vers Bottom'],
+    [/\bsides?\b/, 'position', 'Side'],
+    [/\bswitch(?:es)?\b/, 'position', 'Switch'],
     [/\btops?\b/, 'position', 'Top'],
     [/\bbottoms?\b/, 'position', 'Bottom'],
     [/\bvers(atile)?\b/, 'position', 'Vers'],
@@ -175,7 +179,10 @@ export function parseSmartQuery(text: string): SmartResult {
     [/\bkink/, 'looking', 'Kink-friendly'],
     [/\bpoly/, 'looking', 'Polyamorous'],
   ];
-  for (const [re, k, v] of rules) if (re.test(q)) add(k, v);
+  for (const [re, k, v] of rules) {
+    if (k === 'position' && ['Top', 'Bottom', 'Vers'].includes(v) && /\bvers(?:atile)?[ _-]?(?:tops?|bottoms?)\b/.test(q)) continue;
+    if (re.test(q)) add(k, v);
+  }
   if (/\bhost/.test(q)) chip = 'hosting';
   else if (/\b(tonight|later|this evening)\b/.test(q)) chip = 'tonight';
   else if (/\b(visit|travel+ing|tourist|in town)\b/.test(q)) chip = 'visitors';
