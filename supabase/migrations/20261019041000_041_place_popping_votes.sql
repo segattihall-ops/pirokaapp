@@ -18,7 +18,7 @@ grant select, insert, update, delete on table public.place_pop_votes to service_
 -- physical presence against a deliberately spoofed device fix.
 create or replace function public.can_vote_popping(p_user uuid, p_place uuid)
 returns boolean
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public as $poppingv1$
   select exists (
     select 1
     from public.locations l
@@ -27,6 +27,6 @@ language sql stable security definer set search_path = public as $$
       and l.updated_at >= now() - interval '15 minutes'
       and st_dwithin(l.true_geo, p.geo, 300)
   );
-$$;
+$poppingv1$;
 revoke all on function public.can_vote_popping(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.can_vote_popping(uuid, uuid) to service_role;
