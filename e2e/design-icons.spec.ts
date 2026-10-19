@@ -13,7 +13,7 @@ import {
 } from '../lib/design/icon-paths';
 import { FILTER_OPTIONS, parseSmartQuery } from '../components/map/filters';
 import { albumLimit } from '../lib/intent';
-import { LAUNCH_ALL_ACCESS_UNTIL } from '../lib/billing/launch';
+import { LAUNCH_ALL_ACCESS_UNTIL, launchAllAccess } from '../lib/billing/launch';
 import { approx, exact, dur, tripText, tripDateTime, tripNights, heatOf, heatLabel } from '../lib/map/pin-anatomy';
 
 const original = readFileSync(
@@ -65,13 +65,17 @@ test('every navigation tab shows its canonical SVG stroke and green active state
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(7, 7, 7)');
 });
 
-test('launch all-access promotion expires back to official plan photo limits', () => {
-  const afterPromo = LAUNCH_ALL_ACCESS_UNTIL + 1000;
-  expect(albumLimit('anonymous', afterPromo)).toBe(2);
-  expect(albumLimit('free', afterPromo)).toBe(2);
-  expect(albumLimit('plus', afterPromo)).toBe(5);
-  expect(albumLimit('premium', afterPromo)).toBe(5);
-  expect(albumLimit('free', LAUNCH_ALL_ACCESS_UNTIL - 1000)).toBe(5);
+test('open-ended launch access grants five photos without altering stored billing plans', () => {
+  // Main intentionally changed the launch promotion to OPEN_ENDED=true.
+  // The historical cutoff remains a reference, not an active expiry while enabled.
+  const beforeLegacyCutoff = LAUNCH_ALL_ACCESS_UNTIL - 1000;
+  const afterLegacyCutoff = LAUNCH_ALL_ACCESS_UNTIL + 1000;
+  expect(launchAllAccess(beforeLegacyCutoff)).toBe(true);
+  expect(launchAllAccess(afterLegacyCutoff)).toBe(true);
+  for (const plan of ['anonymous', 'free', 'plus', 'premium'] as const) {
+    expect(albumLimit(plan, beforeLegacyCutoff)).toBe(5);
+    expect(albumLimit(plan, afterLegacyCutoff)).toBe(5);
+  }
 });
 
 test('pin anatomy keeps personal distances approximate outside accepted Meet Mode', () => {
