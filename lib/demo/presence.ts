@@ -16,6 +16,7 @@ export type DemoPlace = {
   here: number;
   arriving: number;
   popping: boolean;
+  popCount?: number;
   peak: string;
 };
 
@@ -195,7 +196,8 @@ export function demoWorld(center: { lat: number; lon: number }): DemoWorld {
       lon: base.lon,
       here: Math.round(rnd(3, 38)),
       arriving: Math.round(rnd(0, 10)),
-      popping: Math.random() < 0.35,
+      popping: false,
+      popCount: 0,
       peak: pick(PEAKS),
     };
   });
