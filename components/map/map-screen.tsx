@@ -1440,7 +1440,7 @@ function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: {
       data-testid="person-hover-card"
       data-flipped={pos.flipped ? 'true' : 'false'}
       aria-hidden="true"
-      className="pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-3 bg-ink-850 shadow-float motion-reduce:animate-none rail:[@media(hover:hover)]:block"
+      className="piroka-hover-card pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-3 bg-ink-850 shadow-float motion-reduce:animate-none rail:block"
       style={{ left: pos.left, top: pos.top }}
     >
       <div className="relative flex h-[210px] items-center justify-center overflow-hidden bg-ink-800">
