@@ -88,7 +88,7 @@ export async function GET(request: Request) {
       limit_count: 200,
     }),
     supabaseAdmin.rpc('nearby_hotspots', { center_lat: lat, center_lon: lon, radius_m: 25000 }),
-    supabaseAdmin.rpc('trips_near', {
+    supabaseAdmin.rpc('trips_near_v2', {
       center_lat: lat,
       center_lon: lon,
       radius_m: 50000,
