@@ -2,96 +2,60 @@
 
 import { useEffect, useState } from 'react';
 
-interface Trend {
-  hour: number;
-  active_profiles: number;
-  messages_sent: number;
-  avg_session_duration: number | null;
-  trend: string;
-}
+type Point = { bucket: string; active: number };
 
-export function ActivityTrends({ city }: { city: string }) {
-  const [trends, setTrends] = useState<Trend[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [peak, setPeak] = useState(0);
+/** Real hourly activity for the member's area, from the snapshot cron. Never fabricated. */
+export function ActivityTrends({ lat, lon }: { lat: number; lon: number }) {
+  const [points, setPoints] = useState<Point[] | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`/api/pulse/heatmap?city=${encodeURIComponent(city)}&radius=25000`, {
-          cache: 'no-store',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          // Simulate trend data from heatmap (in production, this would come from activity_trends table)
-          const simulatedTrends = data.hotspots?.map((p: any, i: number) => ({
-            hour: (new Date().getHours() - i + 24) % 24,
-            active_profiles: Math.round(p.active_profiles * (1 - i * 0.1)),
-            messages_sent: Math.round(p.active_profiles * 2.5 * (1 - i * 0.1)),
-            avg_session_duration: 25 + Math.random() * 35,
-            trend: p.trend,
-          })) || [];
-          setTrends(simulatedTrends);
-          setPeak(Math.max(...simulatedTrends.map((t: Trend) => t.active_profiles)));
-        }
-      } catch (err) {
-        console.error('Failed to load trends:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [city]);
+    fetch(`/api/pulse/trends?lat=${lat}&lon=${lon}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { points: [] }))
+      .then((j) => setPoints(j.points ?? []))
+      .catch(() => setPoints([]));
+  }, [lat, lon]);
 
-  if (loading) {
+  if (points === null) {
     return <div className="text-center text-[13px] text-fg-3">Loading trends…</div>;
   }
-
-  if (trends.length === 0) {
-    return <div className="text-center text-[13px] text-fg-3">No trend data available.</div>;
+  if (points.length < 2) {
+    return (
+      <div className="text-center text-[13px] text-fg-3">
+        Collecting activity for your area — the curve fills in over the next hours. Check back soon.
+      </div>
+    );
   }
 
+  const max = Math.max(...points.map((p) => p.active), 1);
+  const peak = points.reduce((a, b) => (b.active > a.active ? b : a));
+  const peakHour = new Date(peak.bucket).toLocaleTimeString([], { hour: 'numeric' });
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold text-fg-3">24-HOUR ACTIVITY</span>
-        <span className="text-[11px] text-fg-4">Peak: {peak} people</span>
+        <span className="text-[12px] font-semibold text-fg-3">ACTIVE MEMBERS · LAST 24H</span>
+        <span className="text-[11px] text-fg-4">
+          Peak {peak.active} · {peakHour}
+        </span>
       </div>
-
-      {/* Activity bar chart */}
-      <div className="space-y-1.5">
-        {trends.map((t, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="w-6 text-right text-[10px] text-fg-4">{t.hour}h</span>
-            <div className="flex-1">
-              <div className="h-6 rounded-sm bg-ink-800" style={{ width: `${(t.active_profiles / peak) * 100}%` }}>
-                <div
-                  className="h-full rounded-sm bg-green transition-all"
-                  style={{
-                    width: '100%',
-                    opacity: Math.min(t.active_profiles / peak, 1),
-                  }}
-                />
-              </div>
+      <div className="flex h-[140px] items-end gap-1">
+        {points.map((p) => {
+          const h = Math.max(4, Math.round((p.active / max) * 132));
+          const hour = new Date(p.bucket).getHours();
+          return (
+            <div
+              key={p.bucket}
+              className="flex flex-1 flex-col items-center gap-1"
+              title={`${p.active} active`}
+            >
+              <div
+                className="w-full rounded-t-[4px] bg-green"
+                style={{ height: `${h}px`, opacity: p.active === max ? 1 : 0.55 }}
+              />
+              {hour % 6 === 0 && <span className="text-[9px] text-fg-4">{hour}h</span>}
             </div>
-            <span className="w-8 text-right text-[11px] text-fg-3">{t.active_profiles}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="glass rounded-card px-3 py-2 text-center">
-          <div className="text-[14px] font-semibold text-fg">{trends.reduce((a, t) => a + t.messages_sent, 0)}</div>
-          <div className="text-[10px] text-fg-4">Messages</div>
-        </div>
-        <div className="glass rounded-card px-3 py-2 text-center">
-          <div className="text-[14px] font-semibold text-fg">{Math.round((trends[0]?.avg_session_duration || 0) * 10) / 10}m</div>
-          <div className="text-[10px] text-fg-4">Avg session</div>
-        </div>
-        <div className="glass rounded-card px-3 py-2 text-center">
-          <div className="text-[14px] font-semibold text-green">{trends.filter((t) => t.trend === 'rising').length}</div>
-          <div className="text-[10px] text-fg-4">Rising</div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
