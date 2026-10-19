@@ -38,20 +38,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (await isBlocked(me, target)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // A repeat tap (or reopening the profile) must not notify or learn twice, so only a fresh insert counts.
+  const { error: insErr } = await db.from('interests').insert({ from_id: me, to_id: target });
+  if (insErr) {
+    if (insErr.code === '23505') return NextResponse.json({ mutual: false, alreadySent: true });
+    if (isMissingSchema(insErr)) return NextResponse.json(schemaPendingResponse('042_interests'), { status: 503 });
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
+  }
+
   await db.from('taste_events').insert({
     user_id: me,
     target_id: target,
     kind: 'interest',
     weight: SIGNAL_WEIGHT.interest,
   });
-
-  const { error: insErr } = await db
-    .from('interests')
-    .upsert({ from_id: me, to_id: target }, { onConflict: 'from_id,to_id', ignoreDuplicates: true });
-  if (insErr) {
-    if (isMissingSchema(insErr)) return NextResponse.json(schemaPendingResponse('042_interests'), { status: 503 });
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
-  }
 
   const { data: back } = await db
     .from('interests')
