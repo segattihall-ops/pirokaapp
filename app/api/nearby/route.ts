@@ -6,6 +6,7 @@ import { presenceActivity } from '@/lib/geo/presence';
 import { isIntent, type Intent } from '@/lib/intent';
 import { isMissingSchema } from '@/lib/db/schema-errors';
 import { addTripDays } from '@/lib/map/pin-anatomy';
+import { canRevealMainPhoto } from '@/lib/profile/photo-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,7 +154,7 @@ export async function GET(request: Request) {
         .or(`a_id.eq.${session.userId},b_id.eq.${session.userId}`),
       supabaseAdmin.from('meets').select('a_id, b_id, accepted_at, ends_at')
         .or(`a_id.eq.${session.userId},b_id.eq.${session.userId}`)
-        .not('accepted_at', 'is', null).gt('ends_at', nowIso),
+        .not('accepted_at', 'is', null).gt('ends_at', nowIso).eq('status', 'active'),
       supabaseAdmin.from('users').select('plan').eq('id', session.userId).maybeSingle(),
     ]);
     const visibleIds = new Set(ids);
@@ -167,7 +168,7 @@ export async function GET(request: Request) {
       console.error('nearby: accepted Meet Mode lookup failed', meetsError.message);
     for (const m of meets ?? []) {
       const peer = m.a_id === session.userId ? m.b_id : m.b_id === session.userId ? m.a_id : null;
-      if (peer && visibleIds.has(peer)) relationshipOf.set(peer, 'meet');
+      if (peer && visibleIds.has(peer) && relationshipOf.get(peer) !== 'mutual') relationshipOf.set(peer, 'meet');
     }
     if (viewerPlan.data?.plan === 'premium') {
       const { data: scores, error: scoreError } = await supabaseAdmin.from('match_scores')
@@ -180,8 +181,8 @@ export async function GET(request: Request) {
         if (Number.isFinite(score) && score >= 0 && score <= 1) scoreOf.set(item.target_id, score);
       }
     }
-    // The private source image is only signed when the requesting member has a mutual match
-    // or an active, accepted Meet Mode and neither member is in a higher-risk region.
+    // Only sign the original source if a mutual match exists, or an accepted and active Meet
+    // in a region confirmed safe for both people. Missing location safety rows fail closed.
     const candidates = [...relationshipOf].filter(([, rel]) => rel === 'mutual' || rel === 'meet').map(([id]) => id);
     if (candidates.length) {
       const [{ data: photoRows, error: photoError }, { data: riskRows, error: riskError }] = await Promise.all([
@@ -191,15 +192,20 @@ export async function GET(request: Request) {
       ]);
       if (photoError && !isMissingSchema(photoError)) console.error('nearby: clear photo lookup failed', photoError.message);
       if (riskError && !isMissingSchema(riskError)) console.error('nearby: safety lookup failed', riskError.message);
-      // Fail closed if region information is missing: never upgrade to a clear photo by default.
+      // No location risk record => do not sign a clear source image, even for a mutual match.
       if (!photoError && !riskError) {
         const riskOf = new Map((riskRows ?? []).map((row) => [row.user_id, Boolean(row.risk_region)]));
-        if (riskOf.has(session.userId) && !riskOf.get(session.userId)) {
-          for (const p of photoRows ?? []) {
-            if (riskOf.has(p.user_id) && !riskOf.get(p.user_id) && p.storage_key) {
-              clearPhotoKeyOf.set(p.user_id, p.storage_key);
-              safeToReveal.add(p.user_id);
-            }
+        for (const p of photoRows ?? []) {
+          const relation = relationshipOf.get(p.user_id);
+          if (p.storage_key && canRevealMainPhoto({
+            self: false,
+            mutual: relation === 'mutual',
+            activeAcceptedMeet: relation === 'meet',
+            viewerRisk: riskOf.get(session.userId) ?? null,
+            peerRisk: riskOf.get(p.user_id) ?? null,
+          })) {
+            clearPhotoKeyOf.set(p.user_id, p.storage_key);
+            safeToReveal.add(p.user_id);
           }
         }
       }
