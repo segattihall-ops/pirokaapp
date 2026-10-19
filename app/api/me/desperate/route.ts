@@ -7,6 +7,7 @@ import { displayName, userCards } from '@/lib/users/cards';
 import { track } from '@/lib/analytics/server';
 import { DESPERATE_COOLDOWN_H, DESPERATE_MINUTES, type DesperateState } from '@/lib/desperate';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
+import { effectivePlanNow } from '@/lib/billing/launch';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ async function stateFor(userId: string): Promise<DesperateState> {
   const until = d ? new Date(d.until).getTime() : 0;
   const nextAt = d ? new Date(d.sent_at).getTime() + DESPERATE_COOLDOWN_H * 3600_000 : 0;
   return {
-    allowed: u?.plan === 'premium',
+    allowed: effectivePlanNow(u?.plan) === 'premium',
     active: d && until > now ? { until: d.until, reached: d.reached } : null,
     nextAt: nextAt > now ? new Date(nextAt).toISOString() : null,
   };

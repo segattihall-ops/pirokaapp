@@ -7,6 +7,9 @@ import { hasFeature } from './feature-gates';
 
 export function useFeatures() {
   const [plan, setPlan] = useState<Plan>('free');
+  // Launch window: everyone gets every feature until it closes (billing plan is unchanged).
+  const [allAccess, setAllAccess] = useState(false);
+  const [allAccessUntil, setAllAccessUntil] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,8 +17,14 @@ export function useFeatures() {
       try {
         const res = await fetch('/api/billing/status', { cache: 'no-store' });
         if (res.ok) {
-          const data = (await res.json()) as { plan: Plan };
+          const data = (await res.json()) as {
+            plan: Plan;
+            allAccess?: boolean;
+            allAccessUntil?: string | null;
+          };
           setPlan(data.plan);
+          setAllAccess(Boolean(data.allAccess));
+          setAllAccessUntil(data.allAccessUntil ?? null);
         }
       } catch (err) {
         console.error('Failed to load plan:', err);
@@ -28,8 +37,10 @@ export function useFeatures() {
   return {
     plan,
     loading,
-    hasFeature: (feature: Feature) => hasFeature(plan, feature),
-    isPremium: plan === 'premium',
-    isPlus: plan === 'plus' || plan === 'premium',
+    allAccess,
+    allAccessUntil,
+    hasFeature: (feature: Feature) => allAccess || hasFeature(plan, feature),
+    isPremium: allAccess || plan === 'premium',
+    isPlus: allAccess || plan === 'plus' || plan === 'premium',
   };
 }

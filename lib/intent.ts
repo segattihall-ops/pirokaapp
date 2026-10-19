@@ -1,5 +1,6 @@
 // Intent, availability, pin rings, and Smart Inbox buckets — ported from the prototype logic
 // (design_handoff/design/Piroka App v2.dc.html). Shared by the server routes and the client.
+import { launchAllAccess } from '@/lib/billing/launch';
 
 export type Intent =
   'now' | 'next' | 'hosting' | 'travel' | 'tonight' | 'later' | 'visiting' | 'looking' | 'couchless';
@@ -102,6 +103,6 @@ export function photoBlur(o: { mutual: boolean; inMeet: boolean; chatted: boolea
   return o.chatted && !o.riskRegion ? 5 : 11;
 }
 
-/** Album limit by plan. */
+/** Album limit by plan (every member gets the full album during the launch all-access window). */
 export const albumLimit = (plan: 'anonymous' | 'free' | 'plus' | 'premium') =>
-  plan === 'plus' || plan === 'premium' || plan === 'anonymous' ? 5 : 2;
+  launchAllAccess() || plan === 'plus' || plan === 'premium' || plan === 'anonymous' ? 5 : 2;
