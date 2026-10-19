@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Action,
   ActionRow,
@@ -15,17 +15,36 @@ import {
   type QueueRow,
 } from '@/components/admin/console/ui';
 import { useRole, useToast } from '@/components/admin/console/shell';
-import { seedAmbassadors } from '@/lib/admin/ts-seed';
+import { seedAmbassadors, type SeedAmbassador } from '@/lib/admin/ts-seed';
 
 export default function AmbassadorsPage() {
   const { role } = useRole();
   const toast = useToast();
   const admin = role === 'Admin';
-  const [ambs, setAmbs] = useState(() => seedAmbassadors());
+  const [configured, setConfigured] = useState(true);
+  const [ambs, setAmbs] = useState<SeedAmbassador[]>([]);
   const [filt, setFilt] = useState<'open' | 'active' | 'all'>('open');
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<string | null>(null);
   const [note, setNote] = useState('');
+
+  const load = useCallback(async () => {
+    const r = await fetch(`/api/admin/ambassadors?status=${filt === 'all' ? '' : filt}`, {
+      cache: 'no-store',
+    }).catch(() => null);
+    if (r?.ok) {
+      const j = (await r.json()) as { ambassadors: SeedAmbassador[] };
+      setConfigured(true);
+      setAmbs(j.ambassadors);
+    } else {
+      setConfigured(false);
+      setAmbs(seedAmbassadors());
+    }
+  }, [filt]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const rows: QueueRow[] = useMemo(() => {
     const ql = q.toLowerCase();
@@ -48,9 +67,22 @@ export default function AmbassadorsPage() {
 
   const x = ambs.find((b) => b.id === sel && (filt === 'all' || b.status === filt)) ?? null;
 
-  const resolve = (status: string, msg: string) => {
+  const resolve = (status: string, msg: string) => async () => {
     if (!x) return;
-    setAmbs((bs) => bs.map((b) => (b.id === x.id ? { ...b, status } : b)));
+    if (configured) {
+      const r = await fetch('/api/admin/ambassadors', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: x.id, status }),
+      }).catch(() => null);
+      if (!r?.ok) {
+        const j = r ? await r.json().catch(() => null) : null;
+        return toast(j?.error ?? 'Could not update the ambassador.');
+      }
+      await load();
+    } else {
+      setAmbs((bs) => bs.map((b) => (b.id === x.id ? { ...b, status } : b)));
+    }
     setSel(null);
     setNote('');
     toast(msg);
@@ -64,7 +96,7 @@ export default function AmbassadorsPage() {
         search
         q={q}
         onQ={setQ}
-        demo
+        demo={!configured}
       />
       <FilterChips
         filters={[
@@ -114,12 +146,12 @@ export default function AmbassadorsPage() {
                     <Action
                       label="Approve"
                       kind="pri"
-                      onClick={() => resolve('active', `${x.user} is now an ambassador.`)}
+                      onClick={resolve('active', `${x.user} is now an ambassador.`)}
                     />
                     <Action
                       label="Decline"
                       kind="danger"
-                      onClick={() => resolve('declined', `Declined ${x.user}.`)}
+                      onClick={resolve('declined', `Declined ${x.user}.`)}
                     />
                   </>
                 ) : (
@@ -128,7 +160,7 @@ export default function AmbassadorsPage() {
                     kind="danger"
                     disabled={!admin}
                     title={admin ? '' : 'Admins only'}
-                    onClick={() => resolve('removed', `Removed ambassador ${x.user}.`)}
+                    onClick={resolve('removed', `Removed ambassador ${x.user}.`)}
                   />
                 )}
               </ActionRow>
