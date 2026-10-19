@@ -276,8 +276,8 @@ export function SignalChat({
           disabled={sending}
           autoComplete="off"
         />
-        <button type="submit" aria-label="Send" disabled={sending || !input.trim()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green text-ink-950 transition-colors hover:bg-green-hover disabled:opacity-50">
-          {sending ? <span aria-hidden="true">…</span> : <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg>}
+        <button type="submit" aria-label="Send" disabled={sending || !input.trim()} className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green text-ink-950 transition-colors group-hover:bg-green-hover">{sending ? <span aria-hidden="true">…</span> : <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg>}</span>
         </button>
       </form>
     </div>
