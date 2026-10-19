@@ -271,6 +271,7 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: number;
               here: number;
               going: number;
+              popVotes?: number;
             }[];
           };
           setPlaces(
@@ -282,7 +283,8 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: x.lon,
               here: x.here,
               arriving: x.going,
-              popping: false,
+              popping: (x.popVotes ?? 0) >= 5,
+              popCount: x.popVotes ?? 0,
               peak: '',
             })),
           );
