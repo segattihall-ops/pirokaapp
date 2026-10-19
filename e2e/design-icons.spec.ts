@@ -12,6 +12,7 @@ import {
   positionMarkPath,
 } from '../lib/design/icon-paths';
 import { FILTER_OPTIONS, parseSmartQuery } from '../components/map/filters';
+import { albumLimit } from '../lib/intent';
 
 const original = readFileSync(
   join(process.cwd(), 'design_handoff/design/Piroka App v2.dc.html'),
@@ -60,4 +61,11 @@ test('smart parser prioritizes compound positions', () => {
 test('every navigation tab shows its canonical SVG stroke and green active state', async ({ page }) => {
   await page.goto('/'); // Homepage is intentionally public; protected map is covered in map E2E.
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(7, 7, 7)');
+});
+
+test('free and anonymous album limits respect the official FEATURES spec', () => {
+  expect(albumLimit('anonymous')).toBe(2);
+  expect(albumLimit('free')).toBe(2);
+  expect(albumLimit('plus')).toBe(5);
+  expect(albumLimit('premium')).toBe(5);
 });
