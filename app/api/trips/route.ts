@@ -29,17 +29,24 @@ const today = () => new Date().toISOString().slice(0, 10);
 export async function GET() {
   const g = await requireUser();
   if (g.error) return g.error;
-  let query = await supabaseAdmin!
+  const query = await supabaseAdmin!
     .from('trips')
     .select('id, city, arrive_on, nights, arrival_time, departure_on, departure_time, created_at')
     .eq('user_id', g.session.userId)
     .order('arrive_on');
+  let trips = query.data ?? [];
   if (query.error && isMissingSchema(query.error)) {
-    query = await supabaseAdmin!
+    const legacy = await supabaseAdmin!
       .from('trips').select('id, city, arrive_on, nights, created_at')
       .eq('user_id', g.session.userId).order('arrive_on');
+    if (legacy.error) return NextResponse.json({ error: legacy.error.message }, { status: 500 });
+    trips = (legacy.data ?? []).map((t) => ({
+      ...t, arrival_time: null, departure_on: null, departure_time: null,
+    }));
+  } else if (query.error) {
+    return NextResponse.json({ error: query.error.message }, { status: 500 });
   }
-  const trips = (query.data ?? []).filter((t) => (t.departure_on ?? addTripDays(t.arrive_on, t.nights)) >= today());
+  trips = trips.filter((t) => (t.departure_on ?? addTripDays(t.arrive_on, t.nights)) >= today());
   return NextResponse.json({ trips });
 }
 
@@ -68,15 +75,18 @@ export async function POST(request: Request) {
 
   const row = { user_id: me, city, geo: `SRID=4326;POINT(${lon} ${lat})`, arrive_on: arriveOn, nights: actualNights };
   const timeFields = { arrival_time: arrivalTime ?? null, departure_on: departOn ?? null, departure_time: departureTime ?? null };
-  let saved = await db.from('trips').insert({ ...row, ...timeFields })
+  const saved = await db.from('trips').insert({ ...row, ...timeFields })
     .select('id, city, arrive_on, nights, arrival_time, departure_on, departure_time, created_at').single();
+  let trip = saved.data;
   // Old production schemas still support date-only trips. Never silently discard a selected time.
   if (saved.error && isMissingSchema(saved.error)) {
     if (arrivalTime || departOn || departureTime) return NextResponse.json({ error: 'Timed trips require database migration 039', schemaPending: true }, { status: 503 });
-    saved = await db.from('trips').insert(row).select('id, city, arrive_on, nights, created_at').single();
+    const legacy = await db.from('trips').insert(row).select('id, city, arrive_on, nights, created_at').single();
+    if (legacy.error) return NextResponse.json({ error: legacy.error.message }, { status: 500 });
+    trip = legacy.data ? { ...legacy.data, arrival_time: null, departure_on: null, departure_time: null } : null;
+  } else if (saved.error) {
+    return NextResponse.json({ error: saved.error.message }, { status: 500 });
   }
-  if (saved.error) return NextResponse.json({ error: saved.error.message }, { status: 500 });
-  const trip = saved.data;
 
   // Arrival alerts, fire-and-forget.
   Promise.all([db.rpc('favoriters_near', { owner: me, center_lat: lat, center_lon: lon, radius_m: ARRIVAL_RADIUS_M }), userCards([me])])
