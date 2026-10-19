@@ -125,13 +125,13 @@ export function PayPalCheckout({ userId }: { userId: string }) {
     <div className="flex flex-col gap-5 rounded-hero border border-line-1 bg-ink-900 p-5 sm:p-6">
       {status?.allAccess && (
         <div className="rounded-card border border-sel-border bg-sel-fill px-4 py-3">
-          <p className="text-[14px] font-semibold text-green">Launch week — all features unlocked</p>
+          <p className="text-[14px] font-semibold text-green">All features unlocked</p>
           <p className="mt-0.5 text-[13px] text-fg-2">
             Everyone gets every feature free
             {status.allAccessUntil
               ? ` until ${new Date(status.allAccessUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`
-              : ' for launch week'}
-            . Subscribe any time to keep them afterwards.
+              : ' right now'}
+            . Subscribe any time to keep them later.
           </p>
         </div>
       )}
