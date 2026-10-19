@@ -469,7 +469,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
                       key={p}
                       type="button"
                       onClick={() => pick(p)}
-                      className="rounded-chip border border-[rgba(255,255,255,0.14)] bg-white/5 px-[15px] py-[9px] text-[13px] font-medium text-fg transition-colors hover:border-[rgba(52,211,153,0.5)] hover:bg-[rgba(52,211,153,0.08)]"
+                      className="min-h-11 rounded-chip border border-line-3 bg-white/5 px-[15px] py-[9px] text-[13px] font-medium text-fg transition-colors hover:border-sel-border hover:bg-sel-fill"
                     >
                       {PICK_LABEL[p]}
                     </button>
@@ -707,7 +707,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       <button
         type="button"
         onClick={() => (step === 'action' ? act() : inputRef.current?.focus())}
-        className="hidden h-[54px] rounded-[18px] bg-[#34d399] text-[15px] font-semibold tracking-[-0.005em] text-[#070707] shadow-[0_14px_40px_rgba(52,211,153,0.28),inset_0_1px_0_rgba(255,255,255,0.35)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(52,211,153,0.42),inset_0_1px_0_rgba(255,255,255,0.35)] lg:block"
+        className="flex h-[54px] w-full items-center justify-center rounded-[18px] bg-green text-[15px] font-semibold tracking-[-0.005em] text-ink-950 shadow-glow transition-colors hover:bg-green-hover"
       >
         Start chatting
       </button>
@@ -741,7 +741,7 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[46px] items-center justify-center gap-2.5 rounded-btn text-[14px] font-semibold transition-transform active:scale-[0.99] ${cls}`}
+      className={`flex h-[46px] items-center justify-center gap-2.5 rounded-btn text-[14px] font-semibold transition-colors ${cls}`}
     >
       {children}
     </button>

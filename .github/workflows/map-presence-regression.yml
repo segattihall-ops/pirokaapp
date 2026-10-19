@@ -6,10 +6,23 @@ on:
     paths:
       - 'app/api/me/location/route.ts'
       - 'app/api/nearby/route.ts'
+      - 'app/api/users/**'
+      - 'app/api/trips/**'
+      - 'app/api/places/**'
+      - 'components/me/**'
+      - 'lib/map/**'
+      - 'lib/profile/**'
+      - 'supabase/migrations/**'
       - 'components/map/**'
       - 'lib/geo/**'
       - 'lib/db/migrations/**'
       - 'e2e/**'
+      - 'components/app-nav.tsx'
+      - 'components/chat/**'
+      - 'components/profile/**'
+      - 'app/globals.css'
+      - 'lib/design/**'
+      - 'lib/intent.ts'
 
 permissions:
   contents: read
@@ -27,4 +40,4 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
-      - run: npx playwright test e2e/presence.spec.ts e2e/map-presence-navigation.spec.ts --project=chromium
+      - run: npx playwright test e2e/presence.spec.ts e2e/map-presence-navigation.spec.ts e2e/design-icons.spec.ts e2e/pin-anatomy.spec.ts --project=chromium

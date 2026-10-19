@@ -1,6 +1,7 @@
 'use client';
 
 import maplibregl from 'maplibre-gl';
+import { CARTO_FALLBACK_STYLE, PIROKA_BASEMAP_STYLE } from './basemap-style';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -16,7 +17,10 @@ import { MyCardSheet } from './my-card-sheet';
 import { TravelSheet, type TravelView } from './travel-sheet';
 import { VisitorsSheet } from './visitors-sheet';
 import { AssistantPanel } from './assistant-panel';
-import { EMPTY_FILTERS, activeFilterCount, matchesFilters, type Filters } from './filters';
+import { EMPTY_FILTERS, POSITION_LABEL, activeFilterCount, matchesFilters, type Filters } from './filters';
+import { distanceLabel } from '@/lib/geo/client';
+import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
+import { approx, tripText, isPopping, isSelfPinVisible } from '@/lib/map/pin-anatomy';
 import {
   pinElement,
   updatePinElement,
@@ -25,14 +29,13 @@ import {
   pinRingDegrees,
   timeLeftLabel,
 } from './pins';
-import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement } from './place-pins';
+import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement, flagUrl } from './place-pins';
 import { DemoProfileSheet } from './demo-profile-sheet';
 import { demoWorld, type DemoArrival, type DemoEvent, type DemoPlace } from '@/lib/demo/presence';
 import { promosFor, type Promo } from './promos';
 
-const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const ESRI_STYLE =
-  'https://basemap.arcgisonline.com/arcgis/rest/services/World_Dark_Gray_Base/VectorTileServer/resources/styles/root.json';
+const ESRI_STYLE = PIROKA_BASEMAP_STYLE;
+const CARTO_STYLE = CARTO_FALLBACK_STYLE;
 const RADIUS_M = 5000;
 const FREE_M = 3219; // 2 miles — Free members open profiles within this ring (prototype FREE_M).
 const REFRESH_MS = 60_000;
@@ -98,9 +101,10 @@ export function MapScreen({ userId }: { userId: string }) {
   const [arrivals, setArrivals] = useState<DemoArrival[]>([]);
   const [demo, setDemo] = useState(false);
   const [interested, setInterested] = useState<NearbyPerson | null>(null);
-  const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null }>({
+  const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null; visibility: string | null }>({
     handle: null,
     photo: null,
+    visibility: null,
   });
   const [chip, setChip] = useState<IntentChip>('all');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -244,8 +248,8 @@ export function MapScreen({ userId }: { userId: string }) {
             handle: v.handle ?? '',
             lat: v.lat as number,
             lon: v.lon as number,
-            originCode: null,
-            when: 'Arriving soon',
+            originCode: v.originCode ?? null,
+            when: tripText({ arriveOn: v.arriveOn, nights: v.nights, arrivalTime: v.arrivalTime, departOn: v.departOn, departureTime: v.departureTime }),
           })),
       );
       setNow(Date.now());
@@ -269,6 +273,9 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: number;
               here: number;
               going: number;
+              popVotes?: number;
+              votes?: number;
+              peakHint?: string | null;
             }[];
           };
           setPlaces(
@@ -280,8 +287,9 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: x.lon,
               here: x.here,
               arriving: x.going,
-              popping: Boolean((x as { popping?: boolean }).popping),
-              peak: (x as { peakHint?: string | null }).peakHint ?? '',
+              popping: isPopping(x.popVotes ?? x.votes ?? 0),
+              popCount: x.popVotes ?? x.votes ?? 0,
+              peak: x.peakHint ?? '',
             })),
           );
         } else {
@@ -356,9 +364,8 @@ export function MapScreen({ userId }: { userId: string }) {
     };
 
     (async () => {
-      // First load after sign-in: prompt for location when the user hasn't decided yet (state
-      // 'prompt', or no Permissions API — Safari). If already granted, locate(false) still reads the
-      // device; if denied, we don't re-prompt. The periodic republish below always stays silent.
+      // Prompt on first entry if location permission has not been decided.
+      // Do not reprompt denied locations or during background refresh.
       let askOnLoad = true;
       try {
         if (navigator.permissions) {
@@ -395,7 +402,7 @@ export function MapScreen({ userId }: { userId: string }) {
       .then((j) => {
         if (!alive || !j) return;
         const main = (j.photos ?? []).find((x: { slot: number }) => x.slot === 0);
-        setSelfCard({ handle: j.handle ?? null, photo: main?.url ?? null });
+        setSelfCard({ handle: j.handle ?? null, photo: main?.url ?? null, visibility: j.visibility ?? null });
       })
       .catch(() => {});
     return () => {
@@ -412,7 +419,7 @@ export function MapScreen({ userId }: { userId: string }) {
     if (!containerRef.current || mapRef.current || !pos) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: CARTO_STYLE,
+      style: ESRI_STYLE,
       center: [pos.lon, pos.lat],
       zoom: 13,
       attributionControl: false,
@@ -420,8 +427,8 @@ export function MapScreen({ userId }: { userId: string }) {
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
     map.on('error', (e) => {
-      if (String(e.error?.message ?? '').includes('style') && map.getStyle()?.name !== 'esri')
-        map.setStyle(ESRI_STYLE);
+      if (String(e.error?.message ?? '').includes('style') && map.getStyle()?.name === 'Piroka Esri Dark Gray')
+        map.setStyle(CARTO_STYLE);
     });
     map.on('load', () => {
       map.addSource('hotspots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -450,6 +457,8 @@ export function MapScreen({ userId }: { userId: string }) {
       });
     });
     const you = youElement();
+    // Default invisible until the self-only visibility preference is loaded.
+    you.style.display = 'none';
     youRef.current = new maplibregl.Marker({ element: you }).setLngLat([pos.lon, pos.lat]).addTo(map);
     you.setAttribute('aria-label', 'You (approximate)');
     you.addEventListener('click', (e) => {
@@ -469,9 +478,11 @@ export function MapScreen({ userId }: { userId: string }) {
   }, [pos]);
 
   // Self pin reflects your current intent ring and the red Desperate ring.
+  // A Hidden location (or an unknown visibility on API failure) shows no dot at all.
   useEffect(() => {
     const el = youRef.current?.getElement();
     if (!el) return;
+    el.style.display = isSelfPinVisible(selfCard.visibility) ? '' : 'none';
     const meta = intentMeta(status?.intent);
     const degrees = status
       ? pinRingDegrees(
@@ -486,13 +497,13 @@ export function MapScreen({ userId }: { userId: string }) {
     const left = status?.ends_at ? timeLeftLabel(status.ends_at, now) : '';
     const label = meta ? meta.label + (left ? ` · ${left}` : '') : 'You';
     updateYouElement(el, {
-      color: meta?.color ?? '#34d399',
+      color: '#34d399',
       degrees,
       photo: selfCard.photo,
       desperate: Boolean(desperate?.active),
       label,
     });
-  }, [status, now, desperate, selfCard.photo]);
+  }, [status, now, desperate, selfCard.photo, selfCard.visibility]);
 
   const searchFiltered = useMemo(() => people.filter((p) => matchesFilters(p, filters)), [people, filters]);
   const shown = useMemo(
@@ -851,6 +862,7 @@ export function MapScreen({ userId }: { userId: string }) {
           }}
         />
       )}
+
       {alertSent && (
         <div
           role="status"
@@ -864,12 +876,12 @@ export function MapScreen({ userId }: { userId: string }) {
       )}
 
       {/* Top overlay */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pr-[64px] pt-[calc(14px+var(--safe-top))] rail:pr-[72px]">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pr-[64px] pt-[calc(14px+var(--safe-top))] rail:pr-[14px]">
+        <div className="flex flex-wrap items-center gap-2 rail:pr-[250px]">
           <button
             type="button"
             onClick={() => setShowStatus(true)}
-            className="tap pointer-events-auto flex min-w-0 items-center gap-2.5 whitespace-nowrap rounded-chip border border-line-2 bg-ink-850/90 px-4 text-[14px] font-medium backdrop-blur-md"
+            className="tap pointer-events-auto flex min-w-0 items-center gap-2.5 whitespace-nowrap rounded-btn border border-line-2 bg-ink-850/90 px-4 text-[13px] font-semibold backdrop-blur-md"
           >
             <span
               className="h-2 w-2 shrink-0 rounded-full"
@@ -923,28 +935,31 @@ export function MapScreen({ userId }: { userId: string }) {
               </svg>
             )}
           </button>
+          <span className="pointer-events-none hidden min-h-11 items-center gap-2 rounded-btn border border-line-2 bg-ink-850/90 px-3 text-[12px] text-fg-3 backdrop-blur-md rail:flex">
+            Near you <strong className="font-semibold text-green">{liveCount} ready</strong>
+          </span>
           <button
             type="button"
             onClick={() => setShowTravel(true)}
             aria-label="Travel mode"
-            className={`tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md ${
+            className={`tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md rail:hidden ${
               view ? 'border-sel-border text-green' : 'border-line-2'
             }`}
           >
-            ✈️ <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
+            <PlaneIcon /> <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
           </button>
           {pos && !pos.precise && !view && (
             <button
               type="button"
               onClick={() => locate(true).then(refresh)}
-              className="tap pointer-events-auto ml-auto shrink-0 rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
+              className="tap pointer-events-auto shrink-0 rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
             >
               Use my location
             </button>
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex items-center gap-2 rail:absolute rail:right-[72px] rail:top-[calc(14px+var(--safe-top))]">
           <div className="relative">
             <button
               ref={layersButtonRef}
@@ -978,7 +993,7 @@ export function MapScreen({ userId }: { userId: string }) {
                 role="menu"
                 aria-label="Map layers"
                 onKeyDown={onLayersMenuKeyDown}
-                className="absolute left-0 top-12 z-30 w-[230px] rounded-[16px] border border-line-2 bg-ink-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
+                className="absolute left-0 top-12 z-30 w-[230px] rail:left-auto rail:right-0 rounded-[16px] border border-line-2 bg-ink-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
               >
                 {(
                   [
@@ -1139,7 +1154,7 @@ export function MapScreen({ userId }: { userId: string }) {
             <span className="flex min-w-0 flex-col">
               <span className="text-[13px] font-bold">Someone nearby is interested</span>
               <span className="text-[12px] text-fg-3">
-                ~{(interested.distanceM / 1609).toFixed(1)} mi · they&apos;ll see you if you like them back
+                {approx(interested.distanceM)} · they&apos;ll see you if you like them back
               </span>
             </span>
             <span className="shrink-0 text-[12px] font-semibold text-green">See →</span>
@@ -1197,10 +1212,19 @@ export function MapScreen({ userId }: { userId: string }) {
       </div>
 
       {/* Desktop hover preview */}
-      {hovered && <HoverPreview person={hovered} now={now} premium={premium} />}
+      {hovered && !selected && !showMyCard && !filtersOpen && !showStatus && (
+        <HoverPreview
+          person={hovered}
+          now={now}
+          premium={premium}
+          anchor={mapRef.current?.project([hovered.lon, hovered.lat]) ?? null}
+          mapWidth={containerRef.current?.clientWidth ?? 0}
+          mapHeight={containerRef.current?.clientHeight ?? 0}
+        />
+      )}
 
       {/* Bottom pills: scrubber + counts + visitors */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-12 flex flex-col items-center gap-2 px-3">
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 px-3">
         {scrubOpen ? (
           <div className="glass pointer-events-auto flex w-[min(520px,100%)] flex-col gap-2 rounded-sheet px-4 py-3">
             <div className="flex items-center justify-between">
@@ -1264,7 +1288,7 @@ export function MapScreen({ userId }: { userId: string }) {
             onClick={() => setShowVisitors(true)}
             className="tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md"
           >
-            ✈️ {visitors.length} visiting
+            <PlaneIcon /> {visitors.length} visiting
           </button>
         )}
       </div>
@@ -1416,40 +1440,98 @@ function freeRing(lon: number, lat: number, radiusM: number): GeoJSON.Feature {
   return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] }, properties: {} };
 }
 
-/** Desktop-only large preview shown while hovering a pin (prototype hover card). */
-function HoverPreview({ person, now, premium }: { person: NearbyPerson; now: number; premium: boolean }) {
+/** The card flips to the left of a pin when the right edge would clip it. */
+export function hoverCardPosition(
+  anchor: { x: number; y: number },
+  width: number,
+  height: number,
+): { left: number; top: number; flipped: boolean } {
+  const cardWidth = 224;
+  const estimatedHeight = 340;
+  const rightWouldClip = anchor.x + 28 + cardWidth > width - 12;
+  const left = rightWouldClip ? anchor.x - cardWidth - 28 : anchor.x + 28;
+  return {
+    left: Math.max(12, Math.min(left, Math.max(12, width - cardWidth - 12))),
+    top: Math.max(12, Math.min(anchor.y - 160, Math.max(12, height - estimatedHeight - 12))),
+    flipped: rightWouldClip,
+  };
+}
+
+/** Desktop pointer-hover card; data appears only if the member shared it or the backend computed it. */
+function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: {
+  person: NearbyPerson;
+  now: number;
+  premium: boolean;
+  anchor: { x: number; y: number } | null;
+  mapWidth: number;
+  mapHeight: number;
+}) {
   const meta = intentMeta(person.intent);
-  const left = person.intentEndsAt ? fmtDur((new Date(person.intentEndsAt).getTime() - now) / 60_000) : '';
+  const time = person.intentEndsAt ? fmtDur(Math.max(0, (new Date(person.intentEndsAt).getTime() - now) / 60_000)) : '';
+  const state = person.relationship ?? 'stranger';
+  const blur = person.photoRevealed && (state === 'mutual' || state === 'meet') ? 0 : state === 'chatted' ? 5 : 11;
+  const position = person.attrs?.position?.map((p) => POSITION_LABEL[p] ?? p).find(Boolean);
+  const country = person.attrs?.origin;
+  const flag = country && /^(?:[a-z]{2}|us-[a-z]{2})$/i.test(country) ? flagUrl(country.toLowerCase()) : null;
+  const hasScore = premium && typeof person.matchScore === 'number' && Number.isFinite(person.matchScore);
+  const pos = anchor ? hoverCardPosition(anchor, mapWidth, mapHeight) : null;
+  if (!pos || mapWidth < 260 || mapHeight < 340) return null;
   return (
-    <div className="pointer-events-none absolute left-1/2 top-[120px] z-30 hidden w-[224px] -translate-x-1/2 overflow-hidden rounded-card border border-line-2 bg-ink-850 shadow-float rail:block">
-      <div className="relative flex h-[180px] items-center justify-center bg-ink-800">
+    <div
+      data-testid="person-hover-card"
+      data-flipped={pos.flipped ? 'true' : 'false'}
+      aria-hidden="true"
+      className="piroka-hover-card pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-3 bg-ink-850 shadow-float motion-reduce:animate-none rail:block"
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="relative flex h-[210px] items-center justify-center overflow-hidden bg-ink-800">
         {person.photo ? (
+          // The URL is pre-authorized server-side and only yields clear pixels to mutual/Meet connections.
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={person.photo}
-            alt=""
-            className="h-full w-full object-cover"
-            style={{ filter: person.intent ? 'blur(6px)' : 'blur(11px)' }}
-          />
+          <img src={person.photo} alt="" className="h-full w-full object-cover" style={{ filter: `blur(${blur}px)` }} />
         ) : (
-          <span className="text-[40px] font-bold text-fg-4">
-            {(person.handle ?? '?').slice(0, 1).toUpperCase()}
+          <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth={1.4} strokeLinecap="round">
+            <path d={NAV_ICON_PATHS.me} />
+          </svg>
+        )}
+        <span className="absolute left-2.5 top-2.5 flex max-w-[calc(100%-20px)] items-center gap-1.5 rounded-chip bg-ink-950/80 px-2.5 py-1 text-[11px] font-semibold text-fg">
+          <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta?.color ?? '#666666' }} />
+          <span className="truncate">{meta?.label ?? 'On the map'}{time && ` · ${time}`}</span>
+        </span>
+        {hasScore && (
+          <span className="absolute right-2.5 top-10 rounded-chip bg-green px-2 py-1 text-[11px] font-bold text-ink-950">
+            {Math.round(person.matchScore! * 100)}% your type
           </span>
         )}
-        <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-chip bg-black/70 px-2.5 py-1 text-[11px] font-semibold">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta?.color ?? '#666' }} />
-          {meta?.label ?? 'On the map'}
-          {person.travelMi ? ` · ${person.travelMi} mi` : ''}
-        </span>
+        {blur > 0 && person.photo && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-chip bg-ink-950/80 px-2 py-1 text-[10px] text-fg-2">
+            Blurred until mutual
+          </span>
+        )}
       </div>
-      <div className="flex flex-col gap-1 p-3">
-        <span className="text-[15px] font-semibold">{person.handle ? `@${person.handle}` : 'Anonymous'}</span>
-        <span className="text-[12px] text-fg-3">
-          {[meta && left && `${left} left`, `${Math.round(person.distanceM)} m`].filter(Boolean).join(' · ')}
+      <div className="flex flex-col gap-1 px-[14px] pb-[14px] pt-3">
+        <div className="flex items-center gap-2 text-[15px] font-semibold">
+          <span className="truncate">{person.handle ? `@${person.handle}` : 'Anonymous'}{typeof person.age === 'number' && person.age >= 18 ? `, ${person.age}` : ''}</span>
+          {flag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={flag} alt="Origin" width={20} height={14} className="h-[14px] w-5 rounded-[3px] object-cover" />
+          )}
+        </div>
+        <span className="text-[12px] text-fg-2">
+          {[position, person.body, approx(person.distanceM)].filter(Boolean).join(' · ')}
         </span>
-        {premium && <span className="text-[11px] text-green">Opens your match score</span>}
+        {typeof person.responseMinutes === 'number' && person.responseMinutes >= 0 && (
+          <span className="text-[11px] text-fg-3">
+            Replies in {person.responseMinutes <= 5 ? 'minutes' : `~${person.responseMinutes} min`}
+          </span>
+        )}
         <span className="text-[11px] text-fg-4">Click to open profile</span>
       </div>
     </div>
   );
+}
+
+/** Inline SVG, never an emoji: icons follow the fixed semantic token system. */
+function PlaneIcon() {
+  return <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" /></svg>;
 }

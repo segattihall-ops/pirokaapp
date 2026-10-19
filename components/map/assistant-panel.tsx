@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { distanceLabel, intentMeta } from '@/lib/geo/client';
 import { parseSmartQuery, type Filters } from './filters';
@@ -99,7 +100,7 @@ export function AssistantPanel({
   return (
     <section
       aria-label="πroka assistant"
-      className="glass fixed bottom-[calc(78px+var(--safe-bottom))] right-3.5 z-50 flex h-[min(560px,70dvh)] w-[min(390px,calc(100vw-28px))] flex-col overflow-hidden rounded-sheet shadow-float rail:bottom-4 rail:right-4"
+      className="glass fixed inset-0 z-50 flex h-dvh w-full flex-col overflow-hidden rounded-none shadow-panel rail:inset-x-auto rail:bottom-4 rail:right-4 rail:top-auto rail:h-[min(560px,70dvh)] rail:w-[390px] rail:rounded-sheet"
     >
       <div className="flex items-center justify-between border-b border-line-1 px-4 py-3.5">
         <span className="flex items-center gap-2.5">
@@ -189,10 +190,10 @@ export function AssistantPanel({
           onKeyDown={(e) => e.key === 'Enter' && send(draft)}
           placeholder="Ask anything — who’s around, an opener, safety…"
           aria-label="Message πroka"
-          className="input h-11"
+          className="input h-11 min-w-0 flex-1 rounded-chip"
         />
-        <button type="button" onClick={() => send(draft)} className="btn-primary h-11 px-4">
-          Send
+        <button type="button" aria-label="Send" onClick={() => send(draft)} disabled={!draft.trim() || busy} className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green text-ink-950 transition-colors group-hover:bg-green-hover"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.sendArrow} /></svg></span>
         </button>
       </div>
     </section>

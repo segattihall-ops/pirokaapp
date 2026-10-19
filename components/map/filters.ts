@@ -1,5 +1,6 @@
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { INTENTS, type IntentChip } from '@/lib/intent';
+import { POSITION_MARKS, canonicalPositionMark } from '@/lib/design/icon-paths';
 
 /**
  * The Filter sheet model (prototype: "Describe who you're looking for" + chip groups). Every option maps onto
@@ -20,7 +21,7 @@ export const EMPTY_FILTERS: Filters = {
 
 export const FILTER_OPTIONS: Record<FilterKey, string[]> = {
   show: ['Men', 'Women', 'Trans women', 'Trans men', 'Non-binary people'],
-  position: ['Top', 'Vers', 'Bottom'],
+  position: POSITION_MARKS.map((p) => p.label),
   body: ['Bear', 'Cub', 'Otter', 'Jock', 'Twink', 'Chubby', 'Daddy'],
   identity: ['Cis', 'Trans', 'Non-binary', 'Queer', 'Gender fluid'],
   ethnicity: [
@@ -49,14 +50,16 @@ export const FILTER_GROUPS: { key: FilterKey; title: string }[] = [
   { key: 'looking', title: 'Looking for' },
 ];
 
-/** Position marks: the profile stores top / versatile / bottom; the pin draws the prototype glyph for each. */
-export const POSITION_GLYPH: Record<string, string> = {
-  top: 'M12 3.5v17M12 6.5m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
-  versatile: 'M12 3.5v17M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
-  bottom: 'M12 3.5v17M12 17.5m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
-};
-export const POSITION_LABEL: Record<string, string> = { top: 'Top', versatile: 'Vers', bottom: 'Bottom' };
-const POSITION_OF_OPTION: Record<string, string> = { Top: 'top', Vers: 'versatile', Bottom: 'bottom' };
+/** The seven prototype position marks, including the three legacy values. */
+export const POSITION_GLYPH: Record<string, string> = Object.fromEntries(
+  POSITION_MARKS.flatMap((p) => [[p.id, p.path], [p.label, p.path]]),
+);
+export const POSITION_LABEL: Record<string, string> = Object.fromEntries(
+  POSITION_MARKS.map((p) => [p.id, p.label]),
+);
+const POSITION_OF_OPTION: Record<string, string> = Object.fromEntries(
+  POSITION_MARKS.map((p) => [p.label, p.id]),
+);
 
 const TRANS_WORDS = ['trans', 'transmasculine', 'transfeminine'];
 const NB_WORDS = [
@@ -103,7 +106,7 @@ function identityBuckets(gender: string[], communities: string[]): Set<string> {
 export function matchesFilters(p: NearbyPerson, f: Filters): boolean {
   const a = p.attrs;
   if (f.show.length && !f.show.some((s) => showBuckets(a.gender).has(s))) return false;
-  if (f.position.length && !f.position.some((o) => a.position.includes(POSITION_OF_OPTION[o]))) return false;
+  if (f.position.length && !f.position.some((o) => a.position.some((mark) => canonicalPositionMark(mark) === POSITION_OF_OPTION[o]))) return false;
   if (f.body.length && !f.body.some((o) => lower(a.communities).includes(o.toLowerCase()))) return false;
   if (f.identity.length && !f.identity.some((o) => identityBuckets(a.gender, a.communities).has(o)))
     return false;
@@ -150,6 +153,10 @@ export function parseSmartQuery(text: string): SmartResult {
     [/\btrans (women|girls?)\b/, 'show', 'Trans women'],
     [/\btrans (men|guys?)\b/, 'show', 'Trans men'],
     [/\b(enby|enbies|non-?binary)\b/, 'show', 'Non-binary people'],
+    [/\bvers(?:atile)?[ _-]?tops?\b/, 'position', 'Vers Top'],
+    [/\bvers(?:atile)?[ _-]?bottoms?\b/, 'position', 'Vers Bottom'],
+    [/\bsides?\b/, 'position', 'Side'],
+    [/\bswitch(?:es)?\b/, 'position', 'Switch'],
     [/\btops?\b/, 'position', 'Top'],
     [/\bbottoms?\b/, 'position', 'Bottom'],
     [/\bvers(atile)?\b/, 'position', 'Vers'],
@@ -172,7 +179,10 @@ export function parseSmartQuery(text: string): SmartResult {
     [/\bkink/, 'looking', 'Kink-friendly'],
     [/\bpoly/, 'looking', 'Polyamorous'],
   ];
-  for (const [re, k, v] of rules) if (re.test(q)) add(k, v);
+  for (const [re, k, v] of rules) {
+    if (k === 'position' && ['Top', 'Bottom', 'Vers'].includes(v) && /\bvers(?:atile)?[ _-]?(?:tops?|bottoms?)\b/.test(q)) continue;
+    if (re.test(q)) add(k, v);
+  }
   if (/\bhost/.test(q)) chip = 'hosting';
   else if (/\b(tonight|later|this evening)\b/.test(q)) chip = 'tonight';
   else if (/\b(visit|travel+ing|tourist|in town)\b/.test(q)) chip = 'visitors';

@@ -25,6 +25,7 @@ export type Place = {
   visitors: number;
   /** "It's popping!" votes in the last 90 minutes; 5+ lights the red flame. */
   votes: number;
+  popVotes: number;
   popping: boolean;
   my: { kind: 'here' | 'going'; expiresAt: string; etaAt: string | null } | null;
 };
@@ -54,6 +55,14 @@ export async function GET(request: Request) {
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const ids: string[] = (data ?? []).map((r: { id: string }) => r.id);
+  const popOf = new Map<string, number>();
+  if (ids.length) {
+    const response = await supabaseAdmin.from('place_pop_votes').select('place_id').in('place_id', ids)
+      .gt('expires_at', new Date().toISOString());
+    if (response.error && !isMissingSchema(response.error)) console.error('places votes:', response.error.message);
+    for (const row of response.data ?? []) popOf.set(row.place_id, (popOf.get(row.place_id) ?? 0) + 1);
+  }
   const places: Place[] = (data ?? []).map((r: any) => ({
     id: r.id,
     name: r.name,
@@ -67,8 +76,9 @@ export async function GET(request: Request) {
     here: Number(r.here_count ?? 0),
     going: Number(r.going_count ?? 0),
     visitors: Number(r.visitors ?? 0),
-    votes: Number(r.votes ?? 0),
-    popping: Boolean(r.popping),
+    votes: popOf.get(r.id) ?? Number(r.votes ?? 0),
+    popVotes: popOf.get(r.id) ?? Number(r.votes ?? 0),
+    popping: (popOf.get(r.id) ?? Number(r.votes ?? 0)) >= 5,
     my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at, etaAt: r.my_eta_at ?? null } : null,
   }));
   return NextResponse.json({ configured: true, places });

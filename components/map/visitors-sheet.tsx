@@ -3,9 +3,7 @@
 import type { Visitor } from '@/app/api/nearby/route';
 import { UserRow } from '@/components/people/user-row';
 import { Sheet } from './status-sheet';
-
-const fmt = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
+import { tripText } from '@/lib/map/pin-anatomy';
 
 /** People who announced a trip to the area you are looking at. */
 export function VisitorsSheet({
@@ -27,7 +25,7 @@ export function VisitorsSheet({
             <UserRow
               key={v.id}
               user={{ id: v.id, handle: v.handle, photo: v.photo, verified: false }}
-              sub={`${v.city.split(',')[0]} · ${fmt(v.arriveOn)} · ${v.nights} night${v.nights === 1 ? '' : 's'}`}
+              sub={`${tripText({ arriveOn: v.arriveOn, nights: v.nights, arrivalTime: v.arrivalTime, departOn: v.departOn, departureTime: v.departureTime })} · ${v.nights} nights${v.originCode && /^(?:[a-z]{2}|us-[a-z]{2})$/i.test(v.originCode) ? ` · From ${v.originCode.toUpperCase()}` : ''}`}
               onOpen={() => onOpen(v.id)}
             />
           ))}

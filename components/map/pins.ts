@@ -1,7 +1,8 @@
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { INTENT_BADGE_PATH, ringDegrees, type Intent, type Status } from '@/lib/intent';
 import { intentMeta } from '@/lib/geo/client';
-import { POSITION_GLYPH } from './filters';
+import { positionMarkPath } from '@/lib/design/icon-paths';
+import { dur } from '@/lib/map/pin-anatomy';
 
 /** Strip the characters that would break out of a CSS url('…') literal. */
 export function escapeUrl(url: string): string {
@@ -24,8 +25,7 @@ export function timeLeftLabel(iso: string | null | undefined, now: number): stri
   const ms = new Date(iso).getTime() - now;
   if (!Number.isFinite(ms) || ms <= 0) return 'ending';
   const minutes = Math.max(1, Math.ceil(ms / 60_000));
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.ceil(minutes / 60)}h`;
+  return dur(minutes);
 }
 
 export function activityLabel(activity: NearbyPerson['activity']): string {
@@ -40,7 +40,7 @@ const isDesperate = (p: NearbyPerson, now: number) =>
 
 /** The privacy blur the design applies to a pin photo (px): clear once revealed, otherwise fuzzed. */
 function photoBlur(p: NearbyPerson): number {
-  return p.verified || p.activity === 'active' ? 5 : 11;
+  return p.photoRevealed && (p.relationship === 'mutual' || p.relationship === 'meet') ? 0 : p.relationship === 'chatted' ? 5 : 11;
 }
 
 /** Head-and-shoulders silhouette the prototype draws when a member has no photo (never an initial). */
@@ -59,12 +59,12 @@ export function pinElement(p: NearbyPerson, now: number, showLabels: boolean): H
   el.type = 'button';
   el.className = 'tap';
   el.style.cssText =
-    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:46px';
+    'background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:44px';
 
   const shell = document.createElement('span');
   shell.dataset.pinShell = 'true';
   shell.style.cssText =
-    'position:relative;width:46px;height:46px;border-radius:999px;padding:3px;box-shadow:0 6px 16px rgba(0,0,0,.55);display:block;animation:pinIn .35s ease-out both';
+    'position:relative;width:44px;height:44px;border-radius:999px;padding:3px;box-shadow:0 6px 16px rgba(0,0,0,.55);display:block;animation:pinIn .35s ease-out both';
 
   const desp = document.createElement('span');
   desp.dataset.pinDesp = 'true';
@@ -157,14 +157,14 @@ export function updatePinElement(el: HTMLButtonElement, p: NearbyPerson, now: nu
   intentBadge.hidden = !badgePath;
   if (badgePath) intentBadge.innerHTML = svgPath(badgePath, 'currentColor', 2.6);
 
-  const posGlyph = (p.attrs?.position ?? []).map((m) => POSITION_GLYPH[m]).find(Boolean);
+  const posGlyph = (p.attrs?.position ?? []).map(positionMarkPath).find(Boolean);
   positionBadge.hidden = !posGlyph;
   if (posGlyph) positionBadge.innerHTML = svgPath(posGlyph, 'currentColor', 3);
 
   desp.hidden = !desperate;
 
   label.hidden = !showLabels;
-  const travel = p.travelMi ? ` · ${p.travelMi} mi` : '';
+  const travel = p.travelMi ? ` · up to ${p.travelMi} mi` : '';
   label.textContent = [meta ? meta.label + travel : null, activityLabel(p.activity)]
     .filter(Boolean)
     .join(' · ');
@@ -178,6 +178,7 @@ export function youElement(): HTMLElement {
   // Fixed 54×54 box so MapLibre keeps the pin centred on your location; the label hangs below absolutely.
   el.style.cssText = 'position:relative;width:54px;height:54px';
   el.innerHTML = `
+    <span data-you-fog aria-hidden="true" style="position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);border:1px dashed rgba(52,211,153,0.5);border-radius:999px;background:radial-gradient(circle,rgba(52,211,153,0.06),transparent 72%);box-shadow:0 0 30px rgba(52,211,153,0.15);pointer-events:none"></span>
     <span data-you-desp hidden style="position:absolute;inset:-6px;border-radius:999px;border:2.5px solid #ef4444;box-shadow:0 0 18px rgba(239,68,68,.8);animation:piBlink .8s ease-in-out infinite;pointer-events:none"></span>
     <span data-you-ring style="display:flex;width:54px;height:54px;border-radius:999px;padding:3px;background:conic-gradient(#34d399 360deg,rgba(255,255,255,.12) 0deg);animation:piPulse 2.4s infinite;box-shadow:0 0 30px rgba(52,211,153,0.15),0 6px 16px rgba(0,0,0,.55)">
       <span data-you-photo style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;border:2px solid #070707;background:#151515 center/cover no-repeat;color:#fff;font:700 20px/1 Geist,ui-sans-serif,sans-serif">π</span>

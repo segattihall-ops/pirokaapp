@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { POSITION_MARKS, canonicalPositionMark } from '@/lib/design/icon-paths';
 
 interface PositionMarksProps {
   initialMarks?: string[];
@@ -8,14 +9,10 @@ interface PositionMarksProps {
 }
 
 export function PositionMarks({ initialMarks = [], onUpdate }: PositionMarksProps) {
-  const [marks, setMarks] = useState<string[]>(initialMarks);
+  const [marks, setMarks] = useState<string[]>(initialMarks.map(canonicalPositionMark).filter((m): m is NonNullable<typeof m> => Boolean(m)));
   const [loading, setLoading] = useState(false);
 
-  const positions = [
-    { id: 'top', label: 'Top', description: 'Prefer receptive/penetrative' },
-    { id: 'versatile', label: 'Versatile', description: 'Enjoy both roles' },
-    { id: 'bottom', label: 'Bottom', description: 'Prefer penetrative' },
-  ];
+  const positions = POSITION_MARKS;
 
   const toggleMark = async (mark: string) => {
     const updated = marks.includes(mark) ? marks.filter((m) => m !== mark) : [...marks, mark];
@@ -53,14 +50,14 @@ export function PositionMarks({ initialMarks = [], onUpdate }: PositionMarksProp
             key={pos.id}
             onClick={() => toggleMark(pos.id)}
             disabled={loading}
-            className={`w-full rounded-lg border px-3 py-2 text-left text-[12px] transition-colors ${
+            className={`flex min-h-11 w-full items-center gap-3 rounded-btn border px-3 py-2 text-left text-[12px] transition-colors ${
               marks.includes(pos.id)
-                ? 'border-green bg-green/10 text-fg-1'
+                ? 'border-sel-border bg-sel-fill text-fg'
                 : 'border-line-2 bg-transparent text-fg-3 hover:border-line-1'
             } disabled:opacity-50`}
           >
-            <div className="font-medium">{pos.label}</div>
-            <div className="text-fg-4 text-[11px]">{pos.description}</div>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={pos.path} /></svg>
+            <span className="font-medium">{pos.label}</span>
           </button>
         ))}
       </div>

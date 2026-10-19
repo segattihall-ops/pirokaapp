@@ -198,3 +198,8 @@
   12% { opacity: 1; }
   to { transform: translateY(105vh) rotate(260deg); opacity: 0; }
 }
+
+/* Desktop profile preview exists only for mouse/trackpad hover, never touch-only devices. */
+@media (hover: none) {
+  .piroka-hover-card { display: none !important; }
+}

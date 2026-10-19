@@ -4,66 +4,33 @@ import Link from 'next/link';
 import { quickExit } from '@/components/safety/quick-exit';
 import { usePathname } from 'next/navigation';
 import { LogoTile } from '@/components/logo';
+import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
 
 type Item = { href: string; label: string; icon: React.ReactNode };
 
 const stroke = {
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.8,
+  strokeWidth: 2,
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
 } as const;
 
 const ITEMS: Item[] = [
-  {
-    href: '/app/map',
-    label: 'MAP',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" />
-        <circle cx="12" cy="10" r="2.2" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/pulse',
-    label: 'PULSE',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M3 12h4l2.5-6 4 12 2.5-6H21" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/chats',
-    label: 'CHATS',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-5 4z" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/places',
-    label: 'PLACES',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <path d="M3 21h18M5 21V9l7-5 7 5v12M10 21v-6h4v6" />
-      </svg>
-    ),
-  },
-  {
-    href: '/app/me',
-    label: 'ME',
-    icon: (
-      <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
-        <circle cx="12" cy="8" r="3.5" />
-        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-      </svg>
-    ),
-  },
+  { href: '/app/map', label: 'MAP', icon: <NavIcon path={NAV_ICON_PATHS.map} /> },
+  { href: '/app/pulse', label: 'PULSE', icon: <NavIcon path={NAV_ICON_PATHS.pulse} /> },
+  { href: '/app/chats', label: 'CHATS', icon: <NavIcon path={NAV_ICON_PATHS.chats} /> },
+  { href: '/app/places', label: 'PLACES', icon: <NavIcon path={NAV_ICON_PATHS.places} /> },
+  { href: '/app/me', label: 'ME', icon: <NavIcon path={NAV_ICON_PATHS.me} /> },
 ];
+
+function NavIcon({ path }: { path: string }) {
+  return (
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+      <path d={path} />
+    </svg>
+  );
+}
 
 export function useActive(href: string) {
   const path = usePathname();
@@ -81,9 +48,12 @@ function NavLink({ item, variant, badge }: { item: Item; variant: 'rail' | 'tab'
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={`${base} tap transition-colors ${active ? 'text-green' : 'text-fg-3 hover:text-fg'} ${
-        active && variant === 'rail' ? 'bg-sel-fill' : ''
+        active && variant === 'rail' ? 'bg-white/[0.09] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : ''
       }`}
     >
+      {active && variant === 'tab' && (
+        <span aria-hidden className="absolute left-[28%] right-[28%] top-0 h-[2px] rounded-full bg-green" />
+      )}
       {active && variant === 'rail' && (
         <span aria-hidden className="absolute -left-[10px] top-3 h-[34px] w-[3px] rounded-full bg-green" />
       )}
@@ -107,9 +77,10 @@ export function Rail({ unread = 0 }: { unread?: number }) {
       aria-label="Primary"
       className="fixed inset-y-0 left-0 z-40 hidden w-rail flex-col items-center border-r border-line-1 bg-rail pb-4 pt-4 rail:flex"
     >
-      <Link href="/app/map" className="mb-5 rounded-logo" aria-label="πroka home">
-        <LogoTile size={44} />
+      <Link href="/app/map" className="mb-3 rounded-logo" aria-label="πroka home">
+        <LogoTile size={50} />
       </Link>
+      <span aria-hidden className="mb-3 h-px w-[30px] bg-line-3" />
       <div className="flex flex-col gap-1">
         {ITEMS.map((it) => (
           <NavLink key={it.href} item={it} variant="rail" badge={it.href === '/app/chats' ? unread : 0} />
@@ -137,7 +108,7 @@ export function TabBar({ unread = 0 }: { unread?: number }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(66px+var(--safe-bottom))] border-t border-line-1 bg-ink-900/95 pb-[var(--safe-bottom)] backdrop-blur-md rail:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(66px+var(--safe-bottom))] border-t border-line-1 bg-ink-850/95 pb-[var(--safe-bottom)] backdrop-blur-md rail:hidden"
     >
       {ITEMS.map((it) => (
         <NavLink key={it.href} item={it} variant="tab" badge={it.href === '/app/chats' ? unread : 0} />

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { POSITION_MARKS } from '@/lib/design/icon-paths';
 import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
 
 export const dynamic = 'force-dynamic';
 
 const UpdateProfileAttrsSchema = z.object({
-  positionMarks: z.array(z.enum(['top', 'versatile', 'bottom'])).optional(),
+  positionMarks: z.array(z.enum(POSITION_MARKS.map((p) => p.id) as [string, ...string[]])).optional(),
   ethnicity: z.array(z.string()).optional(),
 });
 

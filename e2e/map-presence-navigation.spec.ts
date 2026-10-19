@@ -148,8 +148,34 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await expect(page.getByText('Approximate locations')).toBeVisible();
   await expect(pin).toBeVisible();
 
+  // Preview exists only when a desktop pointer hovers a member, never as a static overlay.
+  await pin.hover();
+  const hoverCard = page.getByTestId('person-hover-card');
+  await expect(hoverCard).toBeVisible();
+  await expect(hoverCard).toHaveCSS('width', '224px');
+  await expect(hoverCard).toContainText('Click to open profile');
+  await expect(hoverCard).not.toContainText('% your type'); // Free: no invented match score.
+  const hoverPhoto = hoverCard.locator('img');
+  await expect(hoverPhoto).toHaveCount(0); // Fixture has no image: no fake photograph.
+  await page.mouse.move(1400, 950);
+  await expect(hoverCard).toHaveCount(0);
+
+  // App v2 desktop: map tools float at top-right, with the left rail at 80px.
+  const layersDesktop = await page.getByRole('button', { name: /^Layers/ }).boundingBox();
+  const filterDesktop = await page.getByRole('button', { name: /^Filter/ }).boundingBox();
+  const intentDesktop = await page.getByRole('button', { name: /Set your intent|You: / }).boundingBox();
+  expect(layersDesktop).not.toBeNull();
+  expect(filterDesktop).not.toBeNull();
+  expect(intentDesktop).not.toBeNull();
+  expect(layersDesktop!.x).toBeGreaterThan(900);
+  expect(filterDesktop!.x).toBeGreaterThan(layersDesktop!.x);
+  expect(Math.abs(layersDesktop!.y - intentDesktop!.y)).toBeLessThan(12);
+
   await page.setViewportSize({ width: 430, height: 932 });
   await expect(pin).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Primary' }).last()).toBeVisible();
+  // Mobile still exposes travel despite moving the desktop action into Layers.
+  await expect(page.getByRole('button', { name: 'Travel mode' })).toBeVisible();
 
   const layersTrigger = page.getByRole('button', { name: /^Layers/ });
   await layersTrigger.focus();
@@ -192,4 +218,26 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await expect(page.getByText('@keyboard-test')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden({ timeout: 10_000 });
+});
+
+
+test('homepage primary CTA respects design tokens and stays accessible at 390px', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const cta = page.getByRole('button', { name: 'Start chatting' });
+  await expect(cta).toBeVisible();
+  const bounds = await cta.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  expect(await cta.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(52, 211, 153)');
+
+  for (const label of ['With Google', 'With my email', 'Stay anonymous']) {
+    const button = page.getByRole('button', { name: label });
+    const hit = await button.boundingBox();
+    expect(hit).not.toBeNull();
+    expect(hit!.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

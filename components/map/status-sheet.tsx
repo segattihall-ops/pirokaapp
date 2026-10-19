@@ -137,7 +137,9 @@ export function StatusSheet({
   );
 }
 
-/** Bottom sheet on phones, centered card on the rail layout. Portaled to <body> so animated/transformed ancestors can't reposition it. */
+/** Prototype layout: bottom sheets for controls, a right-side profile panel on desktop.
+ * Portaled to body so MapLibre's transformed canvas cannot displace the dialog.
+ */
 export function Sheet({
   title,
   onClose,
@@ -148,6 +150,8 @@ export function Sheet({
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
+  const side = title === 'Your profile' || title === 'Edit profile';
+
   useEffect(() => {
     setMounted(true);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -159,19 +163,35 @@ export function Sheet({
       document.body.style.overflow = prev;
     };
   }, [onClose]);
+
   if (!mounted) return null;
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center rail:items-center"
+      className={`fixed inset-0 z-50 flex items-end justify-center ${side ? 'rail:justify-end' : 'rail:justify-center'}`}
       role="dialog"
       aria-modal="true"
+      aria-label={title ?? 'πroka panel'}
     >
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60" />
-      <div className="relative flex max-h-[88dvh] w-full max-w-[520px] flex-col gap-4 overflow-y-auto rounded-t-sheet bg-ink-900 px-5 pb-[calc(20px+var(--safe-bottom))] pt-3 shadow-sheet rail:rounded-sheet rail:pb-5">
-        <span aria-hidden className="mx-auto h-1 w-10 rounded-full bg-line-3 rail:hidden" />
-        {title && <h2 className="text-[20px] font-semibold tracking-[-0.02em]">{title}</h2>}
-        {children}
-      </div>
+      <button
+        type="button"
+        aria-label="Close panel"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50"
+      />
+      <section
+        className={`relative flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-sheet border border-b-0 border-line-2 bg-ink-850/95 shadow-sheet backdrop-blur-xl ${side ? 'h-dvh max-h-dvh rounded-none border-t-0 rail:max-w-[400px] rail:border-r-0 rail:shadow-panel' : 'rail:max-h-[88dvh]'}`}
+      >
+        <div className="relative flex shrink-0 items-center justify-between px-5 pb-2 pt-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span aria-hidden className="h-1 w-9 rounded-full bg-line-3 rail:hidden" />
+            {title && <h2 className="text-[20px] font-semibold tracking-[-0.02em]">{title}</h2>}
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line-2 text-[20px] text-fg-3 hover:text-fg">×</button>
+        </div>
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-5 pb-[calc(22px+var(--safe-bottom))] rail:pb-5">
+          {children}
+        </div>
+      </section>
     </div>,
     document.body,
   );
