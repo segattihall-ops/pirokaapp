@@ -1,6 +1,7 @@
 'use client';
 
 import maplibregl from 'maplibre-gl';
+import { CARTO_FALLBACK_STYLE, PIROKA_BASEMAP_STYLE } from './basemap-style';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -30,9 +31,8 @@ import { DemoProfileSheet } from './demo-profile-sheet';
 import { demoWorld, type DemoArrival, type DemoEvent, type DemoPlace } from '@/lib/demo/presence';
 import { promosFor, type Promo } from './promos';
 
-const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const ESRI_STYLE =
-  'https://basemap.arcgisonline.com/arcgis/rest/services/World_Dark_Gray_Base/VectorTileServer/resources/styles/root.json';
+const ESRI_STYLE = PIROKA_BASEMAP_STYLE;
+const CARTO_STYLE = CARTO_FALLBACK_STYLE;
 const RADIUS_M = 5000;
 const FREE_M = 3219; // 2 miles — Free members open profiles within this ring (prototype FREE_M).
 const REFRESH_MS = 60_000;
@@ -399,7 +399,7 @@ export function MapScreen({ userId }: { userId: string }) {
     if (!containerRef.current || mapRef.current || !pos) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: CARTO_STYLE,
+      style: ESRI_STYLE,
       center: [pos.lon, pos.lat],
       zoom: 13,
       attributionControl: false,
@@ -407,8 +407,8 @@ export function MapScreen({ userId }: { userId: string }) {
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
     map.on('error', (e) => {
-      if (String(e.error?.message ?? '').includes('style') && map.getStyle()?.name !== 'esri')
-        map.setStyle(ESRI_STYLE);
+      if (String(e.error?.message ?? '').includes('style') && map.getStyle()?.name === 'Piroka Esri Dark Gray')
+        map.setStyle(CARTO_STYLE);
     });
     map.on('load', () => {
       map.addSource('hotspots', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -833,8 +833,8 @@ export function MapScreen({ userId }: { userId: string }) {
       )}
 
       {/* Top overlay */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pr-[64px] pt-[calc(14px+var(--safe-top))] rail:pr-[72px]">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-2.5 p-3.5 pr-[64px] pt-[calc(14px+var(--safe-top))] rail:pr-[14px]">
+        <div className="flex flex-wrap items-center gap-2 rail:pr-[250px]">
           <button
             type="button"
             onClick={() => setShowStatus(true)}
@@ -896,24 +896,24 @@ export function MapScreen({ userId }: { userId: string }) {
             type="button"
             onClick={() => setShowTravel(true)}
             aria-label="Travel mode"
-            className={`tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md ${
+            className={`tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md rail:hidden ${
               view ? 'border-sel-border text-green' : 'border-line-2'
             }`}
           >
-            ✈️ <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
+            <PlaneIcon /> <span className="max-w-[120px] truncate">{view ? view.label.split(',')[0] : 'Travel'}</span>
           </button>
           {pos && !pos.precise && !view && (
             <button
               type="button"
               onClick={() => locate(true).then(refresh)}
-              className="tap pointer-events-auto ml-auto shrink-0 rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
+              className="tap pointer-events-auto shrink-0 rounded-[14px] border border-line-2 bg-ink-850/90 px-4 text-[13px] font-medium text-green backdrop-blur-md"
             >
               Use my location
             </button>
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex items-center gap-2 rail:absolute rail:right-[72px] rail:top-[calc(14px+var(--safe-top))]">
           <div className="relative">
             <button
               ref={layersButtonRef}
@@ -947,7 +947,7 @@ export function MapScreen({ userId }: { userId: string }) {
                 role="menu"
                 aria-label="Map layers"
                 onKeyDown={onLayersMenuKeyDown}
-                className="absolute left-0 top-12 z-30 w-[230px] rounded-[16px] border border-line-2 bg-ink-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
+                className="absolute left-0 top-12 z-30 w-[230px] rail:left-auto rail:right-0 rounded-[16px] border border-line-2 bg-ink-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
               >
                 {(
                   [
@@ -1169,7 +1169,7 @@ export function MapScreen({ userId }: { userId: string }) {
       {hovered && <HoverPreview person={hovered} now={now} premium={premium} />}
 
       {/* Bottom pills: scrubber + counts + visitors */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-12 flex flex-col items-center gap-2 px-3">
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 px-3">
         {scrubOpen ? (
           <div className="glass pointer-events-auto flex w-[min(520px,100%)] flex-col gap-2 rounded-sheet px-4 py-3">
             <div className="flex items-center justify-between">
@@ -1233,7 +1233,7 @@ export function MapScreen({ userId }: { userId: string }) {
             onClick={() => setShowVisitors(true)}
             className="tap pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-chip border border-line-2 bg-ink-850/90 px-3.5 text-[13px] font-medium backdrop-blur-md"
           >
-            ✈️ {visitors.length} visiting
+            <PlaneIcon /> {visitors.length} visiting
           </button>
         )}
       </div>
@@ -1421,4 +1421,9 @@ function HoverPreview({ person, now, premium }: { person: NearbyPerson; now: num
       </div>
     </div>
   );
+}
+
+/** Inline SVG, never an emoji: icons follow the fixed semantic token system. */
+function PlaneIcon() {
+  return <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" /></svg>;
 }
