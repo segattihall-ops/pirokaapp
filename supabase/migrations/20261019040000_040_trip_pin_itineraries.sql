@@ -3,20 +3,10 @@
 alter table public.trips add column if not exists arrival_time time without time zone;
 alter table public.trips add column if not exists departure_on date;
 alter table public.trips add column if not exists departure_time time without time zone;
--- Add-only (never remove a live constraint). Existing date-only rows remain valid.
-do $
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'trip_departure_after_arrival'
-      and conrelid = 'public.trips'::regclass
-  ) then
-    alter table public.trips
-      add constraint trip_departure_after_arrival
-      check (departure_on is null or departure_on > arrive_on);
-  end if;
-end
-$;
+-- The constraint did not exist on the inspected PIROKA production schema.
+-- This is additive: it never drops an existing constraint.
+alter table public.trips add constraint trip_departure_after_arrival
+  check (departure_on is null or departure_on > arrive_on);
 
 -- City-only traveler pins: add itinerary and optional user-provided origin code.
 -- The search remains scoped to the requested city, subject to block and moderation rules.
@@ -34,7 +24,7 @@ returns table (
   arrival_time time without time zone, departure_on date,
   departure_time time without time zone, origin_code text
 )
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public as $travelv2$
   select
     t.id, t.user_id, u.handle, t.city, t.arrive_on, t.nights, p.blur_key,
     round(st_y(t.geo::geometry)::numeric, 2)::double precision,
@@ -58,7 +48,7 @@ language sql stable security definer set search_path = public as $$
     )
   order by t.arrive_on
   limit 100
-$$;
+$travelv2$;
 revoke all on function public.trips_near_v2(double precision, double precision, integer, uuid)
   from public, anon, authenticated;
 grant execute on function public.trips_near_v2(double precision, double precision, integer, uuid)
