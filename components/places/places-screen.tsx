@@ -5,26 +5,40 @@ import { useSearchParams } from 'next/navigation';
 import { distanceLabel, getPosition, timeLeft, type Position } from '@/lib/geo/client';
 import type { Place } from '@/app/api/places/route';
 import { heatOf, heatLabel } from '@/lib/map/pin-anatomy';
-import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
+import { MAP_ICON_PATHS, PLACE_ICON_PATHS } from '@/lib/design/icon-paths';
 import { Sheet } from '@/components/map/status-sheet';
 import EventCard from '@/components/events/event-card';
 import { TestingDirectory } from '@/components/health/testing-directory';
 import type { Event } from '@/lib/events/types';
 
-const KINDS: { value: string; label: string; glyph: string }[] = [
-  { value: 'bar', label: 'Bar', glyph: '🍸' },
-  { value: 'club', label: 'Club', glyph: '🪩' },
-  { value: 'cafe', label: 'Café', glyph: '☕' },
-  { value: 'restaurant', label: 'Restaurant', glyph: '🍽' },
-  { value: 'gym', label: 'Gym', glyph: '🏋️' },
-  { value: 'park', label: 'Park', glyph: '🌳' },
-  { value: 'beach', label: 'Beach', glyph: '🏖' },
-  { value: 'sauna', label: 'Sauna', glyph: '♨️' },
-  { value: 'shop', label: 'Shop', glyph: '🛍' },
-  { value: 'venue', label: 'Venue', glyph: '🎤' },
-  { value: 'other', label: 'Other', glyph: '📍' },
-];
-const glyph = (kind: string) => KINDS.find((k) => k.value === kind)?.glyph ?? '📍';
+const KINDS = [
+  { value: 'bar', label: 'Bar' },
+  { value: 'club', label: 'Club' },
+  { value: 'cafe', label: 'Café' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'gym', label: 'Gym' },
+  { value: 'park', label: 'Park' },
+  { value: 'beach', label: 'Beach' },
+  { value: 'sauna', label: 'Sauna' },
+  { value: 'shop', label: 'Shop' },
+  { value: 'venue', label: 'Venue' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+const iconFor = (kind: string) => {
+  const mapped: Record<string, keyof typeof PLACE_ICON_PATHS> = {
+    bar: 'bar', club: 'club', cafe: 'cafe', restaurant: 'cafe',
+    gym: 'gym', park: 'park', beach: 'park', sauna: 'sauna',
+    shop: 'bar', venue: 'club', other: 'bar',
+  };
+  return PLACE_ICON_PATHS[mapped[kind] ?? 'bar'];
+};
+
+function PlaceIcon({ kind }: { kind: string }) {
+  return <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"
+    strokeLinejoin="round"><path d={iconFor(kind)} /></svg>;
+}
 
 export function PlacesScreen() {
   const [pos, setPos] = useState<Position | null>(null);
@@ -171,7 +185,7 @@ export function PlacesScreen() {
                 <div key={p.id} className="glass flex flex-col gap-3 rounded-card px-4 py-3.5">
                   <div className="flex items-start gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ink-800 text-[18px]">
-                      {glyph(p.kind)}
+                      <PlaceIcon kind={p.kind} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 truncate text-[14px] font-medium">
@@ -310,7 +324,7 @@ function SuggestSheet({
             onClick={() => setKind(k.value)}
             className={`chip ${kind === k.value ? 'chip-selected' : ''}`}
           >
-            {k.glyph} {k.label}
+            <PlaceIcon kind={k.value} /> {k.label}
           </button>
         ))}
       </div>
