@@ -92,6 +92,17 @@ export async function POST(request: Request) {
       return NextResponse.json(schemaPendingResponse('035_app_v2_map'), { status: 503 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  // Board auto-post when someone starts hosting, couchless or travelling (FEATURES §7). Written at
+  // the fuzzed public position by a database function; failures never block the status itself.
+  const BOARD_LINE: Partial<Record<string, string>> = {
+    hosting: 'Hosting at my place for the next few hours. Message me if you are free.',
+    couchless: "Couchless: I can't host or travel, but I'm up for a chat.",
+    travel: 'I can travel to you for the next few hours. Message me.',
+  };
+  if (BOARD_LINE[intent] && (!before || before.intent !== intent)) {
+    void db.rpc('board_auto_post', { p_user: session.userId, p_content: BOARD_LINE[intent] });
+  }
+
   void track({
     userId: session.userId,
     event: EVENTS.status_set,

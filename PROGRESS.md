@@ -425,3 +425,32 @@ Not verifiable from the build sandbox: the WebRTC media path (the proxy blocks W
 5. ⏳ Implement email magic link (when SMTP configured)
 6. ⏳ Implement age verification provider (Yoti/Persona)
 7. ⏳ Move to Phase 2: Database schema + onboarding
+
+---
+
+## Build pass: blueprint gaps (this branch)
+
+Scope taken from `design_handoff/FEATURES.md` and `BUILD_PLAN.md`. Each item is committed separately.
+
+### Live in code (needs migrations 035–043 applied)
+- **Plans & billing** (`/app/me/plan`, §10): Free / Plus / Premium cards, PayPal checkout, retention step before cancel (pause 30 days, switch to Plus, or cancel anyway), resume, Premium↔Plus change through PayPal revise, billing email, promo and invite codes (PRIDE26, PIROKA-…), downloadable receipts. Card entry stays with PayPal. Lifecycle cron ends cancelled and complimentary plans and resumes paused ones. Migration 041.
+- **Places v2** (§6): four tabs, going ETA 15/30/60, arrival check within 150 m on the server, two no-shows pause "I'm going" for 5 days, "It's popping!" flame at 5 or more, place detail and place chat. Migration 040.
+- **Partners** (`/partners`, §14): hours, offer tags, totals only, events under review in the admin queue, claims. Migration 039.
+- **Interested and mutual** (§4): anonymous signal, "It's mutual" reveal, Desperate sends an ALERT SENT card, a white flash and a board post. Migration 042.
+- **Your type** (§6, Premium): learned score from open/interest/chat signals, ✓ like and ✕ not for me per trait, reset. Migration none (uses 001/020 tables).
+- **Local board**: 280 characters, drug-word block, 5 mile radius, status auto-posts for hosting, couchless and travel. Migration 043.
+- **Coordinate guard**: `node --test tests/no-raw-coords.test.mjs` checks every API route for raw position columns and coordinate keys.
+
+### Mocked or keyed
+- PayPal (sandbox until `PAYPAL_ENV=live` and plan IDs are set).
+- Desperate and interest notifications use web push when VAPID keys are set, otherwise in-app only.
+- Partner venue "Profile views" needs one fetch on place open (not wired yet).
+
+### Not done
+- Me screen: Invite friends, Who viewed or liked you, Chemsex and party safety section, Become an ambassador, quiet hours, discreet notification previews, Sexual health card polish.
+- Local board: Premium public replies, response-time indicator on profiles and chats.
+- Map: "Only my type (70%+)" filter; Next and skip signals for taste learning.
+- Groups link to `/groups/[id]`, which has no route yet.
+- Clinic events are tagged on the `photo` column as a stopgap; move them to a proper column.
+- Partner RPC `partner_listings_for` assumes the PostGIS `geo` shape of `supabase/schema.sql`; check against production.
+- Legal pages need counsel review; Lighthouse and WCAG audits not run.

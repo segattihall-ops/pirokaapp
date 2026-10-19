@@ -92,8 +92,9 @@ export async function POST(request: Request) {
   if (hasFix) {
     await db.from('area_messages').insert({
       author_id: me,
-      lat,
-      lon: lng,
+      // Same ~1 km grid the board uses everywhere; the exact fix never reaches a public row.
+      lat: Math.round(lat * 100) / 100,
+      lon: Math.round(lng * 100) / 100,
       content: 'Desperate right now. If you are nearby, say hi.',
     });
   }

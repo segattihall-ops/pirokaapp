@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
+import { hasDrugTerms, DRUG_TERMS_MESSAGE } from '@/lib/moderation/drug-words';
 
 export const dynamic = 'force-dynamic';
 
 const coarse = (v: number) => Math.round(v * 100) / 100;
 
-const RADIUS_M = 5000;
+const RADIUS_M = 8047; // 5 miles, as the board is described in FEATURES §7
 const Body = z.object({
   lat: z.number().min(-90).max(90),
   lon: z.number().min(-180).max(180),
-  content: z.string().min(1).max(500),
+  content: z.string().trim().min(1).max(280),
 });
 
 /** Post a public message to the area. */
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const { lat, lon, content } = parsed.data;
+  if (hasDrugTerms(content)) return NextResponse.json({ error: DRUG_TERMS_MESSAGE }, { status: 422 });
 
   const { data, error } = await supabaseAdmin!
     .from('area_messages')
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ id: data.id, created_at: data.created_at });
 }
 
-/** Get messages in a geographic area (5km radius). */
+/** Get messages in a geographic area (5 mi radius). */
 export async function GET(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
