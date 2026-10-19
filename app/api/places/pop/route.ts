@@ -22,6 +22,18 @@ export async function POST(request: Request) {
   if (checkinError) return NextResponse.json({ error: 'Could not verify check-in' }, { status: 500 });
   if (!checkin) return NextResponse.json({ error: 'Check in here before voting' }, { status: 403 });
 
+  // Only the service-role SQL function reads the reduced-precision true_geo to verify
+  // a recent on-site fix. Never return coordinates, an exact distance or the fix age.
+  const proximity = await supabaseAdmin.rpc('can_vote_popping', {
+    p_user: session.userId, p_place: placeId,
+  });
+  if (proximity.error && isMissingSchema(proximity.error))
+    return NextResponse.json({ error: 'Location verification requires database migration 041', schemaPending: true }, { status: 503 });
+  if (proximity.error)
+    return NextResponse.json({ error: 'Could not verify current venue location' }, { status: 500 });
+  if (proximity.data !== true)
+    return NextResponse.json({ error: 'Only members currently at this venue can vote' }, { status: 403 });
+
   const { error } = await supabaseAdmin.from('place_pop_votes').upsert({
     place_id: placeId, user_id: session.userId, expires_at: checkin.expires_at,
   }, { onConflict: 'place_id,user_id' });
