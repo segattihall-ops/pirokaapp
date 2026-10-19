@@ -31,6 +31,8 @@ test('trip clocks preserve declared civil dates and do not invent legacy times',
   expect(validDay('2026-02-31')).toBe(false);
   expect(dayName('2026-10-23')).toBe('Fri');
   expect(clockAt('15:00')).toBe('3 PM');
+  expect(clockAt('15:00:00')).toBe('3 PM');
+  expect(clockAt('11:00:00', true)).toBe('11:00 AM');
   expect(tripNights('2026-10-23', '2026-10-26')).toBe(3);
   expect(tripText({ arriveOn: '2026-10-23', nights: 3, arrivalTime: '15:00', departOn: '2026-10-26', departureTime: '11:00' })).toBe('Arrives Fri 3 PM → Mon 11 AM');
   expect(tripText({ arriveOn: '2026-10-23', nights: 3 })).toBe('Arrives Fri → Mon');
