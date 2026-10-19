@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { approx, exact, dur, heatOf, heatLabel, dayName, clockAt, tripText, validDay, tripNights } from '../lib/map/pin-anatomy';
+import { approx, exact, dur, heatOf, heatLabel, dayName, clockAt, tripText, validDay, tripNights, isPopping, isSelfPinVisible } from '../lib/map/pin-anatomy';
+import { canRevealMainPhoto } from '../lib/profile/photo-visibility';
 import { INTENTS } from '../lib/intent';
 
 test('semantic intent colors match the fixed App v2 system', () => {
@@ -33,4 +34,37 @@ test('trip clocks preserve declared civil dates and do not invent legacy times',
   expect(tripNights('2026-10-23', '2026-10-26')).toBe(3);
   expect(tripText({ arriveOn: '2026-10-23', nights: 3, arrivalTime: '15:00', departOn: '2026-10-26', departureTime: '11:00' })).toBe('Arrives Fri 3 PM → Mon 11 AM');
   expect(tripText({ arriveOn: '2026-10-23', nights: 3 })).toBe('Arrives Fri → Mon');
+});
+
+test('five distinct active on-site votes are required for a red flame', () => {
+  expect(isPopping(0)).toBe(false);
+  expect(isPopping(4)).toBe(false);
+  expect(isPopping(5)).toBe(true);
+  expect(isPopping(6)).toBe(true);
+  expect(isPopping(4.5)).toBe(false);
+});
+
+test('Hidden and missing visibility never paint a self pin', () => {
+  expect(isSelfPinVisible('hidden')).toBe(false);
+  expect(isSelfPinVisible(null)).toBe(false);
+  expect(isSelfPinVisible(undefined)).toBe(false);
+  expect(isSelfPinVisible('neighborhood')).toBe(true);
+  expect(isSelfPinVisible('area')).toBe(true);
+});
+
+test('main photo stays server-blurred after chat alone, album grant or unsafe Meet Mode', () => {
+  const base = {
+    self: false, mutual: false, activeAcceptedMeet: false,
+    viewerRisk: false, peerRisk: false,
+  };
+  expect(canRevealMainPhoto(base)).toBe(false);
+  // Conversation and album grants are intentionally NOT an authorization input.
+  expect(canRevealMainPhoto({ ...base, mutual: true })).toBe(true);
+  expect(canRevealMainPhoto({ ...base, activeAcceptedMeet: true })).toBe(true);
+  expect(canRevealMainPhoto({ ...base, activeAcceptedMeet: true, viewerRisk: true })).toBe(false);
+  expect(canRevealMainPhoto({ ...base, activeAcceptedMeet: true, peerRisk: true })).toBe(false);
+  expect(canRevealMainPhoto({ ...base, mutual: true, viewerRisk: true })).toBe(true);
+  expect(canRevealMainPhoto({ ...base, mutual: true, peerRisk: null })).toBe(false);
+  expect(canRevealMainPhoto({ ...base, activeAcceptedMeet: true, viewerRisk: null })).toBe(false);
+  expect(canRevealMainPhoto({ ...base, self: true, viewerRisk: null, peerRisk: null })).toBe(true);
 });
