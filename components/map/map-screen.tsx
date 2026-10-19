@@ -17,7 +17,9 @@ import { MyCardSheet } from './my-card-sheet';
 import { TravelSheet, type TravelView } from './travel-sheet';
 import { VisitorsSheet } from './visitors-sheet';
 import { AssistantPanel } from './assistant-panel';
-import { EMPTY_FILTERS, activeFilterCount, matchesFilters, type Filters } from './filters';
+import { EMPTY_FILTERS, POSITION_LABEL, activeFilterCount, matchesFilters, type Filters } from './filters';
+import { distanceLabel } from '@/lib/geo/client';
+import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
 import {
   pinElement,
   updatePinElement,
@@ -26,7 +28,7 @@ import {
   pinRingDegrees,
   timeLeftLabel,
 } from './pins';
-import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement } from './place-pins';
+import { placePinElement, eventPinElement, arrivalPinElement, hotspotLabelElement, flagUrl } from './place-pins';
 import { DemoProfileSheet } from './demo-profile-sheet';
 import { demoWorld, type DemoArrival, type DemoEvent, type DemoPlace } from '@/lib/demo/presence';
 import { promosFor, type Promo } from './promos';
@@ -1169,7 +1171,7 @@ export function MapScreen({ userId }: { userId: string }) {
       </div>
 
       {/* Desktop hover preview */}
-      {hovered && (
+      {hovered && !selected && !showMyCard && !filtersOpen && !showStatus && (
         <HoverPreview
           person={hovered}
           now={now}
@@ -1397,42 +1399,91 @@ function freeRing(lon: number, lat: number, radiusM: number): GeoJSON.Feature {
   return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] }, properties: {} };
 }
 
-/** Desktop-only large preview shown while hovering a pin (prototype hover card). */
-function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: { person: NearbyPerson; now: number; premium: boolean; anchor: { x: number; y: number } | null; mapWidth: number; mapHeight: number }) {
+/** The card flips to the left of a pin when the right edge would clip it. */
+export function hoverCardPosition(
+  anchor: { x: number; y: number },
+  width: number,
+  height: number,
+): { left: number; top: number; flipped: boolean } {
+  const cardWidth = 224;
+  const estimatedHeight = 340;
+  const rightWouldClip = anchor.x + 28 + cardWidth > width - 12;
+  const left = rightWouldClip ? anchor.x - cardWidth - 28 : anchor.x + 28;
+  return {
+    left: Math.max(12, Math.min(left, Math.max(12, width - cardWidth - 12))),
+    top: Math.max(12, Math.min(anchor.y - 160, Math.max(12, height - estimatedHeight - 12))),
+    flipped: rightWouldClip,
+  };
+}
+
+/** Desktop pointer-hover card; data appears only if the member shared it or the backend computed it. */
+function HoverPreview({ person, now, premium, anchor, mapWidth, mapHeight }: {
+  person: NearbyPerson;
+  now: number;
+  premium: boolean;
+  anchor: { x: number; y: number } | null;
+  mapWidth: number;
+  mapHeight: number;
+}) {
   const meta = intentMeta(person.intent);
-  const left = person.intentEndsAt ? fmtDur((new Date(person.intentEndsAt).getTime() - now) / 60_000) : '';
+  const time = person.intentEndsAt ? fmtDur(Math.max(0, (new Date(person.intentEndsAt).getTime() - now) / 60_000)) : '';
+  const state = person.relationship ?? 'stranger';
+  const blur = person.photoRevealed && (state === 'mutual' || state === 'meet') ? 0 : state === 'chatted' ? 5 : 11;
+  const position = person.attrs?.position?.map((p) => POSITION_LABEL[p] ?? p).find(Boolean);
+  const country = person.attrs?.origin;
+  const flag = country && /^(?:[a-z]{2}|us-[a-z]{2})$/i.test(country) ? flagUrl(country.toLowerCase()) : null;
+  const hasScore = premium && typeof person.matchScore === 'number' && Number.isFinite(person.matchScore);
+  const pos = anchor ? hoverCardPosition(anchor, mapWidth, mapHeight) : null;
+  if (!pos || mapWidth < 260 || mapHeight < 340) return null;
   return (
-    <div className="pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-2 bg-ink-850 shadow-float rail:block"
-      style={{
-        left: Math.max(12, Math.min((anchor?.x ?? 0) + 28, mapWidth - 236)),
-        top: Math.max(112, Math.min((anchor?.y ?? 0) - 190, mapHeight - 325)),
-      }}>
-      <div className="relative flex h-[210px] items-center justify-center bg-ink-800">
+    <div
+      data-testid="person-hover-card"
+      data-flipped={pos.flipped ? 'true' : 'false'}
+      aria-hidden="true"
+      className="pointer-events-none absolute z-30 hidden w-[224px] overflow-hidden rounded-card border border-line-3 bg-ink-850 shadow-float motion-reduce:animate-none rail:[@media(hover:hover)]:block"
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="relative flex h-[210px] items-center justify-center overflow-hidden bg-ink-800">
         {person.photo ? (
+          // The URL is pre-authorized server-side and only yields clear pixels to mutual/Meet connections.
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={person.photo}
-            alt=""
-            className="h-full w-full object-cover"
-            style={{ filter: person.intent ? 'blur(6px)' : 'blur(11px)' }}
-          />
+          <img src={person.photo} alt="" className="h-full w-full object-cover" style={{ filter: `blur(${blur}px)` }} />
         ) : (
-          <span className="text-[40px] font-bold text-fg-4">
-            {(person.handle ?? '?').slice(0, 1).toUpperCase()}
+          <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth={1.4} strokeLinecap="round">
+            <path d={NAV_ICON_PATHS.me} />
+          </svg>
+        )}
+        <span className="absolute left-2.5 top-2.5 flex max-w-[calc(100%-20px)] items-center gap-1.5 rounded-chip bg-ink-950/80 px-2.5 py-1 text-[11px] font-semibold text-fg">
+          <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta?.color ?? '#666666' }} />
+          <span className="truncate">{meta?.label ?? 'On the map'}{time && ` · ${time}`}</span>
+        </span>
+        {hasScore && (
+          <span className="absolute right-2.5 top-10 rounded-chip bg-green px-2 py-1 text-[11px] font-bold text-ink-950">
+            {Math.round(person.matchScore! * 100)}% your type
           </span>
         )}
-        <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-chip bg-black/70 px-2.5 py-1 text-[11px] font-semibold">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta?.color ?? '#666' }} />
-          {meta?.label ?? 'On the map'}
-          {person.travelMi ? ` · ${person.travelMi} mi` : ''}
-        </span>
+        {blur > 0 && person.photo && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-chip bg-ink-950/80 px-2 py-1 text-[10px] text-fg-2">
+            Blurred until mutual
+          </span>
+        )}
       </div>
-      <div className="flex flex-col gap-1 p-3">
-        <span className="text-[15px] font-semibold">{person.handle ? `@${person.handle}` : 'Anonymous'}</span>
-        <span className="text-[12px] text-fg-3">
-          {[meta && left && `${left} left`, `${Math.round(person.distanceM)} m`].filter(Boolean).join(' · ')}
+      <div className="flex flex-col gap-1 px-[14px] pb-[14px] pt-3">
+        <div className="flex items-center gap-2 text-[15px] font-semibold">
+          <span className="truncate">{person.handle ? `@${person.handle}` : 'Anonymous'}{typeof person.age === 'number' && person.age >= 18 ? `, ${person.age}` : ''}</span>
+          {flag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={flag} alt="Origin" width={20} height={14} className="h-[14px] w-5 rounded-[3px] object-cover" />
+          )}
+        </div>
+        <span className="text-[12px] text-fg-2">
+          {[position, person.body, distanceLabel(person.distanceM)].filter(Boolean).join(' · ')}
         </span>
-        {premium && <span className="text-[11px] text-green">Opens your match score</span>}
+        {typeof person.responseMinutes === 'number' && person.responseMinutes >= 0 && (
+          <span className="text-[11px] text-fg-3">
+            Replies in {person.responseMinutes <= 5 ? 'minutes' : `~${person.responseMinutes} min`}
+          </span>
+        )}
         <span className="text-[11px] text-fg-4">Click to open profile</span>
       </div>
     </div>
