@@ -1,7 +1,7 @@
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { INTENT_BADGE_PATH, ringDegrees, type Intent, type Status } from '@/lib/intent';
 import { intentMeta } from '@/lib/geo/client';
-import { POSITION_GLYPH } from './filters';
+import { positionMarkPath } from '@/lib/design/icon-paths';
 
 /** Strip the characters that would break out of a CSS url('…') literal. */
 export function escapeUrl(url: string): string {
@@ -157,7 +157,7 @@ export function updatePinElement(el: HTMLButtonElement, p: NearbyPerson, now: nu
   intentBadge.hidden = !badgePath;
   if (badgePath) intentBadge.innerHTML = svgPath(badgePath, 'currentColor', 2.6);
 
-  const posGlyph = (p.attrs?.position ?? []).map((m) => POSITION_GLYPH[m]).find(Boolean);
+  const posGlyph = (p.attrs?.position ?? []).map(positionMarkPath).find(Boolean);
   positionBadge.hidden = !posGlyph;
   if (posGlyph) positionBadge.innerHTML = svgPath(posGlyph, 'currentColor', 3);
 
