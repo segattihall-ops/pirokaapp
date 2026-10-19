@@ -59,8 +59,11 @@ export function validWallTime(value: string): boolean {
 
 /** Input is a destination-local wall clock (HH:mm); no guessed timezone. */
 export function clockAt(time: string, alwaysMinutes = false): string {
-  if (!validWallTime(time)) return '';
-  const [hour, minute] = time.split(':').map(Number);
+  // PostgreSQL time columns serialize as HH:mm:ss; the client form submits HH:mm.
+  // Parse both without adding a timezone or manufacturing an arrival/departure hour.
+  const trimmed = /^\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(time) ? time.slice(0, 5) : time;
+  if (!validWallTime(trimmed)) return '';
+  const [hour, minute] = trimmed.split(':').map(Number);
   const hour12 = hour % 12 || 12;
   const digits = minute || alwaysMinutes ? `:${String(minute).padStart(2, '0')}` : '';
   return `${hour12}${digits} ${hour >= 12 ? 'PM' : 'AM'}`;
