@@ -191,3 +191,10 @@
     opacity: 1;
   }
 }
+
+/* Mutual reveal confetti: marks fall from the top and fade. */
+@keyframes piFall {
+  from { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  to { transform: translateY(105vh) rotate(260deg); opacity: 0; }
+}

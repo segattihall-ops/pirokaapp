@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { distanceLabel, intentMeta, timeLeft } from '@/lib/geo/client';
 import { SafetyMenu } from '@/components/chat/safety-menu';
 import { Sheet } from './status-sheet';
+import { MutualReveal } from './mutual-reveal';
 
 type Profile = {
   id: string;
@@ -40,7 +41,25 @@ export function ProfileSheet({
   const router = useRouter();
   const [p, setP] = useState<Profile | null>(null);
   const [err, setErr] = useState('');
-  const [busy, setBusy] = useState<'' | 'message' | 'album' | 'fav'>('');
+  const [busy, setBusy] = useState<'' | 'message' | 'album' | 'fav' | 'interest'>('');
+  const [signalled, setSignalled] = useState(false);
+  const [reveal, setReveal] = useState<string | null>(null);
+
+  const interest = async () => {
+    if (!p) return;
+    setBusy('interest');
+    setErr('');
+    const r = await fetch('/api/interest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setBusy('');
+    if (!r.ok) return setErr(j.error ?? 'Could not send');
+    setSignalled(true);
+    if (j.mutual) setReveal(j.reveal?.name ?? 'Someone');
+  };
 
   useEffect(() => {
     fetch(`/api/users/${userId}`, { cache: 'no-store' })
@@ -224,6 +243,17 @@ export function ProfileSheet({
           {p.albumRequest !== 'self' && (
             <button
               type="button"
+              onClick={interest}
+              disabled={busy === 'interest' || signalled}
+              aria-pressed={signalled}
+              className="btn-secondary h-12"
+            >
+              {signalled ? 'Interested · sent' : busy === 'interest' ? '…' : 'Interested'}
+            </button>
+          )}
+          {p.albumRequest !== 'self' && (
+            <button
+              type="button"
               onClick={message}
               disabled={busy === 'message'}
               className="btn-primary h-12 bg-green hover:bg-green-hover"
@@ -234,6 +264,7 @@ export function ProfileSheet({
           <p className="text-center text-[11px] text-fg-4">Messages are end-to-end encrypted.</p>
         </>
       )}
+      {reveal && <MutualReveal name={reveal} onClose={() => setReveal(null)} />}
     </Sheet>
   );
 }

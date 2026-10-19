@@ -88,6 +88,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Auto-post to the local board (FEATURES §7): only when we have a fix to anchor it to.
+  if (hasFix) {
+    await db.from('area_messages').insert({
+      author_id: me,
+      lat,
+      lon: lng,
+      content: 'Desperate right now. If you are nearby, say hi.',
+    });
+  }
+
   void track({ userId: me, event: 'desperate_sent', props: { reached: nearby.length } });
   if (nearby.length) {
     userCards([me])
