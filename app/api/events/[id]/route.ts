@@ -18,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     supabaseAdmin
       .from('events')
       .select(
-        'id,creator_id,title,description,location_name,photo,starts_at,ends_at,category,max_attendees,created_at,updated_at',
+        'id,creator_id,title,description,location_name,photo,starts_at,ends_at,category,max_attendees,created_at,updated_at,review_status',
       )
       .eq('id', params.id)
       .single(),
@@ -40,11 +40,16 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     }
     return NextResponse.json({ error: 'Failed to load event' }, { status: 500 });
   }
+  // Events in partner review are only visible to the partner who posted them.
+  const { review_status, ...publicEvent } = event as typeof event & { review_status?: string | null };
+  if ((review_status ?? 'approved') !== 'approved' && event.creator_id !== g.session.userId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   return NextResponse.json(
     {
       event: {
-        ...event,
+        ...publicEvent,
         attendee_count: count ?? 0,
         my_rsvp_status: mine?.status ?? null,
       },

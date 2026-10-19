@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from 'react';
 
+/** Anonymous counter for the clinic's partner dashboard (no member data). Fire-and-forget. */
+function countPartnerTap(kind: 'call' | 'directions', siteId: string) {
+  fetch('/api/partners/metrics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, listingKind: 'testing_site', listingId: siteId }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 interface TestingSite {
   id: string;
   name: string;
@@ -111,12 +121,14 @@ export function TestingDirectory() {
               <div className="mt-3 flex gap-2">
                 <a
                   href={`tel:${site.phone}`}
+                  onClick={() => countPartnerTap('call', site.id)}
                   className="flex-1 rounded bg-green py-2 text-center text-[12px] font-semibold text-ink-950"
                 >
                   Call
                 </a>
                 <a
                   href={`https://maps.google.com/?q=${encodeURIComponent(site.address)}`}
+                  onClick={() => countPartnerTap('directions', site.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 rounded bg-white/10 py-2 text-center text-[12px] font-semibold text-white"

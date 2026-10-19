@@ -8,7 +8,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /** Routes that need a signed-in AND age-verified user. Everything else is public. */
-const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/];
+const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/, /^\/partners(\/|$)/];
 
 /**
  * API routes a signed-in but not-yet-verified member may call: the gate itself, auth, telemetry,

@@ -1,60 +1,54 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { distanceLabel, getPosition, timeLeft, type Position } from '@/lib/geo/client';
 import type { Place } from '@/app/api/places/route';
 import { heatOf, heatLabel } from '@/lib/map/pin-anatomy';
-import { MAP_ICON_PATHS, PLACE_ICON_PATHS } from '@/lib/design/icon-paths';
+import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
 import { Sheet } from '@/components/map/status-sheet';
 import EventCard from '@/components/events/event-card';
 import EventSheet from '@/components/events/event-sheet';
 import { TestingDirectory } from '@/components/health/testing-directory';
+import { GroupsList } from '@/components/groups/list';
+import { CreateGroupForm } from '@/components/groups/create';
 import type { Event } from '@/lib/events/types';
+import { useAutoCheckin } from '@/lib/places/auto-checkin';
+import { PlaceDetailSheet } from './place-detail-sheet';
+import { Flame, Glyph, KIND_LABEL, PlaceBadge, crowdWord, etaLabel } from './place-glyphs';
 
-const KINDS = [
-  { value: 'bar', label: 'Bar' },
-  { value: 'club', label: 'Club' },
-  { value: 'cafe', label: 'Café' },
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'gym', label: 'Gym' },
-  { value: 'park', label: 'Park' },
-  { value: 'beach', label: 'Beach' },
-  { value: 'sauna', label: 'Sauna' },
-  { value: 'shop', label: 'Shop' },
-  { value: 'venue', label: 'Venue' },
-  { value: 'other', label: 'Other' },
-] as const;
-
-const iconFor = (kind: string) => {
-  const mapped: Record<string, keyof typeof PLACE_ICON_PATHS> = {
-    bar: 'bar', club: 'club', cafe: 'cafe', restaurant: 'cafe',
-    gym: 'gym', park: 'park', beach: 'park', sauna: 'sauna',
-    shop: 'bar', venue: 'club', other: 'bar',
-  };
-  return PLACE_ICON_PATHS[mapped[kind] ?? 'bar'];
-};
-
-function PlaceIcon({ kind }: { kind: string }) {
-  return <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"
-    strokeLinejoin="round"><path d={iconFor(kind)} /></svg>;
-}
+const KINDS = Object.keys(KIND_LABEL);
+type Tab = 'places' | 'events' | 'groups' | 'testing';
+const TABS: [Tab, string][] = [
+  ['places', 'Places'],
+  ['events', 'Events'],
+  ['groups', 'Groups'],
+  ['testing', 'Testing'],
+];
+const ETAS: { min: 15 | 30 | 60; label: string }[] = [
+  { min: 15, label: '15 min' },
+  { min: 30, label: '30 min' },
+  { min: 60, label: '1 hour' },
+];
 
 export function PlacesScreen() {
   const [pos, setPos] = useState<Position | null>(null);
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [configured, setConfigured] = useState(true);
   const [suggest, setSuggest] = useState(false);
+  const [newGroup, setNewGroup] = useState(false);
   const [showEvent, setShowEvent] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
+  const [goingFor, setGoingFor] = useState<Place | null>(null);
+  const [detail, setDetail] = useState<Place | null>(null);
+  const [toast, setToast] = useState('');
   const params = useSearchParams();
-  const initialTab = ((): 'places' | 'events' | 'testing' => {
+  const initialTab = ((): Tab => {
     const t = params.get('tab');
-    return t === 'events' || t === 'testing' ? t : 'places';
+    return t === 'events' || t === 'testing' || t === 'groups' ? t : 'places';
   })();
-  const [tab, setTab] = useState<'places' | 'events' | 'testing'>(initialTab);
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [events, setEvents] = useState<Event[] | null>(null);
 
   const loadEvents = useCallback(async (p: Position) => {
@@ -86,14 +80,43 @@ export function PlacesScreen() {
     });
   }, [load]);
 
-  const checkin = async (place: Place, kind: 'here' | 'going' | null) => {
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Auto check-in: places I'm "going" to flip to "here" once the device is within 150 m.
+  const going = useMemo(
+    () => (places ?? []).filter((p) => p.my?.kind === 'going').map((p) => ({ id: p.id, lat: p.lat, lon: p.lon })),
+    [places],
+  );
+  useAutoCheckin(going, (id) => {
+    const name = places?.find((p) => p.id === id)?.name ?? 'the venue';
+    setToast(`You arrived at ${name} — checked in.`);
+    if (pos) load(pos);
+  });
+
+  const votePopping = async (place: Place) => {
+    setBusy(place.id);
+    setErr('');
+    const response = await fetch('/api/places/pop', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placeId: place.id }),
+    }).catch(() => null);
+    setBusy(null);
+    if (!response?.ok) return setErr((await response?.json().catch(() => ({})))?.error ?? 'Could not vote');
+    if (pos) load(pos);
+  };
+
+  const checkin = async (place: Place, kind: 'here' | 'going' | null, etaMin?: 15 | 30 | 60) => {
     setBusy(place.id);
     setErr('');
     const r = kind
       ? await fetch('/api/places/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ placeId: place.id, kind }),
+          body: JSON.stringify({ placeId: place.id, kind, etaMin }),
         })
       : await fetch('/api/places/checkin', {
           method: 'DELETE',
@@ -105,19 +128,6 @@ export function PlacesScreen() {
     if (pos) load(pos);
   };
 
-  const votePopping = async (place: Place) => {
-    setBusy(place.id);
-    setErr('');
-    const response = await fetch('/api/places/pop', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ placeId: place.id }),
-    }).catch(() => null);
-    setBusy(null);
-    if (!response?.ok) return setErr((await response?.json().catch(() => ({})))?.error ?? 'Could not vote');
-    if (pos) load(pos);
-  };
-
   return (
     <section className="mx-auto flex w-full max-w-[560px] animate-in flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
       <div className="flex items-end justify-between gap-3 pr-14 rail:pr-16">
@@ -126,28 +136,32 @@ export function PlacesScreen() {
           <h1 className="text-h2 sm:text-h1">What&apos;s happening</h1>
         </div>
         {tab === 'places' && (
-          <button
-            type="button"
-            onClick={() => setSuggest(true)}
-            className="btn-secondary h-10 shrink-0 text-[13px]"
-          >
+          <button type="button" onClick={() => setSuggest(true)} className="btn-secondary h-10 shrink-0 text-[13px]">
             + Suggest a place
           </button>
         )}
+        {tab === 'groups' && (
+          <button
+            type="button"
+            onClick={() => setNewGroup((v) => !v)}
+            className="btn-secondary h-10 shrink-0 text-[13px]"
+            aria-expanded={newGroup}
+          >
+            {newGroup ? 'Cancel' : '+ New group'}
+          </button>
+        )}
         {tab === 'events' && (
-          <button type="button" onClick={() => setShowEvent(true)} className="btn-secondary h-10 shrink-0 text-[13px]">
+          <button
+            type="button"
+            onClick={() => setShowEvent(true)}
+            className="btn-secondary h-10 shrink-0 text-[13px]"
+          >
             + Create event
           </button>
         )}
       </div>
       <div className="flex gap-1.5" role="tablist" aria-label="Places sections">
-        {(
-          [
-            ['places', 'Places'],
-            ['events', 'Events'],
-            ['testing', 'Testing'],
-          ] as const
-        ).map(([value, label]) => (
+        {TABS.map(([value, label]) => (
           <button
             key={value}
             type="button"
@@ -162,8 +176,8 @@ export function PlacesScreen() {
       </div>
       {tab === 'places' && (
         <p className="text-[13px] text-fg-3">
-          Check in to a venue to show you&apos;re there (4 h) or going later (24 h). Only counts are public,
-          never who.
+          Check in to show you&apos;re there (4 h) or say you&apos;re going with an arrival time — you&apos;re checked in
+          automatically when you get there. Only counts are public, never who.
         </p>
       )}
       {!configured && (
@@ -176,72 +190,83 @@ export function PlacesScreen() {
           {err}
         </p>
       )}
+      {toast && (
+        <p role="status" className="rounded-input border border-sel-border bg-sel-fill px-3.5 py-2.5 text-[13px] text-fg">
+          {toast}
+        </p>
+      )}
 
       {tab === 'places' && (
         <div className="flex flex-col gap-1.5">
           {places === null ? (
             <p className="text-[13px] text-fg-3">Finding places near you…</p>
           ) : places.length === 0 ? (
-            <p className="text-[13px] text-fg-3">
-              No places within 10 miles yet. Be the first to suggest one.
-            </p>
+            <p className="text-[13px] text-fg-3">No places within 10 miles yet. Be the first to suggest one.</p>
           ) : (
             places.map((p) => {
               const mine = p.my?.kind ?? null;
               return (
                 <div key={p.id} className="glass flex flex-col gap-3 rounded-card px-4 py-3.5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ink-800 text-[18px]">
-                      <PlaceIcon kind={p.kind} />
-                    </span>
+                  <button
+                    type="button"
+                    onClick={() => setDetail(p)}
+                    className="tap -mx-1 flex items-start gap-3 rounded-input px-1 text-left"
+                    aria-label={`${p.name} details`}
+                  >
+                    <PlaceBadge kind={p.kind} here={p.here} going={p.going} popping={p.popping} />
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 truncate text-[14px] font-medium">
-                        {p.name}
+                        <span className="truncate">{p.name}</span>
                         {p.verified ? (
-                          <span className="text-[11px] text-green">✓</span>
+                          <span className="text-[11px] text-green" aria-label="Verified">
+                            ✓
+                          </span>
                         ) : (
                           <span className="text-[10px] uppercase tracking-[0.1em] text-fg-4">suggested</span>
                         )}
                       </p>
-                      <p className="text-[12px] text-fg-3">{heatLabel(heatOf({ here: p.here, arriving: p.going }))} · {p.popVotes ?? 0}/5 popping votes</p>
-                      <p className="text-[12px] text-fg-3">
-                        {distanceLabel(p.distanceM)}
+                      <p className="truncate text-[12px] text-fg-3">
+                        {KIND_LABEL[p.kind] ?? p.kind} · {distanceLabel(p.distanceM)}
                         {p.address ? ` · ${p.address}` : ''}
                         {p.peakHint ? ` · ${p.peakHint}` : ''}
                       </p>
                     </div>
                     <div className="text-right text-[12px] leading-tight">
-                      <p className={p.here ? 'font-semibold text-green' : 'text-fg-4'}>{p.here} here</p>
-                      <p className={p.going ? 'text-warning' : 'text-fg-4'}>{p.going} going</p>
+                      <p className="flex items-center justify-end gap-1 font-semibold text-fg">
+                        {p.popping && (
+                          <span className="text-danger" aria-label="It's popping">
+                            <Flame />
+                          </span>
+                        )}
+                        {crowdWord(p.here)}
+                      </p>
+                      <p className={p.going ? 'text-fg-2' : 'text-fg-4'}>{p.going} on the way</p>
                     </div>
-                  </div>
+                  </button>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       disabled={busy === p.id}
                       onClick={() => checkin(p, mine === 'here' ? null : 'here')}
-                      className={`chip flex-1 justify-center ${mine === 'here' ? 'chip-selected' : ''}`}
+                      className={`chip h-11 flex-1 justify-center ${mine === 'here' ? 'chip-selected' : ''}`}
                     >
                       {mine === 'here' ? `Here · ${timeLeft(p.my!.expiresAt)}` : "I'm here"}
                     </button>
                     <button
                       type="button"
                       disabled={busy === p.id}
-                      onClick={() => checkin(p, mine === 'going' ? null : 'going')}
-                      className={`chip flex-1 justify-center ${mine === 'going' ? 'chip-selected' : ''}`}
+                      onClick={() => (mine === 'going' ? checkin(p, null) : setGoingFor(p))}
+                      className={`chip h-11 flex-1 justify-center ${mine === 'going' ? 'chip-selected' : ''}`}
                     >
-                      {mine === 'going' ? `Going · ${timeLeft(p.my!.expiresAt)}` : 'Going later'}
+                      {mine === 'going' ? `Going · ${etaLabel(p.my!.etaAt)}` : "I'm going"}
                     </button>
                   </div>
+                  <p className="text-[12px] text-fg-3">{heatLabel(heatOf({ here: p.here, arriving: p.going }))} · {p.popVotes}/5 popping votes</p>
                   {mine === 'here' && (
-                    <button
-                      type="button"
-                      disabled={busy === p.id}
-                      onClick={() => votePopping(p)}
-                      className="tap flex min-h-11 items-center justify-center gap-2 rounded-btn border border-line-2 text-[12px] font-semibold text-fg-2 hover:text-fg"
-                    >
+                    <button type="button" disabled={busy === p.id} onClick={() => votePopping(p)}
+                      className="tap flex min-h-11 items-center justify-center gap-2 rounded-btn border border-line-2 text-[12px] font-semibold text-fg-2 hover:text-fg">
                       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={MAP_ICON_PATHS.flame} /></svg>
-                      It&apos;s popping! · {p.popVotes ?? 0}/5
+                      It&apos;s popping! · {p.popVotes}/5
                     </button>
                   )}
                 </div>
@@ -256,16 +281,79 @@ export function PlacesScreen() {
           {events === null ? (
             <p className="text-[13px] text-fg-3">Finding events near you…</p>
           ) : events.length === 0 ? (
-            <p className="text-[13px] text-fg-3">
-              No events nearby yet. Events people create around you show up here.
-            </p>
+            <p className="text-[13px] text-fg-3">No events nearby yet. Events people create around you show up here.</p>
           ) : (
             events.map((e) => <EventCard key={e.id} event={e} onRsvp={() => pos && loadEvents(pos)} />)
           )}
         </div>
       )}
 
+      {tab === 'groups' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-[13px] text-fg-3">Communities near you. Join one to open its group chat.</p>
+          {!pos ? (
+            <p className="text-[13px] text-fg-3">Finding your location…</p>
+          ) : (
+            <>
+              {newGroup && (
+                <div className="glass rounded-card px-4 py-3.5">
+                  <CreateGroupForm
+                    initialLat={pos.lat}
+                    initialLng={pos.lon}
+                    initialLocationName="Near me"
+                    onSuccess={() => setNewGroup(false)}
+                  />
+                </div>
+              )}
+              <GroupsList lat={pos.lat} lng={pos.lon} />
+            </>
+          )}
+        </div>
+      )}
+
       {tab === 'testing' && <TestingDirectory />}
+
+      {goingFor && (
+        <Sheet title={`Going to ${goingFor.name}`} onClose={() => setGoingFor(null)}>
+          <p className="text-[13px] text-fg-3">
+            When will you get there? You&apos;re checked in automatically on arrival. Two no-shows pause
+            &ldquo;I&apos;m going&rdquo; for 5 days.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {ETAS.map((e) => (
+              <button
+                key={e.min}
+                type="button"
+                disabled={busy === goingFor.id}
+                onClick={async () => {
+                  const p = goingFor;
+                  setGoingFor(null);
+                  await checkin(p, 'going', e.min);
+                }}
+                className="chip h-12 justify-center text-[14px]"
+              >
+                {e.label}
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+
+      {detail && (
+        <PlaceDetailSheet
+          placeId={detail.id}
+          distanceM={detail.distanceM}
+          busy={busy === detail.id}
+          onClose={() => setDetail(null)}
+          onCheckin={() => checkin(detail, 'here')}
+          onLeave={() => checkin(detail, null)}
+          onGoing={() => {
+            setDetail(null);
+            setGoingFor(detail);
+          }}
+          onChanged={() => pos && load(pos)}
+        />
+      )}
 
       {suggest && pos && (
         <SuggestSheet
@@ -277,22 +365,21 @@ export function PlacesScreen() {
           }}
         />
       )}
+
       {showEvent && pos && (
-        <EventSheet lat={pos.lat} lon={pos.lon} locationName="" onClose={() => setShowEvent(false)} onCreated={() => loadEvents(pos)} />
+        <EventSheet
+          lat={pos.lat}
+          lon={pos.lon}
+          locationName=""
+          onClose={() => setShowEvent(false)}
+          onCreated={() => loadEvents(pos)}
+        />
       )}
     </section>
   );
 }
 
-function SuggestSheet({
-  pos,
-  onClose,
-  onCreated,
-}: {
-  pos: Position;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
+function SuggestSheet({ pos, onClose, onCreated }: { pos: Position; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState('');
   const [kind, setKind] = useState('bar');
   const [address, setAddress] = useState('');
@@ -319,22 +406,16 @@ function SuggestSheet({
         {pos.precise ? '' : ' (approximate — turn on location for accuracy)'} and marked as suggested until
         verified.
       </p>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Name"
-        className="input h-12"
-        maxLength={80}
-      />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="input h-12" maxLength={80} />
       <div className="flex flex-wrap gap-1.5">
         {KINDS.map((k) => (
           <button
-            key={k.value}
+            key={k}
             type="button"
-            onClick={() => setKind(k.value)}
-            className={`chip ${kind === k.value ? 'chip-selected' : ''}`}
+            onClick={() => setKind(k)}
+            className={`chip gap-1.5 ${kind === k ? 'chip-selected' : ''}`}
           >
-            <PlaceIcon kind={k.value} /> {k.label}
+            <Glyph kind={k} size={14} /> {KIND_LABEL[k]}
           </button>
         ))}
       </div>

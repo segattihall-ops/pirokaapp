@@ -122,6 +122,7 @@ export function MapScreen({ userId }: { userId: string }) {
   const [plan, setPlan] = useState('free');
   const [desperate, setDesperate] = useState<DesperateState | null>(null);
   const [despFlash, setDespFlash] = useState(false);
+  const [alertSent, setAlertSent] = useState<{ reached: number } | null>(null);
   const [selected, setSelected] = useState<{ id: string; distanceM: number | null } | null>(null);
   const [showStatus, setShowStatus] = useState(false);
   const [showMyCard, setShowMyCard] = useState(false);
@@ -284,9 +285,9 @@ export function MapScreen({ userId }: { userId: string }) {
               lon: x.lon,
               here: x.here,
               arriving: x.going,
-              popping: isPopping(x.popVotes ?? 0),
-              popCount: x.popVotes ?? 0,
-              peak: '',
+              popping: isPopping(x.popVotes ?? x.votes ?? 0),
+              popCount: x.popVotes ?? x.votes ?? 0,
+              peak: x.peakHint ?? '',
             })),
           );
         } else {
@@ -708,6 +709,12 @@ export function MapScreen({ userId }: { userId: string }) {
     return () => clearTimeout(t);
   }, [despFlash]);
 
+  useEffect(() => {
+    if (!alertSent) return;
+    const t = setTimeout(() => setAlertSent(null), 5000);
+    return () => clearTimeout(t);
+  }, [alertSent]);
+
   // Growth banners: never in the first ~20s, one at a time, each shown once per session, auto-dismiss after 12s.
   useEffect(() => {
     if (promo || aiOpen || showStatus || filtersOpen || selected) return;
@@ -803,6 +810,7 @@ export function MapScreen({ userId }: { userId: string }) {
     if (r?.ok && j) {
       setDesperate(j);
       setDespFlash(true);
+      setAlertSent({ reached: j.active?.reached ?? 0 });
     } else if (j?.error) {
       setDesperate((d) => ({
         allowed: true,
@@ -847,10 +855,22 @@ export function MapScreen({ userId }: { userId: string }) {
           aria-hidden
           className="pointer-events-none absolute inset-0 z-[60]"
           style={{
-            boxShadow: 'inset 0 0 0 4px rgba(239,68,68,0.95), inset 0 0 180px rgba(239,68,68,0.45)',
+            boxShadow: 'inset 0 0 0 4px rgba(255,255,255,0.95), inset 0 0 180px rgba(255,255,255,0.45)',
             animation: 'piFade .4s ease-out both',
           }}
         />
+      )}
+
+      {alertSent && (
+        <div
+          role="status"
+          className="glass pointer-events-none absolute left-1/2 top-[18%] z-[61] flex -translate-x-1/2 flex-col items-center gap-1 rounded-card px-5 py-3.5 text-center"
+        >
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-danger">Alert sent</p>
+          <p className="text-[13px] text-fg-2">
+            Nearby for 30 minutes. {alertSent.reached} {alertSent.reached === 1 ? 'person' : 'people'} in reach.
+          </p>
+        </div>
       )}
 
       {/* Top overlay */}

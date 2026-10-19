@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
-import { PayPalCheckout } from '@/components/billing/paypal-checkout';
 import { PushToggle } from '@/components/push/push-toggle';
 import { NotifPrefs } from '@/components/me/notif-prefs';
 import { SignOutButton } from '@/components/account/sign-out-button';
 import { AlbumInbox } from '@/components/me/album-inbox';
 import { FavoritesList } from '@/components/me/favorites-list';
+import { YourType } from '@/components/me/your-type';
 import { TripsList } from '@/components/me/trips-list';
 import { DeleteAccount } from '@/components/me/delete-account';
 import { AccountData } from '@/components/me/account-data';
@@ -25,6 +25,7 @@ const ROWS: { label: string; href: string }[] = [
   { label: 'Safety Center & SafeMeet', href: '/help/safety' },
   { label: 'Community Guidelines', href: '/help/guidelines' },
   { label: 'Privacy & safety', href: '/help/privacy' },
+  { label: 'For partners', href: '/partners' },
 ];
 
 export default async function MePage() {
@@ -84,13 +85,20 @@ export default async function MePage() {
 
       <AlbumInbox />
 
+      <YourType />
+
       <FavoritesList />
 
       <TripsList />
 
-      <div id="billing" className="scroll-mt-4">
-        <PayPalCheckout userId={session.userId} />
-      </div>
+      <Link
+        id="billing"
+        href="/app/me/plan"
+        className="glass flex items-center justify-between rounded-card px-4 py-3.5 text-[14px] font-medium scroll-mt-4"
+      >
+        Plan &amp; billing
+        <span className="text-fg-4">›</span>
+      </Link>
 
       <PushToggle />
 

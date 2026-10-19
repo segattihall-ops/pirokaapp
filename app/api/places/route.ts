@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
-import { isMissingSchema } from '@/lib/db/schema-errors';
+import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +21,13 @@ export type Place = {
   peakHint: string | null;
   here: number;
   going: number;
+  /** Members here now whose active status is "Visiting". */
+  visitors: number;
+  /** "It's popping!" votes in the last 90 minutes; 5+ lights the red flame. */
+  votes: number;
   popVotes: number;
-  my: { kind: 'here' | 'going'; expiresAt: string } | null;
+  popping: boolean;
+  my: { kind: 'here' | 'going'; expiresAt: string; etaAt: string | null } | null;
 };
 
 /** Venues within `radius` metres with live check-in counts. */
@@ -39,6 +44,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'lat and lon required' }, { status: 400 });
   }
 
+  // Expire stale rows and account no-shows first so the counts below are current (040).
+  await supabaseAdmin.rpc('record_no_shows').then(() => undefined, () => undefined);
+
   const { data, error } = await supabaseAdmin.rpc('nearby_places', {
     user_lat: lat,
     user_lon: lon,
@@ -47,12 +55,12 @@ export async function GET(request: Request) {
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const ids: string[] = (data ?? []).map((p: { id: string }) => p.id);
+  const ids: string[] = (data ?? []).map((r: { id: string }) => r.id);
   const popOf = new Map<string, number>();
   if (ids.length) {
     const response = await supabaseAdmin.from('place_pop_votes').select('place_id').in('place_id', ids)
       .gt('expires_at', new Date().toISOString());
-    if (response.error && !isMissingSchema(response.error)) console.error('places: votes lookup failed', response.error.message);
+    if (response.error && !isMissingSchema(response.error)) console.error('places votes:', response.error.message);
     for (const row of response.data ?? []) popOf.set(row.place_id, (popOf.get(row.place_id) ?? 0) + 1);
   }
   const places: Place[] = (data ?? []).map((r: any) => ({
@@ -67,8 +75,11 @@ export async function GET(request: Request) {
     peakHint: r.peak_hint ?? null,
     here: Number(r.here_count ?? 0),
     going: Number(r.going_count ?? 0),
-    popVotes: popOf.get(r.id) ?? 0,
-    my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at } : null,
+    visitors: Number(r.visitors ?? 0),
+    votes: popOf.get(r.id) ?? Number(r.votes ?? 0),
+    popVotes: popOf.get(r.id) ?? Number(r.votes ?? 0),
+    popping: (popOf.get(r.id) ?? Number(r.votes ?? 0)) >= 5,
+    my: r.my_kind ? { kind: r.my_kind, expiresAt: r.my_expires_at, etaAt: r.my_eta_at ?? null } : null,
   }));
   return NextResponse.json({ configured: true, places });
 }
@@ -105,6 +116,9 @@ export async function POST(request: Request) {
     .insert({ name, kind, address: address || null, geo: `POINT(${lng} ${lat})`, verified: false, created_by: session.userId })
     .select('id')
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (isMissingSchema(error)) return NextResponse.json(schemaPendingResponse('012_places'), { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ id: data.id });
 }
