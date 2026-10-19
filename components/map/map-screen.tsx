@@ -274,6 +274,8 @@ export function MapScreen({ userId }: { userId: string }) {
               here: number;
               going: number;
               popVotes?: number;
+              votes?: number;
+              peakHint?: string | null;
             }[];
           };
           setPlaces(
