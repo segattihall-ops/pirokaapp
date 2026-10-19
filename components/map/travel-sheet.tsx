@@ -8,6 +8,37 @@ type Hit = { name: string; lat: number; lon: number };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const PinIcon = ({ className = 'text-fg-3' }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`shrink-0 ${className}`}
+    aria-hidden
+  >
+    <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z" />
+    <circle cx="12" cy="11" r="2.2" />
+  </svg>
+);
+
+const Spinner = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" className="shrink-0 animate-spin text-fg-4" aria-hidden>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25" />
+    <path
+      d="M21 12a9 9 0 0 0-9-9"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 /**
  * Travel mode: look at another city without moving your own pin, and optionally announce the trip
  * so favourites there get an arrival alert. Only the city is stored.
@@ -86,30 +117,48 @@ export function TravelSheet({
           autoComplete="off"
           autoFocus
         />
-        {(hits.length > 0 || searching) && (
-          <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-input border border-line-2 bg-ink-900 shadow-sheet">
+        {(hits.length > 0 || searching || (q.trim().length >= 2 && !err)) && (
+          <ul className="absolute inset-x-0 top-full z-10 mt-1.5 max-h-[280px] divide-y divide-line-1 overflow-y-auto overflow-x-hidden rounded-input border border-line-2 bg-ink-900 shadow-sheet">
             {searching && hits.length === 0 && (
-              <li className="px-3.5 py-2.5 text-[13px] text-fg-4">Searching…</li>
-            )}
-            {hits.map((h) => (
-              <li key={`${h.lat},${h.lon}`}>
-                <button
-                  type="button"
-                  onClick={() => pick(h)}
-                  className="tap block w-full px-3.5 py-2.5 text-left text-[14px] hover:bg-ink-850"
-                >
-                  {h.name}
-                </button>
+              <li className="flex items-center gap-2 px-3.5 py-3 text-[13px] text-fg-4">
+                <Spinner />
+                Searching…
               </li>
-            ))}
+            )}
+            {!searching && hits.length === 0 && q.trim().length >= 2 && (
+              <li className="px-3.5 py-3 text-[13px] text-fg-4">No cities found.</li>
+            )}
+            {hits.map((h) => {
+              const [city, ...rest] = h.name.split(', ');
+              return (
+                <li key={`${h.lat},${h.lon}`}>
+                  <button
+                    type="button"
+                    onClick={() => pick(h)}
+                    className="tap flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-ink-850"
+                  >
+                    <PinIcon />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-[14px] font-medium text-fg">{city}</span>
+                      {rest.length > 0 && (
+                        <span className="truncate text-[12px] text-fg-3">{rest.join(', ')}</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
 
       {picked && (
         <>
-          <div className="flex items-center justify-between rounded-input border border-sel-border bg-sel-fill px-3.5 py-2.5 text-[14px]">
-            <span className="truncate">{picked.name}</span>
+          <div className="flex items-center justify-between gap-3 rounded-input border border-sel-border bg-sel-fill px-3.5 py-2.5 text-[14px]">
+            <span className="flex min-w-0 items-center gap-2">
+              <PinIcon className="text-green" />
+              <span className="truncate">{picked.name}</span>
+            </span>
             <button
               type="button"
               onClick={() => {

@@ -6,6 +6,7 @@ import { ensureUserRow } from '@/lib/db/users';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { opsAlert } from '@/lib/alerts/server';
+import { clientIp } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
       reason,
       details: details || null,
       evidence: conversationId ? { conversationId } : null,
+      // Moderator-only: helps link repeat/abusive reporters. 'unknown' → null when no header is present.
+      reporter_ip: clientIp(request) === 'unknown' ? null : clientIp(request),
       status: 'open',
     })
     .select('id')

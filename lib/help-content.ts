@@ -137,6 +137,10 @@ export const HELP_CONTENT: Record<string, Content> = {
         body: 'Your face check runs on your device. We keep only the result (18+ yes/no), never the image.',
       },
       {
+        heading: 'Abuse reports',
+        body: 'When you report someone or submit the public removal form, we store what you send us together with the IP address the report came from. We use it only to keep people safe — to spot repeat or abusive reports — it is visible only to our moderators, and it is deleted when the report is closed.',
+      },
+      {
         heading: 'Your rights',
         body: 'Download everything we hold, correct it, or delete it from ME → Privacy. We follow GDPR, LGPD and US state privacy laws.',
       },
