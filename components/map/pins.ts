@@ -40,7 +40,7 @@ const isDesperate = (p: NearbyPerson, now: number) =>
 
 /** The privacy blur the design applies to a pin photo (px): clear once revealed, otherwise fuzzed. */
 function photoBlur(p: NearbyPerson): number {
-  return p.verified || p.activity === 'active' ? 5 : 11;
+  return p.photoRevealed && (p.relationship === 'mutual' || p.relationship === 'meet') ? 0 : p.relationship === 'chatted' ? 5 : 11;
 }
 
 /** Head-and-shoulders silhouette the prototype draws when a member has no photo (never an initial). */
