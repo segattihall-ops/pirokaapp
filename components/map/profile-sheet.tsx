@@ -7,6 +7,7 @@ import { SafetyMenu } from '@/components/chat/safety-menu';
 import { Sheet } from './status-sheet';
 import { approx, tripText } from '@/lib/map/pin-anatomy';
 import { MAP_ICON_PATHS } from '@/lib/design/icon-paths';
+import { flagUrl } from './place-pins';
 
 type Profile = {
   id: string;
@@ -16,6 +17,7 @@ type Profile = {
   bio: string | null;
   verified: boolean;
   plan: string;
+  originCode?: string | null;
   intent: string | null;
   intentEndsAt: string | null;
   photos: { slot: number; url: string; blurred: boolean }[];
@@ -126,6 +128,15 @@ export function ProfileSheet({
                 </h2>
                 {p.verified && <span className="text-[12px] font-bold text-green">✓</span>}
               </div>
+              {p.originCode && (
+                <p className="mt-1 flex items-center gap-2 text-[12px] text-fg-2">
+                  {/^(?:[a-z]{2}|us-[a-z]{2})$/i.test(p.originCode) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={flagUrl(p.originCode)} alt="" width={20} height={14} className="h-[14px] w-5 rounded-[3px] object-cover" />
+                  )}
+                  <span>{p.trips.length ? 'Coming from' : 'From'} {p.originCode}</span>
+                </p>
+              )}
               <p className="text-[12px] text-fg-3">
                 {p.pronouns.length ? p.pronouns.join(' / ') : 'no pronouns set'}
                 {distanceM !== null ? ` · ${approx(distanceM)}` : ''}
