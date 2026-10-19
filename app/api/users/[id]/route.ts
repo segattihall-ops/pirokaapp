@@ -34,7 +34,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     supabaseAdmin
       .from('users')
       .select(
-        'id, handle, pronouns, gender, orientation, communities, origin, bio, verified_at, plan, visibility, deleted_at, mod_step',
+        'id, handle, pronouns, gender, orientation, communities, origin, bio, verified_at, phone_verified, plan, visibility, deleted_at, mod_step',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -140,6 +140,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     communities: u.communities ?? [],
     bio: u.bio ?? null,
     verified: Boolean(u.verified_at),
+    phoneVerified: Boolean(u.phone_verified),
     plan: u.plan,
     visibility: self ? (u.visibility ?? 'hidden') : null,
     originCode: u.origin ?? null,

@@ -18,6 +18,7 @@ import { HealthCardMe } from '@/components/me/health-card-me';
 import { AmbassadorApply } from '@/components/me/ambassador-apply';
 import { Admirers } from '@/components/me/admirers';
 import { PinSettings } from '@/components/safety/pin-lock';
+import { PhoneVerify } from '@/components/me/phone-verify';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
 
@@ -110,6 +111,8 @@ export default async function MePage() {
       <NotifPrefs />
 
       <PasskeySettings />
+
+      <PhoneVerify />
 
       <PinSettings />
 
