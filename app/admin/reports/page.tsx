@@ -28,6 +28,7 @@ type Report = {
   sev: 1 | 2 | 3;
   details: string;
   evidence: boolean;
+  reporterIp?: string | null;
   publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
   priors: string[];
   status: string;
@@ -67,6 +68,7 @@ export default function ReportsPage() {
           details: string | null;
           status: string;
           createdAt: string;
+          reporterIp?: string | null;
           publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
         }[];
       };
@@ -82,6 +84,7 @@ export default function ReportsPage() {
           sev: SEV[x.reason] ?? 1,
           details: x.details ?? '—',
           evidence: false,
+          reporterIp: x.reporterIp ?? null,
           publicForm: x.publicForm ?? null,
           priors: [],
           status: x.status === 'open' || x.status === 'under_review' ? 'open' : x.status,
@@ -228,6 +231,15 @@ export default function ReportsPage() {
                     {x.publicForm.contactEmail
                       ? `Reply to: ${x.publicForm.contactEmail}`
                       : 'No contact email left.'}
+                  </span>
+                </DetailBlock>
+              )}
+              {x.reporterIp && (
+                <DetailBlock label="Origin (moderation only)">
+                  <span className="font-mono text-[13px] leading-[1.5] text-fg-2">{x.reporterIp}</span>
+                  <span className="text-[12px] leading-[1.5] text-fg-4">
+                    Best-effort IP captured when the report was filed. Not shown to members; use only to spot
+                    repeat or abusive reports.
                   </span>
                 </DetailBlock>
               )}

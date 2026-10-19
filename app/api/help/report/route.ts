@@ -46,7 +46,8 @@ const Body = z.object({
  */
 export async function POST(request: Request) {
   // The form needs no account, so a per-IP limit (shared across instances) is the only brake on abuse.
-  if (!(await rateLimit(`help-report:${clientIp(request)}`, 5, 3600))) return tooMany();
+  const ip = clientIp(request);
+  if (!(await rateLimit(`help-report:${ip}`, 5, 3600))) return tooMany();
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success)
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
         reporter_id: session?.userId ?? null,
         reason: QUEUE_REASON[type],
         details: text,
+        reporter_ip: ip === 'unknown' ? null : ip,
         evidence: {
           source: 'public_form',
           public_label: type,

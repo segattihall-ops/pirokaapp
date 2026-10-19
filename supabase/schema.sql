@@ -153,6 +153,7 @@ create table reports (
   id text primary key default ('TS-' || lpad((floor(random()*99999))::text, 5, '0')),
   reporter_id uuid references users(id), target_id uuid references users(id),
   reason text not null, details text, evidence jsonb,                  -- client-decrypted, reporter-approved
+  reporter_ip text,                                                    -- best-effort IP for moderation; moderator-only, never shown to members
   created_at timestamptz default now(), status text default 'open'
 );
 create table mod_actions (
