@@ -13,6 +13,7 @@ import {
 } from '../lib/design/icon-paths';
 import { FILTER_OPTIONS, parseSmartQuery } from '../components/map/filters';
 import { albumLimit } from '../lib/intent';
+import { LAUNCH_ALL_ACCESS_UNTIL } from '../lib/billing/launch';
 
 const original = readFileSync(
   join(process.cwd(), 'design_handoff/design/Piroka App v2.dc.html'),
@@ -63,9 +64,11 @@ test('every navigation tab shows its canonical SVG stroke and green active state
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(7, 7, 7)');
 });
 
-test('free and anonymous album limits respect the official FEATURES spec', () => {
-  expect(albumLimit('anonymous')).toBe(2);
-  expect(albumLimit('free')).toBe(2);
-  expect(albumLimit('plus')).toBe(5);
-  expect(albumLimit('premium')).toBe(5);
+test('launch all-access promotion expires back to official plan photo limits', () => {
+  const afterPromo = LAUNCH_ALL_ACCESS_UNTIL + 1000;
+  expect(albumLimit('anonymous', afterPromo)).toBe(2);
+  expect(albumLimit('free', afterPromo)).toBe(2);
+  expect(albumLimit('plus', afterPromo)).toBe(5);
+  expect(albumLimit('premium', afterPromo)).toBe(5);
+  expect(albumLimit('free', LAUNCH_ALL_ACCESS_UNTIL - 1000)).toBe(5);
 });
