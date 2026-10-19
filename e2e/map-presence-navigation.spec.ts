@@ -157,7 +157,7 @@ test('map preserves marker focus and accessibility across responsive layout and 
   await expect(hoverCard).not.toContainText('% your type'); // Free: no invented match score.
   const hoverPhoto = hoverCard.locator('img');
   await expect(hoverPhoto).toHaveCount(0); // Fixture has no image: no fake photograph.
-  await page.mouse.move(700, 550);
+  await page.mouse.move(1400, 950);
   await expect(hoverCard).toHaveCount(0);
 
   // App v2 desktop: map tools float at top-right, with the left rail at 80px.
