@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Action,
   ActionRow,
@@ -26,11 +26,31 @@ const slaLimit = (t: SeedTicket) => (t.topic.toLowerCase().includes('harass') ||
 
 export default function SupportPage() {
   const toast = useToast();
-  const [tickets, setTickets] = useState(() => seedTickets());
+  const [configured, setConfigured] = useState(true);
+  const [tickets, setTickets] = useState<SeedTicket[]>([]);
   const [filt, setFilt] = useState<'open' | 'all'>('open');
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<string | null>(null);
   const [note, setNote] = useState('');
+
+  const load = useCallback(async () => {
+    const r = await fetch(`/api/admin/support?status=${filt === 'all' ? '' : 'open'}`, {
+      cache: 'no-store',
+    }).catch(() => null);
+    if (r?.ok) {
+      const j = (await r.json()) as { tickets: SeedTicket[] };
+      setConfigured(true);
+      setTickets(j.tickets);
+    } else {
+      // No backend → seeded queue (empty in production); actions mutate local state only.
+      setConfigured(false);
+      setTickets(seedTickets());
+    }
+  }, [filt]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const rows: QueueRow[] = useMemo(() => {
     const ql = q.toLowerCase();
@@ -65,9 +85,22 @@ export default function SupportPage() {
 
   const x = tickets.find((t) => t.id === sel && (filt === 'all' || t.status === 'open')) ?? null;
 
-  const resolve = (status: string, msg: string) => {
+  const resolve = (status: string, msg: string) => async () => {
     if (!x) return;
-    setTickets((ts) => ts.map((t) => (t.id === x.id ? { ...t, status } : t)));
+    if (configured) {
+      const r = await fetch('/api/admin/support', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: x.id, status, reply: status === 'replied' ? note.trim() : undefined }),
+      }).catch(() => null);
+      if (!r?.ok) {
+        const j = r ? await r.json().catch(() => null) : null;
+        return toast(j?.error ?? 'Could not update the ticket.');
+      }
+      await load();
+    } else {
+      setTickets((ts) => ts.map((t) => (t.id === x.id ? { ...t, status } : t)));
+    }
     setSel(null);
     setNote('');
     toast(msg);
@@ -81,7 +114,7 @@ export default function SupportPage() {
         search
         q={q}
         onQ={setQ}
-        demo
+        demo={!configured}
       />
       <FilterChips
         filters={[
@@ -126,13 +159,13 @@ export default function SupportPage() {
                   kind="pri"
                   onClick={() =>
                     note.trim()
-                      ? resolve('replied', `Reply sent to ${x.user}.`)
+                      ? void resolve('replied', `Reply sent to ${x.user}.`)()
                       : toast('Write a reply first.')
                   }
                 />
                 <Action
                   label="Escalate to T&S"
-                  onClick={() => resolve('escalated', `Escalated ${x.id} to Trust & Safety.`)}
+                  onClick={resolve('escalated', `Escalated ${x.id} to Trust & Safety.`)}
                 />
               </ActionRow>
             </>
