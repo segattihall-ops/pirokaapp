@@ -36,7 +36,7 @@ export function placePinElement(p: DemoPlace): HTMLButtonElement {
   const deg = Math.max(24, Math.round(activity * 360));
   const el = baseButton(`${p.name} · ${heatLabel(activity)} · ${p.here} here${p.arriving ? ` · ${p.arriving} on the way` : ''}`);
   el.innerHTML = `
-    ${p.popping ? `<span aria-hidden style="position:absolute;left:-7px;top:-7px;z-index:2;width:20px;height:20px;border-radius:999px;background:#f5f5f5;box-shadow:0 0 0 2px #070707;display:flex;align-items:center;justify-content:center">${svg(FLAME_GLYPH, '#ef4444', '#ef4444', 12, 1.5)}</span>` : ''}
+    ${(p.popCount ?? 0) >= 5 ? `<span aria-hidden style="position:absolute;left:-7px;top:-7px;z-index:2;width:20px;height:20px;border-radius:999px;background:#f5f5f5;box-shadow:0 0 0 2px #070707;display:flex;align-items:center;justify-content:center">${svg(FLAME_GLYPH, '#ef4444', '#ef4444', 12, 1.5)}</span>` : ''}
     <span style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#f5f5f5 ${deg}deg,rgba(255,255,255,.12) 0deg);box-shadow:0 6px 16px rgba(0,0,0,.55)"></span>
     <span style="position:absolute;inset:3px;border-radius:999px;background:radial-gradient(120% 100% at 30% 18%,#1a1a1a,#0a0a0a 72%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#f5f5f5">${svg(KIND_GLYPH[p.kind], 'currentColor')}</span>
     <span style="position:absolute;top:-6px;right:-9px;min-width:20px;height:18px;padding:0 5px;border-radius:999px;background:#f5f5f5;color:#070707;font:700 10px/18px Geist,sans-serif;text-align:center;box-shadow:0 0 0 2px #070707">${p.here}</span>`;
