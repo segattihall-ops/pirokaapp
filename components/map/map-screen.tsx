@@ -101,9 +101,10 @@ export function MapScreen({ userId }: { userId: string }) {
   const [arrivals, setArrivals] = useState<DemoArrival[]>([]);
   const [demo, setDemo] = useState(false);
   const [interested, setInterested] = useState<NearbyPerson | null>(null);
-  const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null }>({
+  const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null; visibility: string | null }>({
     handle: null,
     photo: null,
+    visibility: null,
   });
   const [chip, setChip] = useState<IntentChip>('all');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -387,7 +388,7 @@ export function MapScreen({ userId }: { userId: string }) {
       .then((j) => {
         if (!alive || !j) return;
         const main = (j.photos ?? []).find((x: { slot: number }) => x.slot === 0);
-        setSelfCard({ handle: j.handle ?? null, photo: main?.url ?? null });
+        setSelfCard({ handle: j.handle ?? null, photo: main?.url ?? null, visibility: j.visibility ?? null });
       })
       .catch(() => {});
     return () => {
@@ -442,6 +443,8 @@ export function MapScreen({ userId }: { userId: string }) {
       });
     });
     const you = youElement();
+    // Default invisible until the self-only visibility preference is loaded.
+    you.style.display = 'none';
     youRef.current = new maplibregl.Marker({ element: you }).setLngLat([pos.lon, pos.lat]).addTo(map);
     you.setAttribute('aria-label', 'You (approximate)');
     you.addEventListener('click', (e) => {
@@ -461,9 +464,11 @@ export function MapScreen({ userId }: { userId: string }) {
   }, [pos]);
 
   // Self pin reflects your current intent ring and the red Desperate ring.
+  // A Hidden location (or an unknown visibility on API failure) shows no dot at all.
   useEffect(() => {
     const el = youRef.current?.getElement();
     if (!el) return;
+    el.style.display = selfCard.visibility && selfCard.visibility !== 'hidden' ? '' : 'none';
     const meta = intentMeta(status?.intent);
     const degrees = status
       ? pinRingDegrees(
@@ -478,13 +483,13 @@ export function MapScreen({ userId }: { userId: string }) {
     const left = status?.ends_at ? timeLeftLabel(status.ends_at, now) : '';
     const label = meta ? meta.label + (left ? ` · ${left}` : '') : 'You';
     updateYouElement(el, {
-      color: meta?.color ?? '#34d399',
+      color: '#34d399',
       degrees,
       photo: selfCard.photo,
       desperate: Boolean(desperate?.active),
       label,
     });
-  }, [status, now, desperate, selfCard.photo]);
+  }, [status, now, desperate, selfCard.photo, selfCard.visibility]);
 
   const searchFiltered = useMemo(() => people.filter((p) => matchesFilters(p, filters)), [people, filters]);
   const shown = useMemo(
