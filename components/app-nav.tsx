@@ -11,7 +11,7 @@ type Item = { href: string; label: string; icon: React.ReactNode };
 const stroke = {
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.8,
+  strokeWidth: 2,
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
 } as const;
@@ -47,7 +47,7 @@ function NavLink({ item, variant, badge }: { item: Item; variant: 'rail' | 'tab'
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      className={`${base} tap transition-colors ${active ? 'text-fg' : 'text-fg-3 hover:text-fg'} ${
+      className={`${base} tap transition-colors ${active ? 'text-green' : 'text-fg-3 hover:text-fg'} ${
         active && variant === 'rail' ? 'bg-white/[0.09] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : ''
       }`}
     >
