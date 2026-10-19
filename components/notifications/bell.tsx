@@ -18,17 +18,26 @@ type Notice = {
 
 const POLL_MS = 30_000;
 const ICON: Record<string, string> = {
-  message: '💬',
-  call: '📹',
-  album_request: '🖼️',
-  album_grant: '🔓',
-  album: '🖼️',
-  status: '🟢',
-  arrival: '✈️',
-  favorite: '★',
-  match: '✨',
-  safety: '🛡️',
+  message: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
+  call: 'M3 6h13v12H3zM16 10l5-3v10l-5-3',
+  album_request: 'M4 4h16v16H4zM8 15l3-4 3 3 2-2 3 4',
+  album_grant: 'M4 4h16v16H4zM8 15l3-4 3 3 2-2 3 4',
+  album: 'M4 4h16v16H4zM8 15l3-4 3 3 2-2 3 4',
+  status: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+  arrival: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+  favorite: 'M12 21s-8-4.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 5.4-8 10-8 10z',
+  match: 'M12 2l2.3 7.7L22 12l-7.7 2.3L12 22l-2.3-7.7L2 12l7.7-2.3z',
+  safety: 'M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z',
 };
+
+function NoticeGlyph({ kind }: { kind: string }) {
+  const color = kind === 'safety' ? '#fbbf24' : ['status', 'match'].includes(kind) ? '#34d399' : '#f5f5f5';
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={ICON[kind] ?? ICON.message} />
+    </svg>
+  );
+}
 
 function ago(iso: string) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -125,11 +134,11 @@ export function NotificationBell({ className = '' }: { className?: string }) {
                     {n.user ? (
                       <Avatar user={n.user} size={40} />
                     ) : (
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ink-800 text-[18px]">{ICON[n.kind] ?? '•'}</span>
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ink-800 text-[18px]"><NoticeGlyph kind={n.kind} /></span>
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-medium">
-                        {n.user ? <span className="mr-1">{ICON[n.kind] ?? ''}</span> : null}
+                        {n.user ? <span className="mr-1 inline-flex align-middle"><NoticeGlyph kind={n.kind} /></span> : null}
                         {n.title}
                       </span>
                       {n.body && <span className="block truncate text-[12px] text-fg-3">{n.body}</span>}
