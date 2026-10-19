@@ -9,8 +9,9 @@ alter table public.trips add constraint trip_departure_after_arrival
 
 -- City-only traveler pins: add itinerary and optional user-provided origin code.
 -- The search remains scoped to the requested city, subject to block and moderation rules.
-drop function if exists public.trips_near(double precision, double precision, integer, uuid);
-create function public.trips_near(
+-- Keep the existing RPC intact for clients still using the old response shape.
+-- The itinerary RPC is additive and can be rolled out independently.
+create function public.trips_near_v2(
   center_lat double precision,
   center_lon double precision,
   radius_m integer,
@@ -44,7 +45,7 @@ language sql stable security definer set search_path = public as $$
   order by t.arrive_on
   limit 100
 $$;
-revoke all on function public.trips_near(double precision, double precision, integer, uuid)
+revoke all on function public.trips_near_v2(double precision, double precision, integer, uuid)
   from public, anon, authenticated;
-grant execute on function public.trips_near(double precision, double precision, integer, uuid)
+grant execute on function public.trips_near_v2(double precision, double precision, integer, uuid)
   to service_role;
