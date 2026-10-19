@@ -23,8 +23,18 @@ export async function GET() {
     return NextResponse.json({ locked: true, likes: [], views: [] });
 
   const [likeRes, viewRes, blocked] = await Promise.all([
-    supabaseAdmin.from('interests').select('from_id, created_at').eq('to_id', me).order('created_at', { ascending: false }).limit(60),
-    supabaseAdmin.from('profile_views').select('viewer_id, viewed_at').eq('viewee_id', me).order('viewed_at', { ascending: false }).limit(60),
+    supabaseAdmin
+      .from('interests')
+      .select('from_id, created_at')
+      .eq('to_id', me)
+      .order('created_at', { ascending: false })
+      .limit(60),
+    supabaseAdmin
+      .from('profile_views')
+      .select('viewer_id, viewed_at')
+      .eq('viewee_id', me)
+      .order('viewed_at', { ascending: false })
+      .limit(60),
     blockedIdsFor(me),
   ]);
 

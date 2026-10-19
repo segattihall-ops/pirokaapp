@@ -53,7 +53,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       notify(p.proposer_id, {
         kind: 'match',
         title: `${displayName(cards.get(me)?.handle)} accepted your meet`,
-        body: [p.place_label, p.when_text].filter(Boolean).join(' · ') || 'Open the chat to sort out details.',
+        body:
+          [p.place_label, p.when_text].filter(Boolean).join(' · ') || 'Open the chat to sort out details.',
         url: `/app/chats/${p.conversation_id}`,
         refUser: me,
       }),

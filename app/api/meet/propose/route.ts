@@ -24,7 +24,8 @@ export async function GET(request: Request) {
   if (g.error) return g.error;
   const me = g.session.userId;
   const conv = new URL(request.url).searchParams.get('conversation');
-  if (!conv || !UUID_RE.test(conv)) return NextResponse.json({ error: 'conversation required' }, { status: 400 });
+  if (!conv || !UUID_RE.test(conv))
+    return NextResponse.json({ error: 'conversation required' }, { status: 400 });
 
   const membership = await getConversationForUser(conv, me);
   if (!membership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -73,7 +74,8 @@ export async function POST(request: Request) {
   if (error) {
     if (error.code === '23505')
       return NextResponse.json({ error: 'You already have a pending meet in this chat.' }, { status: 409 });
-    if (isMissingSchema(error)) return NextResponse.json(schemaPendingResponse('046_meet_proposals'), { status: 503 });
+    if (isMissingSchema(error))
+      return NextResponse.json(schemaPendingResponse('046_meet_proposals'), { status: 503 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -81,7 +83,8 @@ export async function POST(request: Request) {
     notify(invitee, {
       kind: 'match',
       title: `${displayName(cards.get(me)?.handle)} suggested meeting up`,
-      body: [parsed.data.placeLabel, parsed.data.when].filter(Boolean).join(' · ') || 'Open the chat to reply.',
+      body:
+        [parsed.data.placeLabel, parsed.data.when].filter(Boolean).join(' · ') || 'Open the chat to reply.',
       url: `/app/chats/${conv.id}`,
       refUser: me,
     }),

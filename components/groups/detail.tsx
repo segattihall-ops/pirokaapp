@@ -72,7 +72,9 @@ export function GroupDetail({ groupId, meId }: { groupId: string; meId: string }
         if (j.messages.length === 0) return;
         setMessages((prev) => {
           const seen = new Set(prev.map((m) => m.id));
-          const merged = lastAtRef.current ? [...prev, ...j.messages.filter((m) => !seen.has(m.id))] : j.messages;
+          const merged = lastAtRef.current
+            ? [...prev, ...j.messages.filter((m) => !seen.has(m.id))]
+            : j.messages;
           lastAtRef.current = merged[merged.length - 1]?.created_at ?? lastAtRef.current;
           return merged;
         });
@@ -209,7 +211,7 @@ export function GroupDetail({ groupId, meId }: { groupId: string; meId: string }
                 return (
                   <div
                     key={m.id}
-                    className={`flex max-w-[82%] flex-col gap-0.5 ${mine ? 'self-end items-end' : 'self-start items-start'}`}
+                    className={`flex max-w-[82%] flex-col gap-0.5 ${mine ? 'items-end self-end' : 'items-start self-start'}`}
                   >
                     {!mine && (
                       <span className="px-1 text-[11px] text-fg-4">

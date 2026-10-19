@@ -59,7 +59,11 @@ export function MeetPropose({
     const r = await fetch('/api/meet/propose', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversationId, placeLabel: place.trim() || undefined, when: when.trim() || undefined }),
+      body: JSON.stringify({
+        conversationId,
+        placeLabel: place.trim() || undefined,
+        when: when.trim() || undefined,
+      }),
     });
     setBusy(false);
     if (!r.ok) {
