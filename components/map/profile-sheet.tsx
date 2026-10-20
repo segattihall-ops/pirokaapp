@@ -18,6 +18,7 @@ type Profile = {
   bio: string | null;
   verified: boolean;
   phoneVerified?: boolean;
+  photoVerified?: boolean;
   plan: string;
   originCode?: string | null;
   intent: string | null;
@@ -166,6 +167,14 @@ export function ProfileSheet({
                     className="rounded-chip bg-sel-fill px-1.5 py-0.5 text-[10px] font-semibold text-green"
                   >
                     Phone
+                  </span>
+                )}
+                {p.photoVerified && (
+                  <span
+                    title="Photo verified — a live selfie matched these photos"
+                    className="rounded-chip bg-sel-fill px-1.5 py-0.5 text-[10px] font-semibold text-green"
+                  >
+                    Photo
                   </span>
                 )}
               </div>

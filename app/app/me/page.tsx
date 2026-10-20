@@ -19,6 +19,7 @@ import { AmbassadorApply } from '@/components/me/ambassador-apply';
 import { Admirers } from '@/components/me/admirers';
 import { PinSettings } from '@/components/safety/pin-lock';
 import { PhoneVerify } from '@/components/me/phone-verify';
+import { PhotoVerify } from '@/components/me/photo-verify';
 import { supabaseAdmin } from '@/lib/db/client';
 import { photoUrl } from '@/lib/upload/storage';
 
@@ -100,7 +101,7 @@ export default async function MePage() {
       <Link
         id="billing"
         href="/app/me/plan"
-        className="glass flex items-center justify-between rounded-card px-4 py-3.5 text-[14px] font-medium scroll-mt-4"
+        className="glass flex scroll-mt-4 items-center justify-between rounded-card px-4 py-3.5 text-[14px] font-medium"
       >
         Plan &amp; billing
         <span className="text-fg-4">›</span>
@@ -113,6 +114,8 @@ export default async function MePage() {
       <PasskeySettings />
 
       <PhoneVerify />
+
+      <PhotoVerify />
 
       <PinSettings />
 
