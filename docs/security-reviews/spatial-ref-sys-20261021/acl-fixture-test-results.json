@@ -1,0 +1,172 @@
+{
+  "status": "PASS",
+  "environment": "PGlite0.5.11 / PostgreSQL18.6; in-memory synthetic data",
+  "tests": 38,
+  "passed": 38,
+  "failed": 0,
+  "source_acl_entries": 41,
+  "target_entries": 14,
+  "preserved_entries": 27,
+  "sql_sha256": {
+    "forward": "c17ea91a9ca39d28de28a9bac8892786ce2b024574eb7f7854567066db0e47f0",
+    "rollback": "bc0b9e76b731ee4b8a6c99eae1f6f05fd8b18095f1566719f83018035a7c8f81"
+  },
+  "production_mutations": false,
+  "actual_postgis_loaded": false,
+  "fixture_adaptation": "Only expected extension-name literal postgis→plpgsql for positive cases; original production guard tested unchanged as a rejecting case. Role switching occurs only inside isolated fixtures.",
+  "limits": "No hosted PostGIS transforms, production API, operator connectivity, lock contention or concurrent DDL was exercised.",
+  "results": [
+    {
+      "name": "Source inventory has 41 entries; precisely 14 are targeted and 27 preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "Operator SQL has no role switching, RLS/owner/extension mutation, blanket revoke or grant option",
+      "status": "PASS"
+    },
+    {
+      "name": "Fixture reproduces every observed grantor, grantee, privilege and grantability bit",
+      "status": "PASS"
+    },
+    {
+      "name": "Both synthetic client roles initially hold all seven targeted effective privileges",
+      "status": "PASS"
+    },
+    {
+      "name": "Synthetic anon can truncate the reference table before hardening; transaction is rolled back",
+      "status": "PASS"
+    },
+    {
+      "name": "Forward removes exactly 14 entries and preserves the other 27 exactly",
+      "status": "PASS"
+    },
+    {
+      "name": "All 14 targeted effective privileges are absent after forward",
+      "status": "PASS"
+    },
+    {
+      "name": "Forward preserves all rows, owner, extension membership/metadata, RLS, policies, schema and future grants",
+      "status": "PASS"
+    },
+    {
+      "name": "anon SELECT still returns both synthetic reference rows",
+      "status": "PASS"
+    },
+    {
+      "name": "anon INSERT is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "anon UPDATE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "anon DELETE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "anon TRUNCATE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "anon TRIGGER is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "anon REFERENCES is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated SELECT still returns both synthetic reference rows",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated INSERT is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated UPDATE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated DELETE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated TRUNCATE is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated TRIGGER is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "authenticated REFERENCES is denied on synthetic objects after hardening",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-target service_role retains its existing reference-data UPDATE privilege",
+      "status": "PASS"
+    },
+    {
+      "name": "Forward is idempotent on the exact reviewed hardened state",
+      "status": "PASS"
+    },
+    {
+      "name": "Rollback restores all 41 original ACL entries including original grantor and grantability",
+      "status": "PASS"
+    },
+    {
+      "name": "Rollback preserves all non-ACL invariants and synthetic data",
+      "status": "PASS"
+    },
+    {
+      "name": "Rollback is idempotent on the exact original state",
+      "status": "PASS"
+    },
+    {
+      "name": "Unmodified production PostGIS guard refuses the plpgsql stand-in and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Nonowner SQL actor with inherited table rights but no owner/grant authority is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Changed table owner is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Changed RLS state is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "New policy is rejected even when RLS is disabled and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Removed extension membership is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Missing preserved SELECT grant is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Unexpected table grantability is rejected and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Any unreviewed column ACL is rejected before table REVOKE and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Inherited client write access aborts and rolls back the entire forward change and preserves the full pre-attempt state",
+      "status": "PASS"
+    },
+    {
+      "name": "Rollback refuses drift in the hardened ACL and preserves the full pre-attempt state",
+      "status": "PASS"
+    }
+  ]
+}

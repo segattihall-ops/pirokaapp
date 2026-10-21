@@ -1,0 +1,289 @@
+{
+  "verified_at": "2026-10-21 14:54:49 UTC",
+  "project_id": "clwqmzgoqfqibnfevhyb",
+  "table": "public.spatial_ref_sys",
+  "scope": "Read-only catalog verification; no production mutations",
+  "acl": [
+    {
+      "owner": "supabase_admin",
+      "relkind": "r",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "extension": "postgis",
+      "grants": [
+        {
+          "grantee": "PUBLIC",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "DELETE"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "INSERT"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "MAINTAIN"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "REFERENCES"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRIGGER"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRUNCATE"
+        },
+        {
+          "grantee": "supabase_admin",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "UPDATE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "DELETE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "INSERT"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "MAINTAIN"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "REFERENCES"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRIGGER"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRUNCATE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "UPDATE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "DELETE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "INSERT"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "MAINTAIN"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "REFERENCES"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRIGGER"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRUNCATE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "DELETE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "MAINTAIN"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "REFERENCES"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRIGGER"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRUNCATE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "UPDATE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "DELETE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "INSERT"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "MAINTAIN"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "REFERENCES"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "SELECT"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRIGGER"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "TRUNCATE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "supabase_admin",
+          "grantable": false,
+          "privilege": "UPDATE"
+        }
+      ],
+      "policy_count": 0
+    }
+  ],
+  "effective": [
+    {
+      "relname": "spatial_ref_sys",
+      "relrowsecurity": false,
+      "owning_extension": "postgis",
+      "anon_select": true,
+      "anon_insert": true,
+      "anon_update": true,
+      "anon_delete": true,
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": true
+    }
+  ],
+  "actor": [
+    {
+      "sql_actor": "postgres",
+      "rolsuper": false,
+      "rolcreaterole": true,
+      "has_supabase_admin_usage": false,
+      "can_grant_update": false,
+      "can_grant_truncate": false
+    }
+  ]
+}
