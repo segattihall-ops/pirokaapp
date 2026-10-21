@@ -26,6 +26,13 @@ export function HomeClient({
   authError?: string | null;
 }) {
   const { geo, label, precise, requestPrecise } = useGeo();
+  // Remember an invite code from ?ref= so it survives through sign-up and onboarding attribution.
+  useEffect(() => {
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref && /^[A-Za-z0-9]{6,12}$/.test(ref)) localStorage.setItem('piroka_ref', ref.toUpperCase());
+    } catch {}
+  }, []);
   // Intro plays once per session, never under reduced motion, and never on a gate redirect.
   const [intro, setIntro] = useState(false);
   useEffect(() => {
