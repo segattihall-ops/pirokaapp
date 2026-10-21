@@ -1,23 +1,27 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { distanceLabel, getPosition, INTENTS, intentMeta } from '@/lib/geo/client';
 import type { NearbyPerson } from '@/app/api/nearby/route';
 import { ProfileSheet } from '@/components/map/profile-sheet';
+import { AssistantPanel } from '@/components/map/assistant-panel';
 import { useFeatures } from '@/lib/billing/use-features';
 import { FeaturePaywall } from '@/components/billing/feature-paywall';
 import { ActivityHeatmap } from './activity-heatmap';
 import { ActivityTrends } from './activity-trends';
 
 export function PulseScreen() {
-  const { isPremium, loading: planLoading } = useFeatures();
+  const router = useRouter();
+  const { isPremium } = useFeatures();
   const [people, setPeople] = useState<NearbyPerson[] | null>(null);
   const [hotspots, setHotspots] = useState<{ lat: number; lon: number; count: number }[]>([]);
   const [configured, setConfigured] = useState(true);
   const [selected, setSelected] = useState<NearbyPerson | null>(null);
   const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null);
   const [tab, setTab] = useState<'people' | 'trends' | 'heatmap'>('people');
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -34,18 +38,7 @@ export function PulseScreen() {
     })();
   }, []);
 
-  // Show paywall if not premium
-  if (!planLoading && !isPremium) {
-    return (
-      <FeaturePaywall
-        featureName="πroka Pulse"
-        requiredPlan="premium"
-        description="Advanced activity analytics and intelligence — available on πroka Premium"
-        fullScreen
-      />
-    );
-  }
-
+  // Pulse itself is free (FEATURES §5); only the Trends and Heatmap intelligence are Premium.
   const count = (intent: string) => (people ?? []).filter((p) => p.intent === intent).length;
   const live = (people ?? []).filter((p) => p.intent);
 
@@ -103,17 +96,29 @@ export function PulseScreen() {
         </>
       )}
 
-      {/* Trends Tab */}
+      {/* Trends Tab — Premium intelligence */}
       {tab === 'trends' &&
-        (pos ? (
+        (!isPremium ? (
+          <FeaturePaywall
+            featureName="Pulse Trends"
+            requiredPlan="premium"
+            description="See how activity rises and falls across the week — a πroka Premium insight."
+          />
+        ) : pos ? (
           <ActivityTrends lat={pos.lat} lon={pos.lon} />
         ) : (
           <p className="text-center text-[13px] text-fg-3">Finding your area…</p>
         ))}
 
-      {/* Heatmap Tab */}
+      {/* Heatmap Tab — Premium intelligence */}
       {tab === 'heatmap' &&
-        (pos ? (
+        (!isPremium ? (
+          <FeaturePaywall
+            featureName="Pulse Heatmap"
+            requiredPlan="premium"
+            description="See where people gather near you — a πroka Premium insight."
+          />
+        ) : pos ? (
           <ActivityHeatmap lat={pos.lat} lon={pos.lon} />
         ) : (
           <p className="text-center text-[13px] text-fg-3">Finding your area…</p>
@@ -161,6 +166,32 @@ export function PulseScreen() {
       </div>
       {selected && (
         <ProfileSheet userId={selected.id} distanceM={selected.distanceM} onClose={() => setSelected(null)} />
+      )}
+
+      {/* π assistant — also available on Pulse (FEATURES §11) */}
+      <button
+        type="button"
+        aria-label="Ask πroka"
+        onClick={() => setAiOpen(true)}
+        className="tap fixed bottom-[calc(84px+var(--safe-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-green text-[22px] font-bold text-ink-950 shadow-float rail:bottom-6"
+      >
+        π
+      </button>
+      {aiOpen && (
+        <AssistantPanel
+          people={people ?? []}
+          premium={isPremium}
+          onApply={() => {
+            setAiOpen(false);
+            router.push('/app/map');
+          }}
+          onOpenPerson={(id) => {
+            setAiOpen(false);
+            const person = (people ?? []).find((x) => x.id === id);
+            if (person) setSelected(person);
+          }}
+          onClose={() => setAiOpen(false)}
+        />
       )}
     </section>
   );

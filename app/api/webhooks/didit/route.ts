@@ -3,8 +3,11 @@ import { supabaseAdmin } from '@/lib/db/client';
 import {
   ageCheckLabel,
   evaluateDecision,
+  evaluatePhotoDecision,
   fetchDiditDecision,
   markAgeVerified,
+  markPhotoVerified,
+  photoWorkflowId,
   verifyDiditWebhook,
   type DiditEvent,
 } from '@/lib/age/didit';
@@ -80,6 +83,11 @@ async function apply(event: DiditEvent): Promise<Record<string, unknown>> {
   const userId = event.vendor_data;
   if (!userId || !UUID.test(userId) || !event.session_id) return { ignored: 'no user' };
 
+  // The selfie face-match workflow is a separate, display-only badge: it must never write the age
+  // gate or the age_check_status label. Route it out before any age handling.
+  const photoWf = photoWorkflowId();
+  if (photoWf && event.workflow_id === photoWf) return applyPhoto(event, userId);
+
   const label = ageCheckLabel(event.status);
   if (label) {
     const { error } = await db
@@ -109,4 +117,27 @@ async function apply(event: DiditEvent): Promise<Record<string, unknown>> {
   });
   void track({ userId, event: result.ok ? 'age_verified' : 'age_declined', props: { provider: 'didit' } });
   return { status: label, verified: result.ok };
+}
+
+/** Selfie face-match workflow → the display-only "Photo" badge. Never touches the age gate. */
+async function applyPhoto(event: DiditEvent, userId: string): Promise<Record<string, unknown>> {
+  const db = supabaseAdmin!;
+  if (event.status !== 'Approved' && event.status !== 'Declined')
+    return { kind: 'photo', status: event.status };
+
+  // The body is only a trigger: the decision of record comes from Didit's API.
+  const decision = await fetchDiditDecision(event.session_id!);
+  if (!decision) throw new Error('Could not fetch Didit decision');
+  const verified = evaluatePhotoDecision(decision, userId);
+  if (verified && !(await markPhotoVerified(userId))) throw new Error('Could not grant photo badge');
+
+  await db.from('audit_log').insert({
+    actor_id: null,
+    action: verified ? 'photo.verified' : 'photo.declined',
+    target: event.session_id,
+    target_user_id: userId,
+    details: { provider: 'didit', status: event.status },
+  });
+  void track({ userId, event: verified ? 'photo_verified' : 'photo_declined', props: { provider: 'didit' } });
+  return { kind: 'photo', verified };
 }

@@ -79,6 +79,80 @@ export async function createDiditSession(
   return j.session_id && j.url ? { ok: true, sessionId: j.session_id, url: j.url } : fail;
 }
 
+// ---------- photo (selfie face-match) ----------
+// A separate, optional Didit workflow: a live selfie + a 1:1 face match against the member's own
+// profile photo (passed as the reference `portrait_image`). Approved ⇒ the photos are really them.
+// This is display-only (the "Photo" trust badge), never the age gate. Dormant until the operator
+// builds the workflow in the Didit console and sets DIDIT_PHOTO_WORKFLOW_ID — like phone verification.
+
+export function diditPhotoConfigured(): boolean {
+  return Boolean(process.env.DIDIT_API_KEY && process.env.DIDIT_PHOTO_WORKFLOW_ID);
+}
+
+export function photoWorkflowId(): string | undefined {
+  return process.env.DIDIT_PHOTO_WORKFLOW_ID || undefined;
+}
+
+/**
+ * Start a selfie face-match session. The member's profile photo travels as `portrait_image` (a
+ * short-lived signed URL Didit fetches once, at create time) and is matched against the live selfie.
+ */
+export async function createDiditPhotoSession(
+  userId: string,
+  portraitUrl: string,
+): Promise<{ ok: true; url: string; sessionId: string } | { ok: false; reason: string }> {
+  const apiKey = process.env.DIDIT_API_KEY;
+  const workflowId = photoWorkflowId();
+  if (!apiKey || !workflowId) return { ok: false, reason: 'Photo verification is not available yet' };
+
+  const fail = { ok: false as const, reason: 'Could not start the photo check' };
+  let res: Response;
+  try {
+    res = await fetch(`${API}/`, {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        workflow_id: workflowId,
+        vendor_data: userId,
+        portrait_image: portraitUrl,
+        callback: appUrl('/photo/return'),
+        callback_method: 'initiator',
+        metadata: { kind: 'photo' },
+      }),
+      cache: 'no-store',
+    });
+  } catch (e) {
+    await captureError(e, { route: '/api/me/photo' });
+    return fail;
+  }
+  if (!res.ok) {
+    const body = (await res.text().catch(() => '')).slice(0, 500);
+    await captureError(new Error(`Didit create photo session ${res.status}: ${body}`), {
+      route: '/api/me/photo',
+    });
+    return fail;
+  }
+  const j = (await res.json()) as { session_id?: string; url?: string };
+  return j.session_id && j.url ? { ok: true, sessionId: j.session_id, url: j.url } : fail;
+}
+
+/** Approved, ours, for this user, and from the photo workflow (never an age session). */
+export function evaluatePhotoDecision(d: Decision | null, userId: string): boolean {
+  const workflowId = photoWorkflowId();
+  return Boolean(
+    d && workflowId && d.workflow_id === workflowId && d.vendor_data === userId && d.status === 'Approved',
+  );
+}
+
+/** Grant the photo badge (webhook path; the member is not the current requester). */
+export async function markPhotoVerified(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  if (!admin) return false;
+  const { error } = await admin.from('users').update({ photo_verified: true }).eq('id', userId);
+  if (error) console.error('markPhotoVerified', error.message);
+  return !error;
+}
+
 type Decision = {
   status?: string;
   vendor_data?: string;

@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { prepareImage } from '@/lib/upload/client';
 import { COMM, GENDER, HANDLE_RE, ICONS, ORIENT, PRONOUNS, SHOW_ME, VIS_OPTS } from '@/lib/profile/options';
+import { PositionSelector } from '@/components/profile/position-selector';
+import { EthnicityFilter } from '@/components/profile/ethnicity-filter';
+import { OriginSelector } from '@/components/profile/origin-selector';
 
 type Profile = {
   handle: string | null;
@@ -36,6 +39,9 @@ export function EditProfile() {
   const [err, setErr] = useState('');
   const [photoErr, setPhotoErr] = useState('');
   const [uploading, setUploading] = useState<number | null>(null);
+  const [positionMark, setPositionMark] = useState<string | null>(null);
+  const [ethnicity, setEthnicity] = useState<string[]>([]);
+  const [origin, setOrigin] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const slotRef = useRef(0);
 
@@ -43,10 +49,25 @@ export function EditProfile() {
     const r = await fetch('/api/me/profile', { cache: 'no-store' }).catch(() => null);
     if (!r?.ok) return setErr('Could not load your profile');
     const j = (await r.json()) as { profile: Profile; photos: Photo[]; photoLimit: number };
-    setP(j.profile);
+    // Load the extra attributes (position, ethnicity, origin) before revealing the form, so the
+    // orphan-until-now editors mount with their real initial values (they read initial props once).
+    const [attrsR, originR] = await Promise.all([
+      fetch('/api/me/profile-attrs', { cache: 'no-store' }).catch(() => null),
+      fetch('/api/me/origin', { cache: 'no-store' }).catch(() => null),
+    ]);
+    if (attrsR?.ok) {
+      const a = (await attrsR.json()) as { positionMarks?: string[]; ethnicity?: string[] };
+      setPositionMark(a.positionMarks?.[0] ?? null);
+      setEthnicity(a.ethnicity ?? []);
+    }
+    if (originR?.ok) {
+      const o = (await originR.json()) as { origin?: string | null };
+      setOrigin(o.origin ?? null);
+    }
     setAnonymous(j.profile.handle === null);
     setPhotos(j.photos);
     setLimit(j.photoLimit);
+    setP(j.profile);
   }, []);
   useEffect(() => {
     load();
@@ -83,6 +104,16 @@ export function EditProfile() {
     if (!r.ok) return setErr(j.error ?? 'Could not save');
     setSaved(true);
     router.refresh();
+  };
+
+  // Position saves immediately (like ethnicity/origin and photos), not with the main Save button.
+  const savePosition = async (pos: string | null) => {
+    setPositionMark(pos);
+    await fetch('/api/me/profile-attrs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ positionMarks: pos ? [pos] : [] }),
+    }).catch(() => {});
   };
 
   const pick = (slot: number) => {
@@ -280,6 +311,14 @@ export function EditProfile() {
       {chips('Gender', GENDER, 'gender', 5)}
       {chips('Orientation', ORIENT, 'orientation', 5)}
       {chips('Communities', COMM, 'communities', 8)}
+
+      {/* Identity & background — position, ethnicity, origin (saved immediately) */}
+      <PositionSelector selected={positionMark} onSelect={savePosition} />
+      <section className="glass flex flex-col gap-3 rounded-card px-4 py-3.5">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-fg-3">Background</p>
+        <EthnicityFilter initialEthnicity={ethnicity} onUpdate={setEthnicity} />
+        <OriginSelector initialOrigin={origin ?? undefined} onUpdate={setOrigin} />
+      </section>
 
       {/* Show me */}
       <section className="glass flex flex-col gap-2 rounded-card px-4 py-3.5">

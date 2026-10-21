@@ -17,6 +17,8 @@ type Profile = {
   communities: string[];
   bio: string | null;
   verified: boolean;
+  phoneVerified?: boolean;
+  photoVerified?: boolean;
   plan: string;
   originCode?: string | null;
   intent: string | null;
@@ -159,6 +161,22 @@ export function ProfileSheet({
                   {p.handle ? `@${p.handle}` : 'Anonymous'}
                 </h2>
                 {p.verified && <span className="text-[12px] font-bold text-green">✓</span>}
+                {p.phoneVerified && (
+                  <span
+                    title="Phone verified"
+                    className="rounded-chip bg-sel-fill px-1.5 py-0.5 text-[10px] font-semibold text-green"
+                  >
+                    Phone
+                  </span>
+                )}
+                {p.photoVerified && (
+                  <span
+                    title="Photo verified — a live selfie matched these photos"
+                    className="rounded-chip bg-sel-fill px-1.5 py-0.5 text-[10px] font-semibold text-green"
+                  >
+                    Photo
+                  </span>
+                )}
               </div>
               {p.originCode && (
                 <p className="mt-1 flex items-center gap-2 text-[12px] text-fg-2">
