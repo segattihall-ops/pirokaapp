@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { recordReferral } from '@/lib/referrals/server';
 import { alreadySent, sendEmail } from '@/lib/email';
 import { templates } from '@/lib/email/templates';
 import { track } from '@/lib/analytics/server';
@@ -42,6 +43,7 @@ const Body = z.object({
   visibility: z.enum(['neighborhood', 'area', 'hidden']).default('neighborhood'),
   disguiseIcon: z.string().trim().max(24).default('piroka'),
   bio: z.string().trim().max(160).optional(),
+  ref: z.string().trim().max(20).optional(),
 });
 
 /** Saves the onboarding profile. Anonymous members keep `handle` null and show as "Anonymous". */
@@ -85,6 +87,9 @@ export async function POST(request: Request) {
     })
     .eq('id', session.userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Attribute to the referrer behind ?ref=, once. Never blocks the response.
+  if (b.ref) void recordReferral(session.userId, b.ref);
 
   afterOnboarding(session.userId, session.email, handle, b.anonymous).catch((e) =>
     console.error('afterOnboarding', e),

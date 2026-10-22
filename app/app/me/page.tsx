@@ -13,6 +13,7 @@ import { DeleteAccount } from '@/components/me/delete-account';
 import { AccountData } from '@/components/me/account-data';
 import { PasskeySettings } from '@/components/me/passkey-settings';
 import { FeedbackButton } from '@/components/growth/feedback-button';
+import { ReferralProgram } from '@/components/growth/referral-program';
 import { SafeMeetMe } from '@/components/meet/safemeet-me';
 import { HealthCardMe } from '@/components/me/health-card-me';
 import { AmbassadorApply } from '@/components/me/ambassador-apply';
@@ -122,6 +123,8 @@ export default async function MePage() {
       <AccountData />
 
       <FeedbackButton />
+
+      <ReferralProgram />
 
       <AmbassadorApply />
 

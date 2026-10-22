@@ -70,6 +70,10 @@ export function OnboardingClient() {
     setSaveErr('');
     try {
       const allPronouns = customPronoun.trim() ? [...pronouns, customPronoun.trim()] : pronouns;
+      let ref: string | undefined;
+      try {
+        ref = localStorage.getItem('piroka_ref') ?? undefined;
+      } catch {}
       const r = await fetch('/api/onboarding/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +88,7 @@ export function OnboardingClient() {
           ...safety,
           visibility: visibility.toLowerCase(),
           disguiseIcon: icon === 'πroka' ? 'piroka' : icon.toLowerCase(),
+          ...(ref ? { ref } : {}),
         }),
       });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? 'Could not save your profile');
@@ -106,6 +111,9 @@ export function OnboardingClient() {
       }
 
       await recordConsent().catch(() => {});
+      try {
+        localStorage.removeItem('piroka_ref');
+      } catch {}
       router.push('/app/map');
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : 'Something went wrong');
