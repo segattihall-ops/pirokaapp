@@ -101,6 +101,7 @@ export function MapScreen({ userId }: { userId: string }) {
   const [arrivals, setArrivals] = useState<DemoArrival[]>([]);
   const [demo, setDemo] = useState(false);
   const [interested, setInterested] = useState<NearbyPerson | null>(null);
+  const [realInterest, setRealInterest] = useState(0);
   const [selfCard, setSelfCard] = useState<{ handle: string | null; photo: string | null; visibility: string | null }>({
     handle: null,
     photo: null,
@@ -736,7 +737,7 @@ export function MapScreen({ userId }: { userId: string }) {
     return () => clearTimeout(t);
   }, [promo]);
 
-  // "Someone nearby is interested" — simulated in demo mode (real mode drives this from a backend signal later).
+  // "Someone nearby is interested" — simulated in demo mode; real mode is driven by the backend nudge below.
   useEffect(() => {
     if (!demo || interested || selected || aiOpen) return;
     const t = setTimeout(() => {
@@ -751,6 +752,33 @@ export function MapScreen({ userId }: { userId: string }) {
     const t = setTimeout(() => setInterested(null), 10_000);
     return () => clearTimeout(t);
   }, [interested]);
+
+  // Real mode: an anonymous nudge when members have liked me. Count only — the identities live behind
+  // the premium "who liked you" screen, so the nudge taps through there instead of revealing anyone.
+  const interestNudgedRef = useRef(false);
+  useEffect(() => {
+    if (demo || !configured || interestNudgedRef.current || selected || aiOpen) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const r = await fetch('/api/interest/received', { cache: 'no-store' }).catch(() => null);
+      if (!r?.ok || cancelled) return;
+      const j = (await r.json().catch(() => ({}))) as { count?: number };
+      if ((j.count ?? 0) > 0) {
+        interestNudgedRef.current = true;
+        setRealInterest(j.count ?? 0);
+      }
+    }, 22_000);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [demo, configured, selected, aiOpen]);
+
+  useEffect(() => {
+    if (!realInterest) return;
+    const t = setTimeout(() => setRealInterest(0), 12_000);
+    return () => clearTimeout(t);
+  }, [realInterest]);
 
   const liveCount = useMemo(
     () =>
@@ -1156,6 +1184,26 @@ export function MapScreen({ userId }: { userId: string }) {
               <span className="text-[12px] text-fg-3">
                 {approx(interested.distanceM)} · they&apos;ll see you if you like them back
               </span>
+            </span>
+            <span className="shrink-0 text-[12px] font-semibold text-green">See →</span>
+          </button>
+        )}
+
+        {realInterest > 0 && !interested && (
+          <button
+            type="button"
+            onClick={() => {
+              setRealInterest(0);
+              router.push('/app/me');
+            }}
+            className="glass pointer-events-auto flex items-center gap-3 self-start rounded-card px-3 py-2 text-left"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-800 text-[16px] font-bold text-fg-3">
+              ?
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[13px] font-bold">Someone nearby is interested in you</span>
+              <span className="text-[12px] text-fg-3">See who liked you</span>
             </span>
             <span className="shrink-0 text-[12px] font-semibold text-green">See →</span>
           </button>
