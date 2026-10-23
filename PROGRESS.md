@@ -264,7 +264,7 @@ DEMO_AUTH_SECRET=<generate with: openssl rand -base64 32>
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from Google Cloud Console
 - `APPLE_ID` / `APPLE_SECRET` — from Apple Developer
 - `EMAIL_SERVER` — SMTP URL (e.g., `smtp://user:pass@smtp.gmail.com:587`)
-- `EMAIL_FROM` — Sender email (e.g., `"πroka <no-reply@piroka.app>"`)
+- `EMAIL_FROM` — Sender email (e.g., `"πroka <no-reply@pirokaapp.com>"`)
 - `YOTI_CLIENT_SDK_ID` / `YOTI_PEM` — from Yoti or use Persona instead
 - `PERSONA_API_KEY` — from Persona (age verification)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project

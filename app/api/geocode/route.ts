@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api/guard';
+import { CONTACT_EMAIL } from '@/lib/contact';
 
 export const dynamic = 'force-dynamic';
 
 export type GeoHit = { name: string; lat: number; lon: number };
 
-const UA = 'piroka-app/1.0 (travel mode; support@piroka.app)';
+const UA = `piroka-app/1.0 (travel mode; ${CONTACT_EMAIL.support})`;
 
 async function photon(q: string): Promise<GeoHit[]> {
   const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=en`, {

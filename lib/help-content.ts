@@ -2,7 +2,10 @@
  * Help, safety & legal copy — the exact text of design_handoff → Piroka_Help.dc.html.
  * The interactive tabs (Help center, Talk to a person, Account standing, Report content) live in
  * components/help/*; this module holds the FAQ and the five policy documents they render.
+ * Contact addresses come from lib/contact.ts.
  */
+
+import { CONTACT_EMAIL } from '@/lib/contact';
 
 export type Section = { heading: string; body: string };
 export type Content = {
@@ -144,7 +147,7 @@ export const HELP_CONTENT: Record<string, Content> = {
         heading: 'Your rights',
         body: 'Download everything we hold, correct it, or delete it from ME → Privacy. We follow GDPR, LGPD and US state privacy laws.',
       },
-      { heading: 'Contact', body: 'privacy@piroka.app' },
+      { heading: 'Contact', body: CONTACT_EMAIL.privacy },
     ],
   },
   safety: {
@@ -187,7 +190,10 @@ export const HELP_CONTENT: Record<string, Content> = {
         heading: 'User-generated content',
         body: 'Users confirm they are the person shown, or have consent from everyone shown and that everyone shown was 18 or older at the time the image was created.',
       },
-      { heading: 'Custodian of records', body: 'πroka, Inc. · Compliance Officer · compliance@piroka.app' },
+      {
+        heading: 'Custodian of records',
+        body: `πroka, Inc. · Compliance Officer · ${CONTACT_EMAIL.compliance}`,
+      },
     ],
   },
 };
