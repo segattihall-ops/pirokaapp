@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
-import { paypalConfigured } from '@/lib/billing/paypal';
+import { billingEnabled, checkoutConfigured } from '@/lib/billing/enabled';
 import { billingStatus } from '@/lib/billing/server';
 import { launchAllAccess, launchAllAccessUntil } from '@/lib/billing/launch';
 
@@ -13,9 +13,13 @@ export async function GET() {
 
   // During the launch window every member gets every feature; `plan` stays the real billing plan so
   // the subscribe screen keeps showing the truth, while `allAccess` unlocks UI.
-  const status = await billingStatus(session.userId, paypalConfigured());
+  // `configured` is false unless BILLING_ENABLED is exactly "true" and PayPal keys exist, so the
+  // client can hide checkout without trusting build-time NEXT_PUBLIC_PAYPAL_* values.
+  const enabled = billingEnabled();
+  const status = await billingStatus(session.userId, checkoutConfigured());
   return NextResponse.json({
     ...status,
+    billingEnabled: enabled,
     allAccess: launchAllAccess(),
     allAccessUntil: launchAllAccessUntil(),
   });

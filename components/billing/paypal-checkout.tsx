@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BILLING_UNAVAILABLE_COPY, billingOff, paypalButtonsAllowed } from '@/lib/billing/checkout-ui';
 
 type PlanId = 'plus' | 'premium';
 type Status = {
   configured: boolean;
+  billingEnabled?: boolean;
   plan: 'free' | 'plus' | 'premium' | 'anonymous';
   status: string | null;
   allAccess?: boolean;
@@ -71,10 +73,13 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
   }, []);
 
   const subscribed = status && (status.plan === 'plus' || status.plan === 'premium');
-  const configured = Boolean(CLIENT_ID && PLAN_IDS.plus && PLAN_IDS.premium) && status?.configured !== false;
+  const publicReady = Boolean(CLIENT_ID && PLAN_IDS.plus && PLAN_IDS.premium);
+  // Server status is required. Public client ids alone must not mount the PayPal SDK.
+  const showButtons = paypalButtonsAllowed(status, publicReady);
+  const paymentsClosed = billingOff(status);
 
   useEffect(() => {
-    if (!configured || subscribed || !buttonsRef.current) return;
+    if (!showButtons || subscribed || !buttonsRef.current) return;
     let cancelled = false;
     loadPayPalSdk()
       .then(() => {
@@ -109,7 +114,7 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
     return () => {
       cancelled = true;
     };
-  }, [configured, subscribed, selected, userId]);
+  }, [showButtons, subscribed, selected, userId]);
 
   const cancel = async () => {
     if (!confirm('Cancel your subscription? You keep access until the end of the billing period.')) return;
@@ -124,31 +129,40 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
   if (mode === 'checkout') {
     return (
       <div className="flex flex-col gap-3">
-        {!subscribed && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              {PLANS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelected(p.id)}
-                  aria-pressed={selected === p.id}
-                  className={`rounded-card border-2 p-4 text-left transition-colors ${
-                    selected === p.id ? 'border-sel-border bg-sel-fill' : 'border-line-2 hover:border-line-3'
-                  }`}
-                >
-                  <div className="text-[15px] font-bold text-white">{p.name}</div>
-                  <div className="mt-1 text-[20px] font-bold text-green">${p.price}/mo</div>
-                </button>
-              ))}
-            </div>
-            {configured ? (
-              <div ref={buttonsRef} className="min-h-[48px]" />
-            ) : (
-              <p className="text-[13px] text-fg-3">Billing is not configured yet.</p>
-            )}
-          </>
-        )}
+        {!subscribed &&
+          (status === null ? (
+            <p className="text-[13px] text-fg-3">Loading…</p>
+          ) : paymentsClosed ? (
+            <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
+              {BILLING_UNAVAILABLE_COPY}
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {PLANS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelected(p.id)}
+                    aria-pressed={selected === p.id}
+                    className={`rounded-card border-2 p-4 text-left transition-colors ${
+                      selected === p.id
+                        ? 'border-sel-border bg-sel-fill'
+                        : 'border-line-2 hover:border-line-3'
+                    }`}
+                  >
+                    <div className="text-[15px] font-bold text-white">{p.name}</div>
+                    <div className="mt-1 text-[20px] font-bold text-green">${p.price}/mo</div>
+                  </button>
+                ))}
+              </div>
+              {showButtons ? (
+                <div ref={buttonsRef} className="min-h-[48px]" />
+              ) : (
+                <p className="text-[13px] text-fg-3">Billing is not configured yet.</p>
+              )}
+            </>
+          ))}
         {msg && (
           <p role="status" className="text-[13px] text-fg-2">
             {msg}
@@ -168,7 +182,7 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
             {status.allAccessUntil
               ? ` until ${new Date(status.allAccessUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`
               : ' right now'}
-            . Subscribe any time to keep them later.
+            {paymentsClosed ? '.' : '. Subscribe any time to keep them later.'}
           </p>
         </div>
       )}
@@ -198,41 +212,48 @@ export function PayPalCheckout({ userId, mode = 'full' }: { userId: string; mode
         )}
       </div>
 
-      {!subscribed && (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            {PLANS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelected(p.id)}
-                className={`rounded-card border-2 p-4 text-left transition-colors ${
-                  selected === p.id
-                    ? 'border-green bg-white/[0.08]'
-                    : 'border-line-2 bg-white/[0.04] hover:border-line-3'
-                }`}
-              >
-                <div className="text-[15px] font-bold text-white">{p.name}</div>
-                <div className="mt-1 text-[20px] font-bold text-green">${p.price}/mo</div>
-                <ul className="mt-3 space-y-1 text-[12px] text-fg-3">
-                  {p.features.map((f) => (
-                    <li key={f}>✓ {f}</li>
-                  ))}
-                </ul>
-              </button>
-            ))}
-          </div>
+      {!subscribed &&
+        (status === null ? (
+          <p className="text-[13px] text-fg-3">Loading…</p>
+        ) : paymentsClosed ? (
+          <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
+            {BILLING_UNAVAILABLE_COPY}
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {PLANS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelected(p.id)}
+                  className={`rounded-card border-2 p-4 text-left transition-colors ${
+                    selected === p.id
+                      ? 'border-green bg-white/[0.08]'
+                      : 'border-line-2 bg-white/[0.04] hover:border-line-3'
+                  }`}
+                >
+                  <div className="text-[15px] font-bold text-white">{p.name}</div>
+                  <div className="mt-1 text-[20px] font-bold text-green">${p.price}/mo</div>
+                  <ul className="mt-3 space-y-1 text-[12px] text-fg-3">
+                    {p.features.map((f) => (
+                      <li key={f}>✓ {f}</li>
+                    ))}
+                  </ul>
+                </button>
+              ))}
+            </div>
 
-          {configured ? (
-            <div ref={buttonsRef} className="min-h-[48px]" />
-          ) : (
-            <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
-              Billing is not configured yet. Set <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> and the two plan
-              IDs.
-            </p>
-          )}
-        </>
-      )}
+            {showButtons ? (
+              <div ref={buttonsRef} className="min-h-[48px]" />
+            ) : (
+              <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
+                Billing is not configured yet. Set <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> and the two plan
+                IDs.
+              </p>
+            )}
+          </>
+        ))}
 
       {msg && (
         <p role="status" className="text-[13px] text-fg-2">

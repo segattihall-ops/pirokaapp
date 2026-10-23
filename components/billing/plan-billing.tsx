@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PayPalCheckout } from '@/components/billing/paypal-checkout';
 
+import { BILLING_UNAVAILABLE_COPY, billingOff } from '@/lib/billing/checkout-ui';
 import { PLAN_CATALOG, PLAN_PRICE_USD, fmtDay, isPaid, planLabel } from '@/lib/billing/plans';
 
 type Status = {
   configured: boolean;
+  billingEnabled?: boolean;
   schemaPending: boolean;
   plan: 'free' | 'plus' | 'premium' | 'anonymous';
   status: string | null;
@@ -20,7 +22,15 @@ type Status = {
   paymentFailedAt: string | null;
 };
 
-type Receipt = { id: string; receiptNo: string; date: string; plan: string; amount: number; currency: string; status: string };
+type Receipt = {
+  id: string;
+  receiptNo: string;
+  date: string;
+  plan: string;
+  amount: number;
+  currency: string;
+  status: string;
+};
 
 const Panel = ({ children, label }: { children: React.ReactNode; label: string }) => (
   <section aria-label={label} className="glass flex flex-col gap-4 rounded-hero p-5 sm:p-6">
@@ -70,6 +80,7 @@ export function PlanBilling({ userId }: { userId: string }) {
   if (!s) return <p className="text-[13px] text-fg-3">Loading your plan…</p>;
 
   const paid = isPaid(s.plan) && !s.comp;
+  const paymentsClosed = billingOff(s);
   const current = planLabel(s.plan);
   const renew = fmtDay(s.renewsAt);
   const price = isPaid(s.plan) ? `$${PLAN_PRICE_USD[s.plan]}/mo` : 'Free';
@@ -79,9 +90,13 @@ export function PlanBilling({ userId }: { userId: string }) {
   const statusLine = s.schemaPending
     ? 'Billing details need a database update. Try again later.'
     : s.comp
-      ? `Complimentary ${planLabel(s.comp.plan)} until ${fmtDay(s.comp.until)}. Choose a plan before then to keep it.`
+      ? paymentsClosed
+        ? `Complimentary ${planLabel(s.comp.plan)} until ${fmtDay(s.comp.until)}.`
+        : `Complimentary ${planLabel(s.comp.plan)} until ${fmtDay(s.comp.until)}. Choose a plan before then to keep it.`
       : !isPaid(s.plan)
-        ? 'Core features are free forever. Upgrade any time.'
+        ? paymentsClosed
+          ? 'Core features are free forever.'
+          : 'Core features are free forever. Upgrade any time.'
         : paused
           ? `Paused. Resumes ${fmtDay(s.pausedUntil)}. You won't be charged until then.`
           : cancelled
@@ -92,20 +107,29 @@ export function PlanBilling({ userId }: { userId: string }) {
 
   const cancelAction = async () => {
     const { ok, j } = await post('/api/billing/cancel', { action: 'cancel' });
-    setMsg(ok ? `Cancelled. You keep ${current} until ${fmtDay(j.cancelAt)}.` : j.error ?? 'Could not cancel.');
+    setMsg(
+      ok ? `Cancelled. You keep ${current} until ${fmtDay(j.cancelAt)}.` : (j.error ?? 'Could not cancel.'),
+    );
     setRetain(false);
     refresh();
   };
   const pauseAction = async () => {
     const { ok, j } = await post('/api/billing/cancel', { action: 'pause' });
-    setMsg(ok ? `Paused. Nothing is charged until ${fmtDay(j.pausedUntil)}.` : j.error ?? 'Could not pause.');
+    setMsg(
+      ok ? `Paused. Nothing is charged until ${fmtDay(j.pausedUntil)}.` : (j.error ?? 'Could not pause.'),
+    );
     setRetain(false);
     refresh();
   };
   const resumeAction = async () => {
     const { ok, j } = await post('/api/billing/cancel', { action: 'resume' });
     if (ok) setMsg('Subscription resumed.');
-    else if (j.needsCheckout) setMsg('Your subscription has ended. Choose a plan below to start again.');
+    else if (j.needsCheckout)
+      setMsg(
+        billingOff(s)
+          ? BILLING_UNAVAILABLE_COPY
+          : 'Your subscription has ended. Choose a plan below to start again.',
+      );
     else setMsg(j.error ?? 'Could not resume.');
     refresh();
   };
@@ -122,12 +146,12 @@ export function PlanBilling({ userId }: { userId: string }) {
   };
   const saveEmail = async () => {
     const { ok, j } = await post('/api/billing/email', { email }, 'PATCH');
-    setMsg(ok ? 'Receipts will go to that address.' : j.error ?? 'Could not save email.');
+    setMsg(ok ? 'Receipts will go to that address.' : (j.error ?? 'Could not save email.'));
   };
   const redeem = async () => {
     if (!code.trim()) return;
     const { ok, j } = await post('/api/billing/promo', { code });
-    setMsg(ok ? j.message : j.error ?? 'That code is not valid.');
+    setMsg(ok ? j.message : (j.error ?? 'That code is not valid.'));
     if (ok) setCode('');
     refresh();
   };
@@ -150,15 +174,31 @@ export function PlanBilling({ userId }: { userId: string }) {
           )}
         </div>
 
+        {paymentsClosed && (
+          <p className="rounded-input border border-dashed border-line-2 px-3.5 py-3 text-[13px] text-fg-3">
+            {BILLING_UNAVAILABLE_COPY}
+          </p>
+        )}
+
         {s.subscriptionId && isPaid(s.plan) && !retain && (
           <div className="flex flex-wrap gap-2">
-            {s.plan === 'plus' && (
-              <button type="button" disabled={busy} onClick={() => changeAction('premium')} className="btn-secondary">
+            {!paymentsClosed && s.plan === 'plus' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => changeAction('premium')}
+                className="btn-secondary"
+              >
                 Upgrade to Premium · $10/mo
               </button>
             )}
-            {s.plan === 'premium' && (
-              <button type="button" disabled={busy} onClick={() => changeAction('plus')} className="btn-secondary">
+            {!paymentsClosed && s.plan === 'premium' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => changeAction('plus')}
+                className="btn-secondary"
+              >
                 Switch to Plus · $5/mo
               </button>
             )}
@@ -184,8 +224,13 @@ export function PlanBilling({ userId }: { userId: string }) {
               <button type="button" disabled={busy} onClick={pauseAction} className="btn-primary">
                 Pause for 30 days instead
               </button>
-              {s.plan === 'premium' && (
-                <button type="button" disabled={busy} onClick={() => changeAction('plus')} className="btn-secondary">
+              {!paymentsClosed && s.plan === 'premium' && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => changeAction('plus')}
+                  className="btn-secondary"
+                >
                   Switch to Plus · $5/mo
                 </button>
               )}
@@ -203,7 +248,7 @@ export function PlanBilling({ userId }: { userId: string }) {
         )}
       </Panel>
 
-      {(!s.subscriptionId || s.comp) && (
+      {!paymentsClosed && (!s.subscriptionId || s.comp) && (
         <Panel label="Choose a plan">
           <div className="grid gap-3 sm:grid-cols-2">
             {PLAN_CATALOG.filter((p) => p.key !== 'free').map((p) => (
@@ -231,7 +276,6 @@ export function PlanBilling({ userId }: { userId: string }) {
           {picking && <PayPalCheckout userId={userId} mode="checkout" />}
         </Panel>
       )}
-
 
       <Panel label="Billing details">
         <div className="flex flex-col gap-2">
@@ -273,7 +317,12 @@ export function PlanBilling({ userId }: { userId: string }) {
               autoCapitalize="characters"
               className="input h-12 uppercase tracking-[0.06em]"
             />
-            <button type="button" onClick={redeem} disabled={busy || !code.trim()} className="btn-secondary shrink-0">
+            <button
+              type="button"
+              onClick={redeem}
+              disabled={busy || !code.trim()}
+              className="btn-secondary shrink-0"
+            >
               Redeem
             </button>
           </div>
@@ -293,7 +342,12 @@ export function PlanBilling({ userId }: { userId: string }) {
               <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-[14px]">
-                    {new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} · {r.plan}
+                    {new Date(r.date).toLocaleDateString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}{' '}
+                    · {r.plan}
                   </p>
                   <p className="text-[12px] text-fg-3">
                     {r.receiptNo} · {r.status}
