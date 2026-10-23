@@ -1,5 +1,6 @@
 import 'server-only';
 import webpush from 'web-push';
+import { DEFAULT_VAPID_SUBJECT } from '@/lib/contact';
 import { supabaseAdmin } from '@/lib/db/client';
 
 export type PushPayload = { title: string; body?: string; url?: string; tag?: string };
@@ -13,7 +14,7 @@ function configure() {
   if (configured) return true;
   if (!pushConfigured()) return false;
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:support@piroka.app',
+    process.env.VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );
