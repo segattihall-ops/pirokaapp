@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { opsAlert } from '@/lib/alerts/server';
+import { appUrl } from '@/lib/app-url';
 
 /**
  * Error tracking. `captureError` dedupes by fingerprint into `error_events` (count + last_seen) and,
@@ -122,9 +123,15 @@ export async function captureError(error: unknown, ctx: CaptureContext = {}): Pr
         .maybeSingle();
       const n = Number(data?.count ?? 0);
       if (n === 1 && (ctx.severity === 'fatal' || ctx.source !== 'client')) {
-        void opsAlert('error', `New error in ${ctx.route ?? 'app'}: ${err.message.slice(0, 160)}`);
+        await opsAlert(
+          'error',
+          `New error in ${ctx.route ?? 'app'} · ${fingerprint} · count ${n} · ${appUrl('/admin/errors')}`,
+        );
       } else if (ALERT_AT.has(n)) {
-        void opsAlert('error', `Error spike (${n}×) in ${ctx.route ?? 'app'}: ${err.message.slice(0, 160)}`);
+        await opsAlert(
+          'error',
+          `Error spike in ${ctx.route ?? 'app'} · ${fingerprint} · count ${n} · ${appUrl('/admin/errors')}`,
+        );
       }
     } catch (e) {
       console.error('record_error_event failed', e);

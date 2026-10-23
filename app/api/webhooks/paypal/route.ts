@@ -11,6 +11,7 @@ import { templates } from '@/lib/email/templates';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { opsAlert } from '@/lib/alerts/server';
+import { appUrl } from '@/lib/app-url';
 import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
@@ -172,7 +173,7 @@ export const POST = withApi('/api/webhooks/paypal', async (request: Request) => 
         await mail(userId, 'paymentFailed', templates.paymentFailed(0));
         await opsAlert(
           'payment',
-          `Payment failed for subscription ${res.id}${userId ? ` (user ${userId.slice(0, 8)}…)` : ''}`,
+          `Payment failed for subscription ${res.id}${userId ? ` (user ${userId.slice(0, 8)}…)` : ''} · ${appUrl('/admin/revenue')}`,
         );
         break;
       }

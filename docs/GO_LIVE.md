@@ -43,10 +43,12 @@ behaves as it did when PayPal keys alone opened it. `OPEN_ENDED` launch access i
 | Playwright e2e (local, demo mode) | 80 passed · 11 failed — all 11 are stale tests or environment-only (expect `400` where routes now answer `401` first, need a local DB or `E2E_AUTH_TOKEN`, or test the SW in dev mode). No product bug behind any of them. |
 | Production smoke (`e2e/smoke.full.spec.ts` against www) | Homepage ✔; sign-in is blocked for the headless browser by **Cloudflare Turnstile** (correct — bot protection works). Post-gate flows verified locally instead. |
 | Production probes | `/`, `/help/*`, `/e/*`, `/manifest.webmanifest` 200 · `/app`, `/admin` → gate redirect ✔ · HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy present ✔ · apex → www 308 ✔ |
-| `/api/status` (production, 2026-10-18) | database ok · email ok (Resend) · push ok · age ok (Didit) · cron ok · **billing OFF (PayPal keys were missing that day)** · **ops alerts OFF (OPS_WEBHOOK_URL missing)** |
+| `/api/status` (production, 2026-10-18) | database ok · email ok (Resend) · push ok · age ok (Didit) · cron ok · **billing OFF (PayPal keys were missing that day)** · **ops alerts OFF (neither OPS_ALERT_EMAIL nor OPS_WEBHOOK_URL was set)** |
 
 The 2026-10-18 reading is historical. PayPal keys may be present now. Checkout stays hidden because
 `BILLING_ENABLED` is unset, not because the keys are missing. See **Billing at launch** above.
+Ops alerts stay off until `OPS_ALERT_EMAIL` or `OPS_WEBHOOK_URL` is set (detail `email`, `webhook`,
+or `email + webhook`). See section 3.3.
 | Supabase security advisors | No critical πroka finding. 25 tables “RLS on, no policies” = intended (server uses the service role; anon is denied). `spatial_ref_sys` is PostGIS’s own table. |
 | Security audit (all ~130 API routes, middleware, webhooks, crons) | 3 critical, 5 high → fixed (section 2) |
 | Config / env / schema audit | Production DB was missing the tables of 7 migrations → sync migration written (section 3.1) |
@@ -78,7 +80,8 @@ The 2026-10-18 reading is historical. PayPal keys may be present now. Checkout s
 
 ### Product
 - Public **Report content** form was dead in production (503). Reports now persist to the T&S
-  `reports` queue; the ops webhook is pinged when configured.
+  `reports` queue; the ops channel (email and/or webhook) is pinged with a pointer when configured.
+  The report narrative stays in the queue and is not copied into the alert.
 - 5 “Upgrade / Plan & billing” buttons dead-ended on the magic-link page → `/app/me#billing`.
   3 help links 404’d (`/help/trust`, `/help/safemeet`) → Safety Center. Paywall “Back” → map.
 - Quick-exit shield was a dead button → leaves for a neutral page with no history entry.
@@ -134,7 +137,15 @@ Confirm present / set:
   (The PR adds a fallback to Vercel’s production domain, but set it explicitly.)
 - `ADMIN_EMAILS` — without it nobody can open `/admin`.
 - `EMAIL_UNSUBSCRIBE_SECRET` — any long random string.
-- `OPS_WEBHOOK_URL` — Slack/Discord webhook; reports, payments and errors alert there. Optional but strongly recommended on launch day.
+- `OPS_ALERT_EMAIL` — one inbox, or several separated by commas. This is the channel to set.
+  Alerts go out through the Resend setup already in production (`RESEND_API_KEY` and `EMAIL_FROM`
+  stay as they are). Subject looks like `[PIROKA alert] report`. The body is one line: type, id,
+  link to the admin page, count and timestamp. It does not include coordinates, chat, identity
+  documents or the report narrative. The same alert is not sent again for five minutes on that
+  server instance.
+- `OPS_WEBHOOK_URL` — optional Slack/Discord webhook of the same one-line alert. Email alone is
+  enough: `/api/status` reports Ops alerts **ok** with detail `email`, `webhook`, or
+  `email + webhook`. It stays **off** only when both are unset.
 - PayPal keys may stay set: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`,
   `PAYPAL_ENV=live`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID`,
   `NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID`. They do **not** open checkout by themselves.

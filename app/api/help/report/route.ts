@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
-import { opsAlert, opsAlertsConfigured } from '@/lib/alerts/server';
+import { opsAlert } from '@/lib/alerts/server';
+import { appUrl } from '@/lib/app-url';
 import { clientIp, rateLimit, tooMany } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -41,8 +42,8 @@ const Body = z.object({
 /**
  * Public "Report or request removal" intake (design: Piroka_Help → Report content). No account needed.
  * The report is stored in the same `reports` table the Trust & Safety queue reads (target unknown until a
- * moderator identifies it), and the ops alert channel is pinged when configured. Only when neither the
- * database nor the alert channel exists do we answer 503 — never pretend a safety report was received.
+ * moderator identifies it). The ops alert is only a pointer (type, id, admin link). The narrative,
+ * contact address and any map link stay in the row. If the row cannot be stored we answer 503.
  */
 export async function POST(request: Request) {
   // The form needs no account, so a per-IP limit (shared across instances) is the only brake on abuse.
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Choose a reason and describe what happened.' }, { status: 400 });
   const { type, link, text, email } = parsed.data;
 
-  if (!supabaseAdmin && !opsAlertsConfigured()) {
+  if (!supabaseAdmin) {
     return NextResponse.json(
       { error: 'Reporting is temporarily unavailable. Please use Talk to a person.' },
       { status: 503 },
@@ -64,41 +65,36 @@ export async function POST(request: Request) {
   const session = await getSession().catch(() => null);
   const urgent = type === 'Someone under 18' || type === 'Shared without consent';
 
-  let id = 'TS-' + (40000 + Math.floor(Math.random() * 9999));
-  if (supabaseAdmin) {
-    const { data, error } = await supabaseAdmin
-      .from('reports')
-      .insert({
-        reporter_id: session?.userId ?? null,
-        reason: QUEUE_REASON[type],
-        details: text,
-        reporter_ip: ip === 'unknown' ? null : ip,
-        evidence: {
-          source: 'public_form',
-          public_label: type,
-          link: link || null,
-          contact_email: email || null,
-          urgent,
-        },
-        status: 'open',
-      })
-      .select('id')
-      .single();
-    if (error || !data) {
-      console.error('public report insert failed', error);
-      if (!opsAlertsConfigured())
-        return NextResponse.json(
-          { error: 'Reporting is temporarily unavailable. Please use Talk to a person.' },
-          { status: 503 },
-        );
-    } else {
-      id = data.id as string;
-    }
+  const { data, error } = await supabaseAdmin
+    .from('reports')
+    .insert({
+      reporter_id: session?.userId ?? null,
+      reason: QUEUE_REASON[type],
+      details: text,
+      reporter_ip: ip === 'unknown' ? null : ip,
+      evidence: {
+        source: 'public_form',
+        public_label: type,
+        link: link || null,
+        contact_email: email || null,
+        urgent,
+      },
+      status: 'open',
+    })
+    .select('id')
+    .single();
+  if (error || !data) {
+    console.error('public report insert failed', error);
+    return NextResponse.json(
+      { error: 'Reporting is temporarily unavailable. Please use Talk to a person.' },
+      { status: 503 },
+    );
   }
+  const id = data.id as string;
 
   await opsAlert(
     'report',
-    `${urgent ? 'URGENT ' : ''}public report ${id} · ${type}${link ? ` · ${link}` : ''}\n${text}${email ? `\nupdates → ${email}` : ''}`,
+    `${urgent ? 'URGENT ' : ''}public report ${id} · ${type} · ${appUrl('/admin/reports')}`,
   );
 
   if (session?.userId && supabaseAdmin) {
