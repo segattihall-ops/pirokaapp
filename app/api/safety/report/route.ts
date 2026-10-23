@@ -8,22 +8,14 @@ import { EVENTS } from '@/lib/analytics/events';
 import { opsAlert } from '@/lib/alerts/server';
 import { appUrl } from '@/lib/app-url';
 import { clientIp } from '@/lib/api/rate-limit';
+import { maybeApplyUnderageHold } from '@/lib/safety/apply-hold';
+import { IN_APP_REASONS, reportAlertText } from '@/lib/safety/reasons';
 
 export const dynamic = 'force-dynamic';
 
-const REPORT_REASONS = [
-  'harassment',
-  'spam',
-  'underage',
-  'impersonation',
-  'hate',
-  'unsafe',
-  'other',
-] as const;
-
 const Body = z.object({
   targetId: z.string().uuid(),
-  reason: z.enum(REPORT_REASONS),
+  reason: z.enum(IN_APP_REASONS),
   details: z.string().trim().max(2000).optional(),
   conversationId: z.string().uuid().optional(),
 });
@@ -73,6 +65,21 @@ export async function POST(request: Request) {
     details: { reason },
   });
   void track({ userId: session.userId, event: EVENTS.report_filed, props: { reason } });
-  await opsAlert('report', `New ${reason} report ${data.id} · ${appUrl('/admin/reports')}`);
+
+  // Underage only. Other reasons are severity + alert; a person decides. Failures here must not
+  // drop the report or put the narrative into the alert.
+  try {
+    await maybeApplyUnderageHold({
+      reason,
+      reporterId: session.userId,
+      reporterAgeVerified: session.ageVerified === true,
+      targetId,
+      reportId: data.id,
+    });
+  } catch (err) {
+    console.error('underage protective hold failed', err instanceof Error ? err.name : 'error');
+  }
+
+  await opsAlert('report', reportAlertText({ reason, reportId: data.id, origin: appUrl() }));
   return NextResponse.json({ id: data.id });
 }

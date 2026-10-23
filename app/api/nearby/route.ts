@@ -7,6 +7,7 @@ import { isIntent, type Intent } from '@/lib/intent';
 import { isMissingSchema } from '@/lib/db/schema-errors';
 import { addTripDays } from '@/lib/map/pin-anatomy';
 import { canRevealMainPhoto } from '@/lib/profile/photo-visibility';
+import { heldAmong } from '@/lib/safety/hold-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -149,12 +150,22 @@ export async function GET(request: Request) {
   const clearPhotoKeyOf = new Map<string, string>();
   const safeToReveal = new Set<string>();
   if (ids.length > 0) {
-    const [{ data: conversations, error: conversationsError }, { data: meets, error: meetsError }, viewerPlan] = await Promise.all([
-      supabaseAdmin.from('conversations').select('a_id, b_id, mutual')
+    const [
+      { data: conversations, error: conversationsError },
+      { data: meets, error: meetsError },
+      viewerPlan,
+    ] = await Promise.all([
+      supabaseAdmin
+        .from('conversations')
+        .select('a_id, b_id, mutual')
         .or(`a_id.eq.${session.userId},b_id.eq.${session.userId}`),
-      supabaseAdmin.from('meets').select('a_id, b_id, accepted_at, ends_at')
+      supabaseAdmin
+        .from('meets')
+        .select('a_id, b_id, accepted_at, ends_at')
         .or(`a_id.eq.${session.userId},b_id.eq.${session.userId}`)
-        .not('accepted_at', 'is', null).gt('ends_at', nowIso).eq('status', 'active'),
+        .not('accepted_at', 'is', null)
+        .gt('ends_at', nowIso)
+        .eq('status', 'active'),
       supabaseAdmin.from('users').select('plan').eq('id', session.userId).maybeSingle(),
     ]);
     const visibleIds = new Set(ids);
@@ -168,12 +179,16 @@ export async function GET(request: Request) {
       console.error('nearby: accepted Meet Mode lookup failed', meetsError.message);
     for (const m of meets ?? []) {
       const peer = m.a_id === session.userId ? m.b_id : m.b_id === session.userId ? m.a_id : null;
-      if (peer && visibleIds.has(peer) && relationshipOf.get(peer) !== 'mutual') relationshipOf.set(peer, 'meet');
+      if (peer && visibleIds.has(peer) && relationshipOf.get(peer) !== 'mutual')
+        relationshipOf.set(peer, 'meet');
     }
     if (viewerPlan.data?.plan === 'premium') {
-      const { data: scores, error: scoreError } = await supabaseAdmin.from('match_scores')
-        .select('target_id, score').eq('user_id', session.userId)
-        .in('target_id', ids).gt('expires_at', nowIso);
+      const { data: scores, error: scoreError } = await supabaseAdmin
+        .from('match_scores')
+        .select('target_id, score')
+        .eq('user_id', session.userId)
+        .in('target_id', ids)
+        .gt('expires_at', nowIso);
       if (scoreError && !isMissingSchema(scoreError))
         console.error('nearby: match score lookup failed', scoreError.message);
       for (const item of scores ?? []) {
@@ -183,27 +198,37 @@ export async function GET(request: Request) {
     }
     // Only sign the original source if a mutual match exists, or an accepted and active Meet
     // in a region confirmed safe for both people. Missing location safety rows fail closed.
-    const candidates = [...relationshipOf].filter(([, rel]) => rel === 'mutual' || rel === 'meet').map(([id]) => id);
+    const candidates = [...relationshipOf]
+      .filter(([, rel]) => rel === 'mutual' || rel === 'meet')
+      .map(([id]) => id);
     if (candidates.length) {
-      const [{ data: photoRows, error: photoError }, { data: riskRows, error: riskError }] = await Promise.all([
-        supabaseAdmin.from('photos').select('user_id, storage_key').in('user_id', candidates).eq('slot', 0),
-        supabaseAdmin.from('locations').select('user_id, risk_region')
-          .in('user_id', [session.userId, ...candidates]),
-      ]);
-      if (photoError && !isMissingSchema(photoError)) console.error('nearby: clear photo lookup failed', photoError.message);
-      if (riskError && !isMissingSchema(riskError)) console.error('nearby: safety lookup failed', riskError.message);
+      const [{ data: photoRows, error: photoError }, { data: riskRows, error: riskError }] =
+        await Promise.all([
+          supabaseAdmin.from('photos').select('user_id, storage_key').in('user_id', candidates).eq('slot', 0),
+          supabaseAdmin
+            .from('locations')
+            .select('user_id, risk_region')
+            .in('user_id', [session.userId, ...candidates]),
+        ]);
+      if (photoError && !isMissingSchema(photoError))
+        console.error('nearby: clear photo lookup failed', photoError.message);
+      if (riskError && !isMissingSchema(riskError))
+        console.error('nearby: safety lookup failed', riskError.message);
       // No location risk record => do not sign a clear source image, even for a mutual match.
       if (!photoError && !riskError) {
         const riskOf = new Map((riskRows ?? []).map((row) => [row.user_id, Boolean(row.risk_region)]));
         for (const p of photoRows ?? []) {
           const relation = relationshipOf.get(p.user_id);
-          if (p.storage_key && canRevealMainPhoto({
-            self: false,
-            mutual: relation === 'mutual',
-            activeAcceptedMeet: relation === 'meet',
-            viewerRisk: riskOf.get(session.userId) ?? null,
-            peerRisk: riskOf.get(p.user_id) ?? null,
-          })) {
+          if (
+            p.storage_key &&
+            canRevealMainPhoto({
+              self: false,
+              mutual: relation === 'mutual',
+              activeAcceptedMeet: relation === 'meet',
+              viewerRisk: riskOf.get(session.userId) ?? null,
+              peerRisk: riskOf.get(p.user_id) ?? null,
+            })
+          ) {
             clearPhotoKeyOf.set(p.user_id, p.storage_key);
             safeToReveal.add(p.user_id);
           }
@@ -261,21 +286,28 @@ export async function GET(request: Request) {
     lon: s.lon,
     count: Number(s.count),
   }));
-  const visitors: Visitor[] = (tripRows ?? []).map((t: any) => ({
-    id: t.user_id,
-    handle: t.handle ?? null,
-    city: t.city,
-    arriveOn: t.arrive_on,
-    nights: t.nights,
-    arrivalTime: t.arrival_time ? String(t.arrival_time).slice(0, 5) : null,
-    departOn: t.departure_on ?? addTripDays(t.arrive_on, t.nights),
-    departureTime: t.departure_time ? String(t.departure_time).slice(0, 5) : null,
-    originCode: t.origin_code ?? null,
-    photo: photoOf.get(t.photo_blur_key) ?? null,
-    lat: Number.isFinite(t.lat) ? t.lat : null,
-    lon: Number.isFinite(t.lon) ? t.lon : null,
-  }));
-  return NextResponse.json({ configured: true, people, hotspots, visitors });
+  const held = await heldAmong([
+    ...people.map((p) => p.id),
+    ...(tripRows ?? []).map((t: { user_id?: string }) => t.user_id ?? ''),
+  ]);
+  const visiblePeople = held.size ? people.filter((p) => !held.has(p.id)) : people;
+  const visitors: Visitor[] = (tripRows ?? [])
+    .filter((t: { user_id?: string }) => !t.user_id || !held.has(t.user_id))
+    .map((t: any) => ({
+      id: t.user_id,
+      handle: t.handle ?? null,
+      city: t.city,
+      arriveOn: t.arrive_on,
+      nights: t.nights,
+      arrivalTime: t.arrival_time ? String(t.arrival_time).slice(0, 5) : null,
+      departOn: t.departure_on ?? addTripDays(t.arrive_on, t.nights),
+      departureTime: t.departure_time ? String(t.departure_time).slice(0, 5) : null,
+      originCode: t.origin_code ?? null,
+      photo: photoOf.get(t.photo_blur_key) ?? null,
+      lat: Number.isFinite(t.lat) ? t.lat : null,
+      lon: Number.isFinite(t.lon) ? t.lon : null,
+    }));
+  return NextResponse.json({ configured: true, people: visiblePeople, hotspots, visitors });
 }
 
 export type Visitor = {

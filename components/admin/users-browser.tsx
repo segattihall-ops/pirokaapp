@@ -24,6 +24,8 @@ type Detail = {
     cancelled_at: string | null;
     payment_failed_at: string | null;
     verified_at: string | null;
+    safety_hold_at?: string | null;
+    safety_hold_report_id?: string | null;
   };
   events: { event: string; props: Record<string, unknown>; path: string | null; created_at: string }[];
   emails: { template: string; subject: string; status: string; provider: string; created_at: string }[];
@@ -249,6 +251,36 @@ export function UsersBrowser() {
                 </select>
               </label>
             </div>
+
+            {detail.user.safety_hold_at && (
+              <div className="flex items-center justify-between gap-2 rounded-card border border-line-1 p-3">
+                <div>
+                  <p className="font-semibold text-fg-2">Protective hold</p>
+                  <p className="text-fg-4">
+                    Hidden from the map, nearby, and search. New messages and matches are blocked. Not a ban.
+                    {detail.user.safety_hold_report_id ? ` Report ${detail.user.safety_hold_report_id}.` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (!detail || !confirm('Release the protective hold and restore this account?')) return;
+                    setBusy(true);
+                    const r = await fetch(`/api/admin/users/${detail.user.id}/safety-hold`, {
+                      method: 'POST',
+                    });
+                    setBusy(false);
+                    const j = await r.json().catch(() => null);
+                    setMsg(r.ok ? 'Protective hold released.' : (j?.error ?? 'Could not release the hold.'));
+                    if (r.ok) open(detail.user.id);
+                  }}
+                  className="btn-secondary h-9 shrink-0 text-[12px]"
+                >
+                  Release hold
+                </button>
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-2 rounded-card border border-line-1 p-3">
               <div>

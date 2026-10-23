@@ -1,3 +1,5 @@
+import { SEV } from '@/lib/safety/reasons';
+
 /**
  * Seeded Trust & Safety data for the admin console, ported from the Piroka Admin prototype
  * (design_handoff → Piroka_Admin.dc.html). Used for the queues that do not yet have a backend
@@ -5,6 +7,8 @@
  * Users tabs read real data from /api/admin/*; everything seeded here is clearly labelled "Demo data"
  * in the UI so no one mistakes it for live moderation state. Nothing here is persisted.
  */
+
+export { SEV };
 
 export const RULES = [
   'Guidelines → Consent first',
@@ -25,19 +29,6 @@ export const REASONS = [
   'Underage',
   'Threats or violence',
 ] as const;
-
-export const SEV: Record<string, 1 | 2 | 3> = {
-  Underage: 3,
-  'Threats or violence': 3,
-  'Shared my photos': 3,
-  Harassment: 2,
-  'Hate or discrimination': 2,
-  'Fake or impersonation': 1,
-  'Scam or spam': 1,
-  // Public form only (app/api/help/report)
-  'Illegal content': 3,
-  Other: 1,
-};
 
 const H = [
   'NightOwl',

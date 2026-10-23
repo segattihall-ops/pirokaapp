@@ -2,7 +2,7 @@
 
 **Status: CREATED 2026-10-23. Operational draft. Not legal advice. Not a drill.**
 
-Owner: Gleicimar. Written from the code on `main` (plus the location-privacy change in this branch). It describes what the product does today. Where a section is marked **counsel review required**, counsel has to confirm it before anyone treats it as the company's obligation or as permission to act.
+Owner: Gleicimar. Location privacy is the annulus merged in PR #51. This branch adds the severity map in `lib/safety/reasons.ts` and the underage protective hold. It describes that code. Where a section is marked **counsel review required**, counsel has to confirm it before anyone treats it as the company's obligation or as permission to act.
 
 Nothing here was checked against a live queue, a production database, or an on-call rotation.
 
@@ -10,43 +10,49 @@ Related: `docs/GO_LIVE.md` §4 (member appeals still static), `docs/registers/LA
 
 ## 1. How a report arrives
 
-Two writers insert into `reports`. Neither one suspends the reported member.
+Two writers insert into `reports`. Neither path sets `users.mod_step` to `suspended` or deletes the account. An in-app report whose stored reason is exactly `underage`, filed by an age-verified member, applies a reversible protective hold (section 6). Every other reason only files the report and sends the alert.
 
 | Path | Who | Route | What is stored |
 |---|---|---|---|
 | In the product | Signed-in member | `POST /api/safety/report` | `target_id`, reason enum, optional `details` (max 2,000 characters), optional `evidence.conversationId`, `reporter_ip` when a client IP header exists, `status: open` |
 | Public form | Anyone, account optional | `POST /api/help/report` | Public label mapped to a queue reason, the story in `details`, `evidence.source = public_form` plus link, contact email, and `urgent`, `reporter_ip`, `target_id` null until a person identifies the member |
 
-In-app reasons (`app/api/safety/report/route.ts`): `harassment`, `spam`, `underage`, `impersonation`, `hate`, `unsafe`, `other`. A member cannot report their own id. More than 10 reports from the same account in an hour returns 429. The route writes `audit_log` action `report.filed` and calls `opsAlert`.
+In-app reasons (`lib/safety/reasons.ts`, used by `POST /api/safety/report` and the chat safety menu): `underage`, `csam`, `threats`, `stalking`, `sextortion`, `ncii`, `harassment`, `hate`, `unsafe`, `spam`, `impersonation`, `other`. A member cannot report their own id. More than 10 reports from the same account in an hour returns 429. The route writes `audit_log` action `report.filed` and calls `opsAlert`. When the underage hold runs, it writes its own audit rows (section 6).
 
 Public labels (`app/api/help/report/route.ts`): "Someone under 18", "Shared without consent", "Impersonation", "Harassment or threats", "Hate or discrimination", "Scam or spam", "Illegal content", "Other". Five reports per IP per hour. `urgent` is set only for under-18 and non-consensual sharing. If the database is missing or the insert fails, the route returns 503 and does not claim the report was received. The id in a successful response is the row id.
 
 The chat safety menu (`components/chat/safety-menu.tsx`) calls the in-app route. It tells the member that messages stay encrypted and that only the text they type is shared. Sending a report does not block. Blocking is a separate button.
 
-Alerts (`lib/alerts/server.ts`, merged PR #50) go to `OPS_ALERT_EMAIL` through Resend, to `OPS_WEBHOOK_URL`, or to both. The body is a pointer: type, id, and an admin link. Coordinates, chat, document numbers, and the report story are redacted. The same alert is not sent again for five minutes on that server instance. If neither channel is set, the alert is a server log line. As of 2026-10-23 18:40 UTC the alerts code was deployed and `OPS_ALERT_EMAIL` was not visible in production, so do not assume an inbox is receiving these.
+Alerts (`lib/alerts/server.ts`, merged PR #50) go to `OPS_ALERT_EMAIL` through Resend, to `OPS_WEBHOOK_URL`, or to both. The body is built only by `reportAlertText` in `lib/safety/reasons.ts`: type, severity, id, and an admin link. Coordinates, chat, document numbers, and the report story are not parameters of that function. The same alert is not sent again for five minutes on that server instance. If neither channel is set, the alert is a server log line. As of 2026-10-23 18:40 UTC the alerts code was deployed and `OPS_ALERT_EMAIL` was not visible in production, so do not assume an inbox is receiving these.
 
 ## 2. Severity chips and the SLA the console shows
 
 `/admin/reports` header: "Highest severity first · SLA: safety 4h, other 24h". The home queue uses the same split (`app/admin/page.tsx`).
 
-The chip comes from `SEV` in `lib/admin/ts-seed.ts`, keyed by the **stored reason string**. In-app reasons are lowercase and are not keys in `SEV`, so they all fall through to Low (`SEV[reason] ?? 1`). A human must read the reason text. The chip is wrong for every in-app report until that map is fixed.
+The chip comes from `REASON_SEVERITY` in `lib/safety/reasons.ts`, re-exported as `SEV` from `lib/admin/ts-seed.ts`. The key is the **stored reason string**. Rank 3 is labelled Critical and is the 4-hour safety clock. Rank 2 (Medium) and rank 1 (Low) share the 24-hour clock. A string that is not in the map is Low. The full write-up of the choices is `docs/trust-safety/REPORT_SEVERITY.md`.
 
-| Stored reason | Where it is written | Chip today | How to triage |
+| Stored reason | Where it is written | Chip | How to triage |
 |---|---|---|---|
-| `underage` | In-app | Low | Safety. Immediate. Section 6. |
-| `Underage` | Public form | Safety (3) | Safety. Immediate. Section 6. |
-| `unsafe` | In-app | Low | Safety if the text is a threat, stalking, or coercion. Otherwise read it. |
-| `harassment` | In-app | Low | Upgrade to the 4h clock when the text is a threat, stalking, or coercion. |
-| `Harassment` | Public form | Medium (2) | Same upgrade rule. The chip alone is a 24h item. |
-| `hate` | In-app | Low | Treat as the public "Hate or discrimination" case (Medium). |
-| `Hate or discrimination` | Public form | Medium (2) | 24h clock. |
-| `Illegal content` | Public form | Safety (3) | 4h. If it describes sexual material of a minor, stop and use section 7. |
-| `Shared my photos` | Public form | Safety (3) | 4h. Non-consensual imagery. Do not re-host the image. |
-| `spam`, `Scam or spam` | In-app / public | Low | 24h, unless money has already moved. Section 9. |
-| `impersonation`, `Fake or impersonation` | In-app / public | Low | 24h. Section 9 if they are pretending to be the company. |
-| `other`, `Other` | Either | Low | Read the text before assigning a clock. |
+| `underage` | In-app | Critical (3) | Safety. Immediate. Protective hold when the reporter is age-verified. Section 6. |
+| `Underage` | Public form | Critical (3) | Safety. Immediate. No `target_id`, so no automatic hold. Section 6. |
+| `csam` | In-app | Critical (3) | 4h. Sexual material of a minor. No automatic hold. Section 7. |
+| `Illegal content` | Public form | Critical (3) | 4h. If it describes sexual material of a minor, stop and use section 7. No automatic hold. |
+| `threats` | In-app | Critical (3) | 4h. No automatic hold. Section 8. |
+| `Threats or violence` | Older demo queue | Critical (3) | Same clock as `threats`. |
+| `stalking` | In-app | Critical (3) | 4h. Stalking, doxxing, or location exposure. No automatic hold. Section 8. |
+| `sextortion` | In-app | Critical (3) | 4h. Coercion or sextortion. No automatic hold. Section 8. |
+| `ncii` | In-app | Critical (3) | 4h. Intimate images shared without consent. No automatic hold. Do not re-host the image. |
+| `Shared my photos` | Public form | Critical (3) | 4h. Non-consensual imagery. Do not re-host the image. |
+| `harassment` | In-app | Medium (2) | 24h. Upgrade when the text is a threat, stalking, or coercion. Those have their own critical slugs. |
+| `Harassment` | Public form | Medium (2) | The public label is "Harassment or threats" and still stores `Harassment`. Read it before leaving it on the 24h clock. |
+| `hate` | In-app | Medium (2) | 24h. |
+| `Hate or discrimination` | Public form | Medium (2) | 24h. |
+| `unsafe` | In-app | Medium (2) | 24h unless the text is a threat, stalking, or coercion. |
+| `spam`, `Scam or spam` | In-app / public | Low (1) | 24h, unless money has already moved. Section 9. |
+| `impersonation`, `Fake or impersonation` | In-app / public | Low (1) | 24h. Section 9 if they are pretending to be the company. |
+| `other`, `Other` | Either | Low (1) | Read the text before assigning a clock. |
 
-Sort in the console is severity descending, then **newest** first (`ageMin` ascending). An older Safety report can sit under a newer one with the same chip. Scan the whole open Safety band, not only the top row.
+Sort in the console is `compareReportQueue`: critical first, then **newest** first inside the same rank. `GET /api/admin/reports` uses the same order. An older Critical report can sit under a newer one with the same rank. Scan the whole open Critical band, not only the top row.
 
 There is no `under_review` button on the page. The API accepts `open`, `under_review`, `resolved`, `dismissed`. Closing a report (`resolved` or `dismissed`) sets `resolved_at`, `resolved_by`, and **clears `reporter_ip`**.
 
@@ -90,9 +96,32 @@ If the auth ban call fails, the route logs it and still returns success after th
 
 ## 6. Under-18 reports
 
-**Do this immediately, then a second person reviews. The insert does not suspend anyone.**
+**Do this immediately, then a second person reviews.**
 
-1. Identify the account. In-app reports have `target_id`. Public reports do not, until you match a profile from the link or the story. Do not suspend a guess.
+### In-app `underage` (there is a `target_id`)
+
+When the reporter's session is age-verified (`session.ageVerified`), the route applies a protective hold after the report insert:
+
+- `users.visibility` becomes `hidden` and `users.safety_hold_at` is set. Map, nearby, and hotspot queries already skip hidden members. Search drops ids with `safety_hold_at`. Other members' profile reads return 404. A member who only chose hidden themselves is still searchable.
+- New direct messages, new interests (matches), meet proposals, and new group, area, and place messages are refused while the hold is on. Existing rows are not deleted.
+- Require ID: auth `app_metadata.age_verified` false, `age_recheck` true, `age_method` null. Same flag as Admin → Users → Require ID. It is not an auth ban. The hold does not set `mod_step`, `deleted_at`, or `ban_duration`.
+- Audit: `safety.hold_applied`, with the report id and the previous visibility and 18+ flags. No narrative and no coordinates.
+
+The hold is reversible. Release it from Admin → Users → **Release hold** (`POST /api/admin/users/{id}/safety-hold`). Release restores the saved visibility and, when this hold wrote Require ID, restores the previous 18+ flag.
+
+Limits, so a report cannot be used as a ban:
+
+- Only the exact slug `underage`. `csam`, public `Underage`, and every other reason do not hold.
+- The reporter must already be age-verified. Middleware already returns 403 on `/api/safety/report` until the 18+ gate. An unverified reporter still files a critical report and the alert still fires; a person applies the hold. Photo verification or a minimum account age was not added: that delay would leave a reported minor visible when the only witness is new. The age gate and the cap below are the brakes.
+- Cap: 2 holds per reporter per 24 hours, counted from `safety.hold_applied`. Further underage reports from that account still file and still alert.
+- A target already on hold is not written again, so the saved previous visibility is not overwritten.
+- If the previous 18+ flag cannot be read, the account is still hidden and Require ID is left for a person (`safety.hold_require_id_failed`). Release will not guess that the account was verified.
+
+The hold columns and the check `users_safety_hold_hidden` are on the production database as `schema_migrations` version `20261023190526` (name `underage_protective_hold`). The repo copy is `supabase/migrations/20261023190000_051_underage_protective_hold.sql`. Do not run that file again. The route writes those columns. If a database response says a column is missing, the route audits `safety.hold_schema_pending`, the report is still stored, and the critical alert still fires. That audit is a fallback, not the path the applied schema takes. While that fallback happens, do both human steps in the public-form list below (suspend and Require ID). Those two steps are not substitutes for each other. The hold is not a substitute for them, and it is not a ban.
+
+### Public form `Underage` (no `target_id`)
+
+1. Identify the account from the link or the story. Do not suspend a guess.
 2. On that user, do **both**:
    - Suspend (`POST /api/admin/mod-action`, step `suspend`), with the report id attached.
    - Require an ID check (`POST /api/admin/users/{id}/age-recheck`, or Admin → Users → **Require ID**). That route sets auth `app_metadata.age_verified` false and `age_recheck` true. Middleware then answers 403 on gated APIs until a verification provider approves them again. It does not set `mod_step` and it does not ban the auth user. Suspend and Require ID are not substitutes.
@@ -105,17 +134,21 @@ If the auth ban call fails, the route logs it and still returns success after th
 
 > **Counsel review required.** This is a preservation and escalation note for staff. It is not legal advice, not a determination that a report is CSAM, and not the company's CyberTipline procedure. Counsel has to approve who files, what may be included, and how long objects are kept before this section is used as policy.
 
+In-app `csam` and public `Illegal content` are Critical. Neither applies the protective hold. The hold in section 6 is not a substitute for this section, and it is not a substitute for counsel or for an NCMEC filing.
+
 When a report may involve child sexual abuse material:
 
 - Do not download, open, screenshot, forward, or copy the material. Do not ask the reporter to send a copy to email, Slack, or a phone.
-- Do not put the story into a new message. The public-form alert is a pointer (id and admin link). The story stays on the report row. Do not forward even the pointer into a personal channel.
-- Leave the `reports` row, its `evidence`, and any objects already in storage in place. Do not delete the account or the objects until counsel says preservation is satisfied. Section 6's suspension still applies to the account so it cannot keep using the product; suspension hides and bans, it does not delete stored objects (`Remove` does set `deleted_at` — do not Remove until counsel has said so).
+- Do not put the story into a new message. The alert is a pointer (type, severity, id, and admin link). The story stays on the report row. Do not forward even the pointer into a personal channel.
+- Leave the `reports` row, its `evidence`, and any objects already in storage in place. Do not delete the account or the objects until counsel says preservation is satisfied. The section 6 hold hides the account and flags Require ID; it does not set `mod_step` and it does not delete stored objects. Suspension is still a human step so the account cannot keep using the product; suspension hides and bans, it does not delete stored objects (`Remove` does set `deleted_at` — do not Remove until counsel has said so).
 - Counsel directs the report to the National Center for Missing & Exploited Children (NCMEC) CyberTipline. 18 U.S.C. § 2258A is the statute counsel will read. Staff do not freelance a filing from this runbook.
 - Tell counsel the same day the report is seen.
 
 ## 8. Stalking, coercion, threats
 
-Treat the text as Safety (4 hour clock) when it describes a threat, someone being followed, or pressure to meet or to send images. The in-app reason will often be `harassment` or `unsafe`, which the chip marks Low.
+In-app `threats`, `stalking`, and `sextortion` are Critical (4 hour clock). They do not apply a protective hold and they do not suspend. Public "Harassment or threats" is stored as `Harassment` (Medium). In-app `harassment` and `unsafe` are Medium; upgrade them when the text is a threat, stalking, or coercion.
+
+Treat the text as the 4 hour clock when it describes a threat, someone being followed, or pressure to meet or to send images.
 
 - The member can block (section 4). Say that. Do not promise that a block moves the other person or reveals where they are.
 - Suspend when the threat is specific or the member says they are afraid now.

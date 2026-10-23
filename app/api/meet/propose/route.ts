@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser, UUID_RE } from '@/lib/api/guard';
 import { getConversationForUser, isBlocked, peerOf } from '@/lib/chat/server';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { ensureUserRow } from '@/lib/db/users';
 import { notify } from '@/lib/notify/server';
 import { displayName, userCards } from '@/lib/users/cards';
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
   if (!conv) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const invitee = peerOf(conv, me);
   if (await isBlocked(me, invitee)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  if (await eitherHeld(me, invitee)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   await ensureUserRow(g.session);
   const { data, error } = await db

@@ -4,6 +4,7 @@ import { requireUser } from '@/lib/api/guard';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { isBlocked } from '@/lib/chat/server';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { notify } from '@/lib/notify/server';
 import { userCards, displayName } from '@/lib/users/cards';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
@@ -37,12 +38,14 @@ export async function POST(request: Request) {
   if (!t || t.deleted_at || (t.mod_step && ['suspended', 'removed'].includes(t.mod_step)))
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (await isBlocked(me, target)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (await eitherHeld(me, target)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // A repeat tap (or reopening the profile) must not notify or learn twice, so only a fresh insert counts.
   const { error: insErr } = await db.from('interests').insert({ from_id: me, to_id: target });
   if (insErr) {
     if (insErr.code === '23505') return NextResponse.json({ mutual: false, alreadySent: true });
-    if (isMissingSchema(insErr)) return NextResponse.json(schemaPendingResponse('042_interests'), { status: 503 });
+    if (isMissingSchema(insErr))
+      return NextResponse.json(schemaPendingResponse('042_interests'), { status: 503 });
     return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
 
@@ -103,7 +106,8 @@ export async function DELETE(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
   const target = new URL(request.url).searchParams.get('userId');
-  if (!target || !/^[0-9a-f-]{36}$/i.test(target)) return NextResponse.json({ error: 'userId required' }, { status: 400 });
+  if (!target || !/^[0-9a-f-]{36}$/i.test(target))
+    return NextResponse.json({ error: 'userId required' }, { status: 400 });
   await supabaseAdmin!.from('interests').delete().eq('from_id', g.session.userId).eq('to_id', target);
   return NextResponse.json({ ok: true });
 }

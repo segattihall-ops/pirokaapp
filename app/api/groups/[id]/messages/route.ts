@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { requireUser } from '@/lib/api/guard';
 import { supabaseAdmin } from '@/lib/db/client';
+import { eitherHeld } from '@/lib/safety/hold-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!supabaseAdmin) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   if (!(await isMember(parsedId.data, g.session.userId)))
     return NextResponse.json({ error: 'Join the group to post in its chat' }, { status: 403 });
+  if (await eitherHeld(g.session.userId))
+    return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   const { data, error } = await supabaseAdmin
     .from('group_messages')

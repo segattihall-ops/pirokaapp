@@ -2,17 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-
-const TYPES = [
-  'Someone under 18',
-  'Shared without consent',
-  'Impersonation',
-  'Harassment or threats',
-  'Hate or discrimination',
-  'Scam or spam',
-  'Illegal content',
-  'Other',
-];
+import { PUBLIC_REPORT_TYPES } from '@/lib/safety/reasons';
 
 /** Public "Report or request removal" (Piroka_Help → Report content). No account needed; posts to /api/help/report. */
 export function ReportForm() {
@@ -66,7 +56,7 @@ export function ReportForm() {
       ) : (
         <>
           <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
-            {TYPES.map((t) => {
+            {PUBLIC_REPORT_TYPES.map((t) => {
               const on = type === t;
               return (
                 <button

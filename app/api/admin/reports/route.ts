@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { requireAdmin } from '@/lib/admin/guard';
+import { sortReportQueue } from '@/lib/safety/reasons';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +37,8 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const one = (v: unknown) => (Array.isArray(v) ? v[0] : v) as { handle: string | null } | null;
-  return NextResponse.json({
-    reports: (data ?? []).map((r) => ({
+  const reports = sortReportQueue(
+    (data ?? []).map((r) => ({
       id: r.id,
       reporterId: r.reporter_id,
       reporterHandle: one(r.reporter)?.handle ?? null,
@@ -53,7 +54,8 @@ export async function GET(request: Request) {
       // Public-form reports carry what moderators need to find the content and reply.
       publicForm: publicForm(r.evidence),
     })),
-  });
+  );
+  return NextResponse.json({ reports });
 }
 
 export async function PATCH(request: Request) {

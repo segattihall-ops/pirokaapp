@@ -5,6 +5,7 @@ import { ensureUserRow } from '@/lib/db/users';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { rateLimit, tooMany } from '@/lib/api/rate-limit';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { SIGNAL_WEIGHT } from '@/lib/taste/learn';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,9 @@ export async function POST(request: Request) {
   }
   if (!peerId) return NextResponse.json({ error: 'User not found' }, { status: 404 });
   if (peerId === session.userId) return NextResponse.json({ error: 'That is you' }, { status: 400 });
-  void supabaseAdmin.from('taste_events').insert({ user_id: session.userId, target_id: peerId, kind: 'chat', weight: SIGNAL_WEIGHT.chat });
+  void supabaseAdmin
+    .from('taste_events')
+    .insert({ user_id: session.userId, target_id: peerId, kind: 'chat', weight: SIGNAL_WEIGHT.chat });
 
   const me = session.userId;
   const { data: blocked } = await supabaseAdmin
@@ -48,6 +51,7 @@ export async function POST(request: Request) {
     .or(`and(blocker_id.eq.${peerId},blocked_id.eq.${me}),and(blocker_id.eq.${me},blocked_id.eq.${peerId})`)
     .limit(1);
   if (blocked?.length) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  if (await eitherHeld(me, peerId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   await ensureUserRow(session);
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { recordReferral } from '@/lib/referrals/server';
 import { alreadySent, sendEmail } from '@/lib/email';
 import { templates } from '@/lib/email/templates';
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
   if (!supabaseAdmin) return NextResponse.json({ ok: true, handle, demo: true });
 
   await ensureUserRow(session);
+  const held = await eitherHeld(session.userId);
   const { error } = await supabaseAdmin
     .from('users')
     .update({
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
         verifiedOnly: b.verifiedOnly,
         strangerFilter: b.strangerFilter,
       },
-      visibility: b.visibility,
+      visibility: held ? 'hidden' : b.visibility,
       disguise_icon: b.disguiseIcon,
       ...(b.bio !== undefined ? { bio: b.bio } : {}),
       updated_at: new Date().toISOString(),

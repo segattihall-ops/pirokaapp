@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
 import { ensureUserRow } from '@/lib/db/users';
 import { HANDLE_RE, photoLimit } from '@/lib/profile/options';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { photoUrl } from '@/lib/upload/storage';
 
 export const dynamic = 'force-dynamic';
@@ -111,7 +112,7 @@ export async function PATCH(request: Request) {
   if (b.communities) patch.communities = b.communities;
   if (b.showMe) patch.show_me = b.showMe.includes('Everyone') ? [] : b.showMe;
   if (b.bio !== undefined) patch.bio = b.bio || null;
-  if (b.visibility) patch.visibility = b.visibility;
+  if (b.visibility && !(await eitherHeld(me))) patch.visibility = b.visibility;
   if (b.disguiseIcon) patch.disguise_icon = b.disguiseIcon;
   if (b.safetyPrefs) {
     const { data: cur } = await db.from('users').select('safety_prefs').eq('id', me).maybeSingle();
