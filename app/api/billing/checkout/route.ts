@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
+import { newCheckoutClosedResponse } from '@/lib/billing/guard';
 import { PAYPAL_PLANS, paypalConfigured } from '@/lib/billing/paypal';
 
 export const dynamic = 'force-dynamic';
 
 /** Returns what the PayPal Buttons need to start a subscription for the signed-in user. */
 export async function POST(request: Request) {
+  const closed = newCheckoutClosedResponse();
+  if (closed) return closed;
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!paypalConfigured()) return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });

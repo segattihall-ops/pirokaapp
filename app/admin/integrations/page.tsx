@@ -7,7 +7,8 @@ const DOT: Record<string, string> = { ok: 'bg-green', degraded: 'bg-warning', of
 const KEYS: Record<string, string> = {
   database: 'NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY',
   email: 'RESEND_API_KEY (preferred) or EMAIL_SERVER, EMAIL_FROM',
-  billing: 'PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, NEXT_PUBLIC_PAYPAL_*',
+  billing:
+    'BILLING_ENABLED=true to charge; PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, NEXT_PUBLIC_PAYPAL_*',
   push: 'NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT',
   analytics: 'POSTHOG_KEY, POSTHOG_HOST (optional mirror)',
   errors: 'SENTRY_DSN (optional mirror)',

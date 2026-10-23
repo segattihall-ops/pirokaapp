@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
+import { newCheckoutClosedResponse } from '@/lib/billing/guard';
 import { getPayPalSubscription, paypalConfigured, planFromPayPalPlanId } from '@/lib/billing/paypal';
 import { sendEmail } from '@/lib/email';
 import { templates } from '@/lib/email/templates';
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 
 /** Called from the PayPal Buttons onApprove. Confirms the subscription with PayPal before granting a plan. */
 export const POST = withApi('/api/billing/subscribe', async (request: Request) => {
+  const closed = newCheckoutClosedResponse();
+  if (closed) return closed;
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!paypalConfigured() || !supabaseAdmin) {
