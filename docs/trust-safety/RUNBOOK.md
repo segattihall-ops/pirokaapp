@@ -19,11 +19,11 @@ Two writers insert into `reports`. Neither one suspends the reported member.
 
 In-app reasons (`app/api/safety/report/route.ts`): `harassment`, `spam`, `underage`, `impersonation`, `hate`, `unsafe`, `other`. A member cannot report their own id. More than 10 reports from the same account in an hour returns 429. The route writes `audit_log` action `report.filed` and calls `opsAlert`.
 
-Public labels (`app/api/help/report/route.ts`): "Someone under 18", "Shared without consent", "Impersonation", "Harassment or threats", "Hate or discrimination", "Scam or spam", "Illegal content", "Other". Five reports per IP per hour. `urgent` is set only for under-18 and non-consensual sharing. If both the database and `OPS_WEBHOOK_URL` are missing, the route returns 503 and does not claim the report was received. If the insert fails and a webhook is set, the route still returns an id and alerts: that id may be a placeholder that was **not** written to `reports`. Check the queue; do not trust the id in the alert alone.
+Public labels (`app/api/help/report/route.ts`): "Someone under 18", "Shared without consent", "Impersonation", "Harassment or threats", "Hate or discrimination", "Scam or spam", "Illegal content", "Other". Five reports per IP per hour. `urgent` is set only for under-18 and non-consensual sharing. If the database is missing or the insert fails, the route returns 503 and does not claim the report was received. The id in a successful response is the row id.
 
 The chat safety menu (`components/chat/safety-menu.tsx`) calls the in-app route. It tells the member that messages stay encrypted and that only the text they type is shared. Sending a report does not block. Blocking is a separate button.
 
-`OPS_WEBHOOK_URL` unset means the alert is a server log line (`lib/alerts/server.ts`), not an email and not a Slack message. Email alerts are open PR #50 and are not on `main`.
+Alerts (`lib/alerts/server.ts`, merged PR #50) go to `OPS_ALERT_EMAIL` through Resend, to `OPS_WEBHOOK_URL`, or to both. The body is a pointer: type, id, and an admin link. Coordinates, chat, document numbers, and the report story are redacted. The same alert is not sent again for five minutes on that server instance. If neither channel is set, the alert is a server log line. As of 2026-10-23 18:40 UTC the alerts code was deployed and `OPS_ALERT_EMAIL` was not visible in production, so do not assume an inbox is receiving these.
 
 ## 2. Severity chips and the SLA the console shows
 
@@ -108,7 +108,7 @@ If the auth ban call fails, the route logs it and still returns success after th
 When a report may involve child sexual abuse material:
 
 - Do not download, open, screenshot, forward, or copy the material. Do not ask the reporter to send a copy to email, Slack, or a phone.
-- Do not put the story into a new message. On current `main`, the public-form ops alert includes the narrative. Do not forward that alert. The report row is the record.
+- Do not put the story into a new message. The public-form alert is a pointer (id and admin link). The story stays on the report row. Do not forward even the pointer into a personal channel.
 - Leave the `reports` row, its `evidence`, and any objects already in storage in place. Do not delete the account or the objects until counsel says preservation is satisfied. Section 6's suspension still applies to the account so it cannot keep using the product; suspension hides and bans, it does not delete stored objects (`Remove` does set `deleted_at` — do not Remove until counsel has said so).
 - Counsel directs the report to the National Center for Missing & Exploited Children (NCMEC) CyberTipline. 18 U.S.C. § 2258A is the statute counsel will read. Staff do not freelance a filing from this runbook.
 - Tell counsel the same day the report is seen.
@@ -156,6 +156,6 @@ The help page says a different moderator replies within 72 hours. That clock is 
 - Direct messages are stored as ciphertext. A report does not decrypt them. The only message content moderators see is what the reporter typed into `details`.
 - `reporter_ip` is for spotting repeat or abusive reporters. It is removed when the report is closed. Do not copy it into a ticket that outlives the report.
 - Do not request or attach health-card contents. Those payloads are separate and encrypted.
-- Do not put true coordinates, document numbers, or the report story into Slack, email, or analytics. Public-form alerts on current `main` already include the story; treat the webhook as sensitive and do not add a second copy.
+- Do not put true coordinates, document numbers, or the report story into Slack, email, or analytics. The product redacts those from ops alerts. Do not add a second copy of the report text anywhere else.
 - Photos stay behind the routes that mint signed URLs. Do not make a bucket public to "get a look", and do not download a private album into a chat.
 - Account export (`/api/me/export`) is the member's own data. It is not the evidence bundle for a report.

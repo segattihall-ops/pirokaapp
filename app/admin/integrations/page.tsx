@@ -12,7 +12,7 @@ const KEYS: Record<string, string> = {
   push: 'NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT',
   analytics: 'POSTHOG_KEY, POSTHOG_HOST (optional mirror)',
   errors: 'SENTRY_DSN (optional mirror)',
-  alerts: 'OPS_WEBHOOK_URL',
+  alerts: 'OPS_ALERT_EMAIL (one or comma-separated), OPS_WEBHOOK_URL (optional Slack/Discord)',
   cron: 'CRON_SECRET (Vercel Cron sends it automatically)',
   age: 'AGE_PROVIDER, YOTI_CLIENT_SDK_ID, YOTI_PEM_PATH',
 };
