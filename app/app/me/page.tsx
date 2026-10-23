@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/server';
 import { isAdmin } from '@/lib/auth/admin';
 import { PushToggle } from '@/components/push/push-toggle';
 import { NotifPrefs } from '@/components/me/notif-prefs';
+import { LanguageSelector } from '@/components/i18n/language-selector';
 import { SignOutButton } from '@/components/account/sign-out-button';
 import { AlbumInbox } from '@/components/me/album-inbox';
 import { FavoritesList } from '@/components/me/favorites-list';
@@ -111,6 +112,8 @@ export default async function MePage() {
       <PushToggle />
 
       <NotifPrefs />
+
+      <LanguageSelector />
 
       <PasskeySettings />
 
