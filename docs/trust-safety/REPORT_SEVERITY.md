@@ -82,4 +82,4 @@ If the previous 18+ flag cannot be read, the account is still hidden and Require
 
 ### Database
 
-`supabase/migrations/20261023190000_051_underage_protective_hold.sql` adds the columns and a check that a held row stays `visibility = hidden`. **It is not applied by this change.** The owner runs it in Supabase before relying on the hold. Until then, a missing column is audited as `safety.hold_schema_pending`, the report is still stored, and the critical alert still fires.
+The columns and the check that a held row stays `visibility = hidden` are on the production database as `schema_migrations` version `20261023190526` (name `underage_protective_hold`). The repo copy is `supabase/migrations/20261023190000_051_underage_protective_hold.sql`. Do not run that file again. The hold writes those columns. A missing-column response is audited as `safety.hold_schema_pending`, the report is still stored, and the critical alert still fires. That path is a fallback.

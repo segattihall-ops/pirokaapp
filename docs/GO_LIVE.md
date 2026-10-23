@@ -189,9 +189,11 @@ could not read env. The two `/api/status` readings above are the production fact
 `false` in `lib/help-content.ts` because the owner authorised that on 2026-10-18. Counsel has
 not signed off. The draft legal center is `docs/legal-review/`.
 
-The 2257 custodian line is still `compliance@piroka.app`. A DNS lookup on 2026-10-23 returned
-NXDOMAIN for `piroka.app`. The privacy page also uses `privacy@piroka.app`. See PRK-005 and
-PRK-006.
+The 2257 custodian line is `compliance@pirokaapp.com` and the privacy contact is
+`privacy@pirokaapp.com` (`lib/contact.ts`). A DNS lookup on 2026-10-23 returned NXDOMAIN for
+`piroka.app`. `pirokaapp.com` is the production domain and has IONOS MX. The mailboxes still
+have to be created and delivery checked (PRK-006). Counsel sign-off is PRK-005. Production
+`EMAIL_FROM` was not changed.
 
 ### 3.5 Advisor SQL
 

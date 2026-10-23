@@ -10,7 +10,7 @@ Related: `docs/GO_LIVE.md` §4 (member appeals still static), `docs/registers/LA
 
 ## 1. How a report arrives
 
-Two writers insert into `reports`. Neither path sets `users.mod_step` to `suspended` or deletes the account. An in-app report whose stored reason is exactly `underage`, filed by an age-verified member, applies a reversible protective hold (section 6) once migration `20261023190000_051_underage_protective_hold.sql` is applied. Every other reason only files the report and sends the alert.
+Two writers insert into `reports`. Neither path sets `users.mod_step` to `suspended` or deletes the account. An in-app report whose stored reason is exactly `underage`, filed by an age-verified member, applies a reversible protective hold (section 6). Every other reason only files the report and sends the alert.
 
 | Path | Who | Route | What is stored |
 |---|---|---|---|
@@ -33,7 +33,7 @@ The chip comes from `REASON_SEVERITY` in `lib/safety/reasons.ts`, re-exported as
 
 | Stored reason | Where it is written | Chip | How to triage |
 |---|---|---|---|
-| `underage` | In-app | Critical (3) | Safety. Immediate. Protective hold when the reporter is age-verified and migration 051 is applied. Section 6. |
+| `underage` | In-app | Critical (3) | Safety. Immediate. Protective hold when the reporter is age-verified. Section 6. |
 | `Underage` | Public form | Critical (3) | Safety. Immediate. No `target_id`, so no automatic hold. Section 6. |
 | `csam` | In-app | Critical (3) | 4h. Sexual material of a minor. No automatic hold. Section 7. |
 | `Illegal content` | Public form | Critical (3) | 4h. If it describes sexual material of a minor, stop and use section 7. No automatic hold. |
@@ -117,7 +117,7 @@ Limits, so a report cannot be used as a ban:
 - A target already on hold is not written again, so the saved previous visibility is not overwritten.
 - If the previous 18+ flag cannot be read, the account is still hidden and Require ID is left for a person (`safety.hold_require_id_failed`). Release will not guess that the account was verified.
 
-Migration `supabase/migrations/20261023190000_051_underage_protective_hold.sql` adds the columns and a check that a held row stays `visibility = hidden`. **It is not applied by this change.** The owner runs it in Supabase. Until then the route audits `safety.hold_schema_pending`, the report is still stored, and the critical alert still fires. While the schema is missing, do both human steps in the public-form list below (suspend and Require ID). Those two steps are not substitutes for each other. The hold is not a substitute for them, and it is not a ban.
+The hold columns and the check `users_safety_hold_hidden` are on the production database as `schema_migrations` version `20261023190526` (name `underage_protective_hold`). The repo copy is `supabase/migrations/20261023190000_051_underage_protective_hold.sql`. Do not run that file again. The route writes those columns. If a database response says a column is missing, the route audits `safety.hold_schema_pending`, the report is still stored, and the critical alert still fires. That audit is a fallback, not the path the applied schema takes. While that fallback happens, do both human steps in the public-form list below (suspend and Require ID). Those two steps are not substitutes for each other. The hold is not a substitute for them, and it is not a ban.
 
 ### Public form `Underage` (no `target_id`)
 

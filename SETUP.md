@@ -43,7 +43,7 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 
 # Email magic links
 EMAIL_SERVER=smtp://user:pass@smtp.gmail.com:587
-EMAIL_FROM="πroka <no-reply@piroka.app>"
+EMAIL_FROM="πroka <no-reply@pirokaapp.com>"
 ```
 
 ### Phase 2: Database (Supabase)
@@ -330,7 +330,7 @@ create extension if not exists postgis;
 
 - 🆘 Issues: https://github.com/segattihall-ops/pirokaapp/issues
 - 💬 Discussions: https://github.com/segattihall-ops/pirokaapp/discussions
-- 📧 Email: support@piroka.app
+- 📧 Email: support@pirokaapp.com
 
 ---
 

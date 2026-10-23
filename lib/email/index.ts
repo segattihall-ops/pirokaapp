@@ -1,5 +1,6 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
+import { DEFAULT_EMAIL_FROM } from '@/lib/contact';
 import { supabaseAdmin } from '@/lib/db/client';
 import type { EmailContent } from './templates';
 
@@ -29,7 +30,7 @@ export type SendEmailResult = {
   error?: string;
 };
 
-const FROM = process.env.EMAIL_FROM || '"πroka" <no-reply@piroka.app>';
+const FROM = process.env.EMAIL_FROM || DEFAULT_EMAIL_FROM;
 
 export function emailProvider(): EmailProvider {
   if (process.env.RESEND_API_KEY) return 'resend';

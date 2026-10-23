@@ -25,6 +25,7 @@ export function liveHoldDeps(): HoldDeps | null {
     async getTarget(id) {
       const { data, error } = await db.from('users').select(TARGET_COLS).eq('id', id).maybeSingle();
       if (error) {
+        // Defensive. The live columns are safety_hold_* from version 20261023190526.
         if (isMissingSchema(error)) return { ok: false, missingSchema: true };
         console.error('safety hold target read failed', error.code, error.message);
         throw new Error('safety hold target read failed');

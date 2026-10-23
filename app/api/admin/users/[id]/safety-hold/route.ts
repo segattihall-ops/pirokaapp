@@ -30,7 +30,7 @@ export async function POST(_request: Request, { params }: Ctx) {
   if (error) {
     if (isMissingSchema(error)) {
       return NextResponse.json(
-        { error: 'Protective holds need the database update 051_underage_protective_hold.' },
+        { error: 'Protective-hold columns are missing on this database.' },
         { status: 503 },
       );
     }

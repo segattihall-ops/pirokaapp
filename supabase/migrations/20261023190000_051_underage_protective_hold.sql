@@ -1,8 +1,9 @@
 -- 051 · Reversible protective hold for an in-app underage report.
 --
--- NOT APPLIED by this change. Run this file in the Supabase SQL editor (or the migration
--- pipeline) before the new app version is relied on. Do not run it against production from a
--- laptop checkout, and do not combine it with a deploy.
+-- Applied in production on 2026-10-23 as schema_migrations version 20261023190526,
+-- name underage_protective_hold. The statements below are that change. Do not run this
+-- file again. The app writes these columns. safety.hold_schema_pending is only a fallback
+-- when a response says a column is missing.
 --
 -- The hold is not a ban and not a deletion. It records the previous visibility and 18+ flags,
 -- sets visibility to hidden (map, nearby, and hotspot queries already skip hidden members),

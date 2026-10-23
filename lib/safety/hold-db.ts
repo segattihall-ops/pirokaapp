@@ -2,7 +2,7 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/db/client';
 import { isMissingSchema } from '@/lib/db/schema-errors';
 
-/** User ids with a protective hold. Missing column (migration not applied) yields an empty set. */
+/** User ids with a protective hold. A missing-column error yields an empty set; production has safety_hold_at. */
 export async function heldAmong(ids: string[]): Promise<Set<string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (!supabaseAdmin || unique.length === 0) return new Set();

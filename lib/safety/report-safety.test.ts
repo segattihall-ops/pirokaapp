@@ -361,6 +361,38 @@ describe('underage protective hold', () => {
     assert.equal(h.holds.length, 0);
   });
 
+  test('a missing column is a fallback and does not write the hold', async () => {
+    const unread = harness({ getTarget: async () => ({ ok: false, missingSchema: true }) });
+    const unreadOutcome = await applyUnderageProtectiveHold(
+      {
+        reason: 'underage',
+        reporterId: 'reporter',
+        reporterAgeVerified: true,
+        targetId: target().id,
+        reportId: 'TS-8',
+      },
+      unread.deps,
+    );
+    assert.deepEqual(unreadOutcome, { apply: false, skip: 'schema_pending' });
+    assert.equal(unread.holds.length, 0);
+    assert.equal(unread.audits[0]?.action, HOLD_AUDIT.schemaPending);
+
+    const unwritten = harness({ writeHold: async () => 'missing_schema' });
+    const unwrittenOutcome = await applyUnderageProtectiveHold(
+      {
+        reason: 'underage',
+        reporterId: 'reporter',
+        reporterAgeVerified: true,
+        targetId: target().id,
+        reportId: 'TS-9',
+      },
+      unwritten.deps,
+    );
+    assert.deepEqual(unwrittenOutcome, { apply: false, skip: 'schema_pending' });
+    assert.equal(unwritten.holds.length, 0);
+    assert.equal(unwritten.audits.at(-1)?.action, HOLD_AUDIT.schemaPending);
+  });
+
   test('the hold patch itself is not a ban', () => {
     const patch = protectiveHoldPatch(target(), 'TS-7', '2026-10-23T12:00:00.000Z', true);
     assert.equal(patch.visibility, 'hidden');
@@ -371,11 +403,14 @@ describe('underage protective hold', () => {
 });
 
 describe('migration file', () => {
-  test('the hold columns live only in a new migration and are not applied here', () => {
+  test('the hold migration records the production version and does not delete', () => {
     const sql = source('supabase/migrations/20261023190000_051_underage_protective_hold.sql');
     assert.match(sql, /safety_hold_at/);
-    assert.match(sql, /NOT APPLIED/);
+    assert.match(sql, /20261023190526/);
+    assert.match(sql, /underage_protective_hold/);
     assert.match(sql, /users_safety_hold_hidden/);
+    assert.match(sql, /Do not run this/);
+    assert.doesNotMatch(sql, /NOT APPLIED/);
     assert.doesNotMatch(sql, /delete from|drop table|ban_duration/i);
   });
 });

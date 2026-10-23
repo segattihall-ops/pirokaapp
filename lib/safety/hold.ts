@@ -178,6 +178,8 @@ export async function applyUnderageProtectiveHold(
   }
 
   const found = await deps.getTarget(args.targetId);
+  // Production has these columns (schema_migrations 20261023190526). schema_pending is only
+  // the fallback when the read or the write reports that a column is missing.
   if (!found.ok) {
     await deps.audit(HOLD_AUDIT.schemaPending, { reportId: args.reportId });
     return { apply: false, skip: 'schema_pending' };
