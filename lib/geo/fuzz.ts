@@ -2,34 +2,71 @@ import 'server-only';
 import crypto from 'crypto';
 
 /**
- * Location fuzzing for privacy
- * Takes true coordinates and a seed, returns fuzzed coordinates
- * Fuzzing is deterministic per seed but changes the location by 0-800m
- * Used to hide exact position while preserving relative distances for "nearby" queries
+ * Location fuzzing for privacy. Server only — clients never receive the true point.
+ *
+ * The public point is a deterministic offset of the true point. The offset is a pure
+ * function of the publication seed (HMAC-SHA256), not of the coordinates, so a new GPS
+ * fix does not roll a new sample. Callers keep that seed until the location row is
+ * deleted (`stableFuzzSeedHex`). A fresh seed on every read would let someone average
+ * the pins back onto the true point.
+ *
+ * Distance is drawn from the annulus [FUZZ_MIN_METERS, radius], uniform in area:
+ *   r = sqrt(u * (Rmax² − Rmin²) + Rmin²)
+ * The previous draw was uniform on [0, 800] m, so a share of members were published
+ * within a few metres of where they actually were. Snapping to a grid and then adding
+ * a disc does not create a hard floor: the cell center can sit on the member, and the
+ * offset can point back across them, unless the inner radius exceeds the cell's
+ * half-diagonal — which would push pins past the 800 m cap this map already uses.
+ * The annulus keeps that cap and guarantees the floor.
+ *
+ * The floor is 250 m, inside the 200–300 m band. The outer radius stays 800 m.
  */
+export const FUZZ_MIN_METERS = 250;
+export const FUZZ_MAX_METERS = 800;
+
+const EARTH_RADIUS_M = 6_371_000;
+
 export function fuzzLocation(
   trueLat: number,
   trueLng: number,
   seed: Buffer,
-  radiusMeters = 800
+  radiusMeters = FUZZ_MAX_METERS,
 ): { lat: number; lng: number } {
-  // PRNG using seed
-  const hash = crypto.createHmac('sha256', seed).update('position');
-  const hashBytes = hash.digest();
+  const maxMeters = Math.max(radiusMeters, FUZZ_MIN_METERS);
+  const minMeters = FUZZ_MIN_METERS;
+  const hashBytes = crypto.createHmac('sha256', seed).update('fuzz-annulus-v1').digest();
+  const bearing = uint32Unit(hashBytes, 0) * 2 * Math.PI;
+  const u = uint32Unit(hashBytes, 4);
+  const distance = Math.sqrt(u * (maxMeters * maxMeters - minMeters * minMeters) + minMeters * minMeters);
+  return destination(trueLat, trueLng, distance, bearing);
+}
 
-  // Extract angle (0-2π) and distance (0-radiusMeters)
-  const angleRaw = (hashBytes[0] / 256) * 2 * Math.PI;
-  const distanceRaw = (hashBytes[1] / 256) * radiusMeters;
+/** Four bytes → [0, 1). Zero maps to the inner radius, never inside it. */
+function uint32Unit(bytes: Buffer, offset: number): number {
+  return bytes.readUInt32BE(offset) / 0x1_0000_0000;
+}
 
-  // Convert to lat/lng offset
-  const earthRadiusM = 6371000;
-  const latOffset = (distanceRaw * Math.cos(angleRaw)) / earthRadiusM * (180 / Math.PI);
-  const lngOffset = (distanceRaw * Math.sin(angleRaw)) / earthRadiusM * (180 / Math.PI) / Math.cos(trueLat * Math.PI / 180);
+function destination(
+  latDeg: number,
+  lngDeg: number,
+  distanceM: number,
+  bearing: number,
+): { lat: number; lng: number } {
+  const delta = distanceM / EARTH_RADIUS_M;
+  const lat1 = (latDeg * Math.PI) / 180;
+  const lng1 = (lngDeg * Math.PI) / 180;
+  const sinLat1 = Math.sin(lat1);
+  const cosLat1 = Math.cos(lat1);
+  const sinDelta = Math.sin(delta);
+  const cosDelta = Math.cos(delta);
+  const sinLat2 = sinLat1 * cosDelta + cosLat1 * sinDelta * Math.cos(bearing);
+  const lat2 = Math.asin(Math.min(1, Math.max(-1, sinLat2)));
+  const lng2 = lng1 + Math.atan2(Math.sin(bearing) * sinDelta * cosLat1, cosDelta - sinLat1 * Math.sin(lat2));
+  return { lat: (lat2 * 180) / Math.PI, lng: wrapLng((lng2 * 180) / Math.PI) };
+}
 
-  return {
-    lat: trueLat + latOffset,
-    lng: trueLng + lngOffset,
-  };
+function wrapLng(lng: number): number {
+  return ((((lng + 180) % 360) + 360) % 360) - 180;
 }
 
 /**
