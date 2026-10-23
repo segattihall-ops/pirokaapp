@@ -3,15 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-const REASONS: { value: string; label: string }[] = [
-  { value: 'harassment', label: 'Harassment or threats' },
-  { value: 'spam', label: 'Spam or scam' },
-  { value: 'underage', label: 'Looks under 18' },
-  { value: 'impersonation', label: 'Impersonation' },
-  { value: 'hate', label: 'Hate or discrimination' },
-  { value: 'unsafe', label: 'Unsafe meet-up behaviour' },
-  { value: 'other', label: 'Something else' },
-];
+import { IN_APP_REASONS, IN_APP_REASON_LABELS, type InAppReason } from '@/lib/safety/reasons';
+
+const REASONS = IN_APP_REASONS.map((value) => ({ value, label: IN_APP_REASON_LABELS[value] }));
 
 export function SafetyMenu({
   peerUserId,
@@ -27,7 +21,7 @@ export function SafetyMenu({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'menu' | 'report' | 'done'>('menu');
-  const [reason, setReason] = useState(REASONS[0].value);
+  const [reason, setReason] = useState<InAppReason>(REASONS[0].value);
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -152,7 +146,10 @@ export function SafetyMenu({
               <select
                 aria-label="Reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if ((IN_APP_REASONS as readonly string[]).includes(next)) setReason(next as InAppReason);
+                }}
                 className="input h-10 py-0 text-[13px]"
               >
                 {REASONS.map((r) => (

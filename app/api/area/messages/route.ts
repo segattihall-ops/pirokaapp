@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
 import { hasDrugTerms, DRUG_TERMS_MESSAGE } from '@/lib/moderation/drug-words';
+import { eitherHeld } from '@/lib/safety/hold-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const { lat, lon, content } = parsed.data;
   if (hasDrugTerms(content)) return NextResponse.json({ error: DRUG_TERMS_MESSAGE }, { status: 422 });
+  if (await eitherHeld(session.userId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   const { data, error } = await supabaseAdmin!
     .from('area_messages')

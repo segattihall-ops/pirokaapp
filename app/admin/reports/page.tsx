@@ -16,7 +16,8 @@ import {
   type QueueRow,
 } from '@/components/admin/console/ui';
 import { useRole, useToast } from '@/components/admin/console/shell';
-import { RULES, SEV, agoLabel, seedReports, type SeedReport } from '@/lib/admin/ts-seed';
+import { RULES, agoLabel, seedReports, type SeedReport } from '@/lib/admin/ts-seed';
+import { compareReportQueue, severityLabel, severityRank } from '@/lib/safety/reasons';
 
 type Report = {
   id: string;
@@ -25,6 +26,7 @@ type Report = {
   targetId: string | null;
   reporter: string;
   ageMin: number;
+  createdAt: string;
   sev: 1 | 2 | 3;
   details: string;
   evidence: boolean;
@@ -35,10 +37,14 @@ type Report = {
 };
 
 const sevCol = (v: number) => (v === 3 ? '#f87171' : v === 2 ? '#fbbf24' : '#999');
-const SEV_LABEL = ['', 'Low', 'Medium', 'Safety'];
 
 function fromSeed(r: SeedReport): Report {
-  return { ...r, targetId: null, ageMin: r.age };
+  return {
+    ...r,
+    targetId: null,
+    ageMin: r.age,
+    createdAt: new Date(Date.now() - r.age * 60000).toISOString(),
+  };
 }
 
 export default function ReportsPage() {
@@ -81,7 +87,8 @@ export default function ReportsPage() {
           targetId: x.targetId,
           reporter: x.reporterHandle ?? 'someone',
           ageMin: Math.max(1, Math.round((Date.now() - new Date(x.createdAt).getTime()) / 60000)),
-          sev: SEV[x.reason] ?? 1,
+          createdAt: x.createdAt,
+          sev: severityRank(x.reason),
           details: x.details ?? '—',
           evidence: false,
           reporterIp: x.reporterIp ?? null,
@@ -109,7 +116,7 @@ export default function ReportsPage() {
           (filt === 'all' || r.status === 'open') && (!ql || JSON.stringify(r).toLowerCase().includes(ql)),
       )
       .slice()
-      .sort((a, b) => b.sev - a.sev || a.ageMin - b.ageMin)
+      .sort((a, b) => compareReportQueue(a, b))
       .map((r) => ({
         id: r.id,
         dot: sevCol(r.sev),
@@ -209,7 +216,7 @@ export default function ReportsPage() {
                   { k: 'Reported user', v: x.target },
                   { k: 'Reporter', v: x.reporter },
                   { k: 'Received', v: agoLabel(x.ageMin) },
-                  { k: 'Severity', v: SEV_LABEL[x.sev] },
+                  { k: 'Severity', v: severityLabel(x.sev) },
                 ]}
               />
               <DetailBlock
@@ -285,10 +292,17 @@ export default function ReportsPage() {
                   title={admin ? '' : 'Admins only'}
                 />
               </ActionRow>
-              {x.reason === 'Underage' && (
+              {(x.reason === 'underage' || x.reason === 'Underage') && (
                 <Warn>
-                  Possible minor: hide the account now and escalate to an admin. Preserve evidence for NCMEC
-                  reporting.
+                  Possible minor. An in-app underage report hides the account from the map, nearby, and
+                  search, blocks new messages and matches, and flags Require ID. Release that hold from the
+                  user page if the report is unfounded. It is not a ban and it does not delete anything.
+                </Warn>
+              )}
+              {(x.reason === 'csam' || x.reason === 'Illegal content') && (
+                <Warn>
+                  Possible child sexual exploitation. Do not download, copy, or forward the material, and do
+                  not delete the account. A person decides the next step.
                 </Warn>
               )}
             </>

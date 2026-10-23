@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
 import { haveConversation, isBlocked } from '@/lib/chat/server';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { photoUrl } from '@/lib/upload/storage';
 import { addTripDays } from '@/lib/map/pin-anatomy';
 import { isMissingSchema } from '@/lib/db/schema-errors';
@@ -77,6 +78,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   if (!u || u.deleted_at || (u.mod_step && ['suspended', 'removed'].includes(u.mod_step))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+  if (id !== session.userId && (await eitherHeld(id))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   // Record the view for the viewee's premium "Who viewed you" list. Fire-and-forget: never let a
   // missing table or a write error affect the profile response. Self-views are not recorded.
@@ -87,18 +91,27 @@ export async function GET(_request: Request, { params }: { params: { id: string 
         { viewer_id: session.userId, viewee_id: id, viewed_at: new Date().toISOString() },
         { onConflict: 'viewer_id,viewee_id' },
       )
-      .then(() => undefined, () => undefined);
+      .then(
+        () => undefined,
+        () => undefined,
+      );
   }
 
   let trips = initialTrips.data ?? [];
   if (initialTrips.error && isMissingSchema(initialTrips.error)) {
-    const legacy = await supabaseAdmin.from('trips').select('city, arrive_on, nights')
+    const legacy = await supabaseAdmin
+      .from('trips')
+      .select('city, arrive_on, nights')
       .eq('user_id', id)
       .gte('arrive_on', new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10))
-      .order('arrive_on').limit(3);
+      .order('arrive_on')
+      .limit(3);
     if (!legacy.error) {
       trips = (legacy.data ?? []).map((t) => ({
-        ...t, arrival_time: null, departure_on: null, departure_time: null,
+        ...t,
+        arrival_time: null,
+        departure_on: null,
+        departure_time: null,
       }));
     }
   }
@@ -112,10 +125,15 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     const nowIso = new Date().toISOString();
     const [mutual, meet, risk] = await Promise.all([
       supabaseAdmin.from('conversations').select('id').or(pair).eq('mutual', true).limit(1),
-      supabaseAdmin.from('meets').select('id').or(pair)
-        .not('accepted_at', 'is', null).gt('ends_at', nowIso).eq('status', 'active').limit(1),
-      supabaseAdmin.from('locations').select('user_id, risk_region')
-        .in('user_id', [session.userId, id]),
+      supabaseAdmin
+        .from('meets')
+        .select('id')
+        .or(pair)
+        .not('accepted_at', 'is', null)
+        .gt('ends_at', nowIso)
+        .eq('status', 'active')
+        .limit(1),
+      supabaseAdmin.from('locations').select('user_id, risk_region').in('user_id', [session.userId, id]),
     ]);
     // Missing location safety information or query errors must never reveal a clear photo.
     if (!mutual.error && !meet.error && !risk.error) {
@@ -130,7 +148,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     }
   }
   const today = new Date().toISOString().slice(0, 10);
-  const upcoming = (trips ?? []).filter((t) => (t.departure_on ?? addTripDays(t.arrive_on, t.nights)) >= today);
+  const upcoming = (trips ?? []).filter(
+    (t) => (t.departure_on ?? addTripDays(t.arrive_on, t.nights)) >= today,
+  );
   return NextResponse.json({
     id: u.id,
     handle: u.handle,
@@ -157,7 +177,10 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     albumRequest: self ? 'self' : grant ? 'unlocked' : (request?.status ?? 'none'),
     favorite: Boolean(fav),
     favoriteAlerts: fav?.alerts ?? true,
-    trips: upcoming.map((t) => ({ city: t.city, arriveOn: t.arrive_on, nights: t.nights,
+    trips: upcoming.map((t) => ({
+      city: t.city,
+      arriveOn: t.arrive_on,
+      nights: t.nights,
       arrivalTime: t.arrival_time ? String(t.arrival_time).slice(0, 5) : null,
       departOn: t.departure_on ?? null,
       departureTime: t.departure_time ? String(t.departure_time).slice(0, 5) : null,
@@ -165,4 +188,3 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     conversation,
   });
 }
-

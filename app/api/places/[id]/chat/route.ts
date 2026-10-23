@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { ensureUserRow } from '@/lib/db/users';
 import { isMissingSchema, schemaPendingResponse } from '@/lib/db/schema-errors';
 import { DRUG_TERMS_MESSAGE, hasDrugTerms } from '@/lib/moderation/drug-words';
+import { eitherHeld } from '@/lib/safety/hold-db';
 import { displayName, userCards } from '@/lib/users/cards';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     .order('created_at', { ascending: false })
     .limit(60);
   if (error) {
-    if (isMissingSchema(error)) return NextResponse.json(schemaPendingResponse('001_schema'), { status: 503 });
+    if (isMissingSchema(error))
+      return NextResponse.json(schemaPendingResponse('001_schema'), { status: 503 });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   const rows = (data ?? []).reverse();
@@ -60,8 +62,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!isUuid(params.id)) return NextResponse.json({ error: 'Invalid place' }, { status: 400 });
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: 'Say something (up to 280 characters).' }, { status: 400 });
-  if (hasDrugTerms(parsed.data.body)) return NextResponse.json({ error: DRUG_TERMS_MESSAGE }, { status: 422 });
+  if (!parsed.success)
+    return NextResponse.json({ error: 'Say something (up to 280 characters).' }, { status: 400 });
+  if (hasDrugTerms(parsed.data.body))
+    return NextResponse.json({ error: DRUG_TERMS_MESSAGE }, { status: 422 });
+  if (await eitherHeld(g.session.userId))
+    return NextResponse.json({ error: 'Not available' }, { status: 403 });
 
   const { data: place } = await db.from('places').select('id').eq('id', params.id).maybeSingle();
   if (!place) return NextResponse.json({ error: 'Place not found' }, { status: 404 });

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { requireUser } from '@/lib/api/guard';
 import { deepseekChat } from '@/lib/ai/deepseek';
 import type { SearchResult } from '@/lib/ai/types';
+import { idsExcludedFromDiscovery } from '@/lib/safety/hold-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
         reason: `Matches: ${keywords.join(', ')}`,
       }));
 
-      return NextResponse.json({ results });
+      return NextResponse.json({ results: await withoutHeld(results) });
     }
 
     // Validate query with Deepseek: is it a reasonable search term?
@@ -113,9 +114,15 @@ Format ONLY as JSON: {"@handle": 0.8, ...}`;
 
     results.sort((a, b) => b.relevance - a.relevance);
 
-    return NextResponse.json({ results: results.slice(0, 10) });
+    return NextResponse.json({ results: (await withoutHeld(results)).slice(0, 10) });
   } catch (err) {
     console.error('search error:', err);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
+}
+
+async function withoutHeld(results: SearchResult[]): Promise<SearchResult[]> {
+  if (!results.length) return results;
+  const hidden = await idsExcludedFromDiscovery(results.map((r) => r.userId));
+  return hidden.size ? results.filter((r) => !hidden.has(r.userId)) : results;
 }

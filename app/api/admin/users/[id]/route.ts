@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { requireAdmin } from '@/lib/admin/guard';
 import { isUuid } from '@/lib/api/guard';
 import { withApi } from '@/lib/errors/server';
+import { isMissingSchema } from '@/lib/db/schema-errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,8 +56,23 @@ export const GET = withApi('/api/admin/users/[id]', async (_request: Request, { 
   ]);
   if (!user.data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const hold = await db
+    .from('users')
+    .select('safety_hold_at, safety_hold_report_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (hold.error && !isMissingSchema(hold.error)) {
+    console.error('safety hold admin read failed', hold.error.code, hold.error.message);
+  }
+  const holdFields = hold.error
+    ? { safety_hold_at: null, safety_hold_report_id: null }
+    : {
+        safety_hold_at: (hold.data?.safety_hold_at as string | null) ?? null,
+        safety_hold_report_id: (hold.data?.safety_hold_report_id as string | null) ?? null,
+      };
+
   return NextResponse.json({
-    user: user.data,
+    user: { ...user.data, ...holdFields },
     events: events.data ?? [],
     emails: emails.data ?? [],
     payments: payments.data ?? [],

@@ -5,32 +5,9 @@ import { supabaseAdmin } from '@/lib/db/client';
 import { opsAlert } from '@/lib/alerts/server';
 import { appUrl } from '@/lib/app-url';
 import { clientIp, rateLimit, tooMany } from '@/lib/api/rate-limit';
+import { PUBLIC_QUEUE_REASON, PUBLIC_REPORT_TYPES, reportAlertText } from '@/lib/safety/reasons';
 
 export const dynamic = 'force-dynamic';
-
-// Not exported: Next only allows route-handler exports from a route file.
-const PUBLIC_REPORT_TYPES = [
-  'Someone under 18',
-  'Shared without consent',
-  'Impersonation',
-  'Harassment or threats',
-  'Hate or discrimination',
-  'Scam or spam',
-  'Illegal content',
-  'Other',
-] as const;
-
-/** Public labels → the Trust & Safety queue's canonical reasons (lib/admin/ts-seed REASONS/SEV). */
-const QUEUE_REASON: Record<(typeof PUBLIC_REPORT_TYPES)[number], string> = {
-  'Someone under 18': 'Underage',
-  'Shared without consent': 'Shared my photos',
-  Impersonation: 'Fake or impersonation',
-  'Harassment or threats': 'Harassment',
-  'Hate or discrimination': 'Hate or discrimination',
-  'Scam or spam': 'Scam or spam',
-  'Illegal content': 'Illegal content',
-  Other: 'Other',
-};
 
 const Body = z.object({
   type: z.enum(PUBLIC_REPORT_TYPES),
@@ -63,13 +40,14 @@ export async function POST(request: Request) {
   }
 
   const session = await getSession().catch(() => null);
-  const urgent = type === 'Someone under 18' || type === 'Shared without consent';
+  const storedReason = PUBLIC_QUEUE_REASON[type];
+  const urgent = storedReason === 'Underage' || storedReason === 'Shared my photos';
 
   const { data, error } = await supabaseAdmin
     .from('reports')
     .insert({
       reporter_id: session?.userId ?? null,
-      reason: QUEUE_REASON[type],
+      reason: storedReason,
       details: text,
       reporter_ip: ip === 'unknown' ? null : ip,
       evidence: {
@@ -92,10 +70,7 @@ export async function POST(request: Request) {
   }
   const id = data.id as string;
 
-  await opsAlert(
-    'report',
-    `${urgent ? 'URGENT ' : ''}public report ${id} · ${type} · ${appUrl('/admin/reports')}`,
-  );
+  await opsAlert('report', reportAlertText({ reason: storedReason, reportId: id, origin: appUrl() }));
 
   if (session?.userId && supabaseAdmin) {
     await supabaseAdmin
