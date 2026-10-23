@@ -42,7 +42,7 @@ Status legend: ✅ built · 🔌 needs a real key to leave demo mode
 | 18 | **Data export** — "Download my data" JSON (profile, photos, statuses, trips, favourites, payments, notifications, events) | `app/api/me/export`, Me screen | ✅ |
 | 19 | **Weekly admin digest** — stats + revenue + errors emailed to `ADMIN_EMAILS` | `app/api/cron/digest` | ✅ |
 | 20 | **Public status page** — `/status` reads `/api/status` (no secrets) | `app/status` | ✅ |
-| 21 | **Outbound ops alerts** — Slack/Discord-compatible webhook on payment failures, new reports, error spikes, new feedback | `lib/alerts/` | ✅ 🔌 `OPS_WEBHOOK_URL` |
+| 21 | **Outbound ops alerts** — email and/or Slack/Discord webhook on payment failures, new reports, error spikes, new feedback | `lib/alerts/` | ✅ 🔌 `OPS_ALERT_EMAIL` and/or `OPS_WEBHOOK_URL` |
 
 ---
 
@@ -72,6 +72,7 @@ EMAIL_UNSUBSCRIBE_SECRET=  # signs unsubscribe links (falls back to NEXTAUTH_SEC
 POSTHOG_KEY=               # optional: mirror analytics events to PostHog
 POSTHOG_HOST=https://us.i.posthog.com
 SENTRY_DSN=                # optional: mirror captured errors to Sentry
-OPS_WEBHOOK_URL=           # optional: Slack/Discord incoming webhook for ops alerts
+OPS_ALERT_EMAIL=           # optional: one or comma-separated inboxes for ops alerts (Resend)
+OPS_WEBHOOK_URL=           # optional: Slack/Discord incoming webhook for the same ops alerts
 NEXT_PUBLIC_APP_URL=       # absolute URL used inside emails (falls back to NEXTAUTH_URL)
 ```

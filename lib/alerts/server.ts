@@ -1,44 +1,38 @@
 import 'server-only';
+import { sendEmail } from '@/lib/email';
+import { dispatchOpsAlert } from './dispatch';
+import { opsAlertsConfigured, opsAlertsDetail, type AlertKind } from './policy';
 
 /**
- * Outbound ops alerts to a Slack- or Discord-compatible incoming webhook (OPS_WEBHOOK_URL).
- * Both accept `{ "text": ... }` (Slack) / `{ "content": ... }` (Discord), so we send both keys.
- * Without a URL, alerts log to the console. Never throws.
+ * Outbound ops alerts.
+ *   OPS_ALERT_EMAIL — one or comma-separated inboxes, sent through the app email provider (Resend).
+ *   OPS_WEBHOOK_URL — optional Slack/Discord incoming webhook ({ text, content }).
+ * Either channel is enough. Bodies are redacted and the same key is skipped for five minutes.
+ * Never throws.
  */
 
-export type AlertKind = 'payment' | 'report' | 'error' | 'feedback' | 'signup' | 'ops';
+export type { AlertKind };
+export { opsAlertsConfigured, opsAlertsDetail };
 
-const ICON: Record<AlertKind, string> = {
-  payment: '💳',
-  report: '🚩',
-  error: '🔥',
-  feedback: '💬',
-  signup: '🎉',
-  ops: '🛠️',
-};
-
-export function opsAlertsConfigured(): boolean {
-  return Boolean(process.env.OPS_WEBHOOK_URL);
-}
+const seen = new Map<string, number>();
 
 export async function opsAlert(kind: AlertKind, message: string): Promise<boolean> {
-  const text = `${ICON[kind]} [πroka ${kind}] ${message}`.slice(0, 1900);
-  const url = process.env.OPS_WEBHOOK_URL;
-  if (!url) {
-    console.info(`[ops-alert:console] ${text}`);
-    return false;
-  }
   try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, content: text }),
-      cache: 'no-store',
+    const result = await dispatchOpsAlert(kind, message, {
+      env: process.env,
+      now: () => Date.now(),
+      fetch: globalThis.fetch,
+      seen,
+      sendEmail: async (input) => {
+        const res = await sendEmail({ ...input, template: 'ops-alert' });
+        return { ok: res.ok };
+      },
+      info: (line) => console.info(line),
+      error: (line) => console.error(line),
     });
-    if (!r.ok) console.error('ops webhook responded', r.status);
-    return r.ok;
-  } catch (e) {
-    console.error('ops webhook failed', e);
+    return result.ok;
+  } catch {
+    console.error('ops alert failed');
     return false;
   }
 }

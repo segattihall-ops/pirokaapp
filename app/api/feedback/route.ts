@@ -7,6 +7,7 @@ import { rateLimit, tooMany } from '@/lib/api/rate-limit';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { opsAlert } from '@/lib/alerts/server';
+import { appUrl } from '@/lib/app-url';
 import { withApi } from '@/lib/errors/server';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,9 @@ export const POST = withApi('/api/feedback', async (request: Request) => {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   void track({ userId: session.userId, event: EVENTS.feedback_sent, props: { kind: b.kind } });
-  void opsAlert('feedback', `${b.kind}: ${b.message.slice(0, 200)}${b.message.length > 200 ? '…' : ''}`);
+  await opsAlert(
+    'feedback',
+    `${b.kind} ${data.id}${b.path ? ` · ${b.path}` : ''} · ${appUrl('/admin/feedback')}`,
+  );
   return NextResponse.json({ ok: true, id: data.id });
 });

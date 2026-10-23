@@ -5,7 +5,7 @@ import { pushConfigured } from '@/lib/push/server';
 import { emailConfigured, emailProvider } from '@/lib/email';
 import { analyticsForwardingConfigured } from '@/lib/analytics/server';
 import { errorForwardingConfigured } from '@/lib/errors/server';
-import { opsAlertsConfigured } from '@/lib/alerts/server';
+import { opsAlertsConfigured, opsAlertsDetail } from '@/lib/alerts/server';
 
 export type ComponentState = 'ok' | 'degraded' | 'off';
 export type ComponentStatus = {
@@ -78,7 +78,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
     key: 'alerts',
     label: 'Ops alerts',
     state: opsAlertsConfigured() ? 'ok' : 'off',
-    detail: opsAlertsConfigured() ? 'Webhook configured' : 'OPS_WEBHOOK_URL missing',
+    detail: opsAlertsDetail(),
   });
   components.push({
     key: 'cron',

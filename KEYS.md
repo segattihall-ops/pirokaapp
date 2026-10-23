@@ -223,8 +223,11 @@ Analytics and error tracking are stored in Postgres (`analytics_events`, `error_
 |---|---|---|
 | `POSTHOG_KEY` + `POSTHOG_HOST` | https://posthog.com → Project settings | copy of every analytics event (`https://us.i.posthog.com` or `https://eu.i.posthog.com`) |
 | `SENTRY_DSN` | https://sentry.io → Project → Client Keys | copy of every captured error |
-| `OPS_WEBHOOK_URL` | Slack → Incoming Webhooks, or Discord → Channel → Integrations → Webhooks | one-line alerts for failed payments, new reports, error spikes, feedback |
+| `OPS_ALERT_EMAIL` | Any inbox you read. One address, or several separated by commas. | Emails the same alerts through the Resend setup already used by the app (`RESEND_API_KEY` + `EMAIL_FROM`). Subject is `[PIROKA alert] <type>`. |
+| `OPS_WEBHOOK_URL` | Slack → Incoming Webhooks, or Discord → Channel → Integrations → Webhooks | optional one-line copy of the same alerts. Set this, the email, or both. |
 | `FLAG_<KEY>` | — | `1`/`0` overrides a feature flag from the environment (e.g. `FLAG_SMART_SEARCH=0`) |
+
+Ops alerts fire for failed payments, new reports, error spikes and feedback. `/api/status` shows Ops alerts **ok** when `OPS_ALERT_EMAIL` or `OPS_WEBHOOK_URL` is set (detail `email`, `webhook`, or `email + webhook`) and **off** only when neither is set. The message is the type, record id, admin link, count and timestamp. Coordinates, private chat, identity documents and report narratives are stripped before send. The same alert key is skipped for five minutes on that server instance, so a tight loop cannot fill the inbox. A failed send is logged and does not fail the request that raised the alert.
 
 The cron routes in `vercel.json` (`/api/cron/campaigns`, `/api/cron/lifecycle`, `/api/cron/digest`) reuse
 `CRON_SECRET`; nothing else is needed. Apply `lib/db/migrations/032_post_launch_systems.sql` in the Supabase SQL editor

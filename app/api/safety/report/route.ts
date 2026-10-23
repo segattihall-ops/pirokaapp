@@ -6,6 +6,7 @@ import { ensureUserRow } from '@/lib/db/users';
 import { track } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { opsAlert } from '@/lib/alerts/server';
+import { appUrl } from '@/lib/app-url';
 import { clientIp } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,6 @@ export async function POST(request: Request) {
     details: { reason },
   });
   void track({ userId: session.userId, event: EVENTS.report_filed, props: { reason } });
-  void opsAlert('report', `New ${reason} report ${data.id} — review at /admin`);
+  await opsAlert('report', `New ${reason} report ${data.id} · ${appUrl('/admin/reports')}`);
   return NextResponse.json({ id: data.id });
 }
