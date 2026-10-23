@@ -1,6 +1,6 @@
 # Report severity and the underage protective hold
 
-Operational note for the queue and the in-app report path. Not legal advice. The Trust & Safety runbook (draft PR #51) describes the human steps; this file is the map the code uses.
+Operational note for the queue and the in-app report path. Not legal advice. `docs/trust-safety/RUNBOOK.md` is the staff procedure. This file is the map the code uses.
 
 The admin header stays “Highest severity first · SLA: safety 4h, other 24h”. **Critical** is that 4-hour clock. Medium and low share the 24-hour clock. A person still decides every action except the underage hold below.
 
