@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/db/client';
+import { newCheckoutClosedResponse } from '@/lib/billing/guard';
 import { PAYPAL_PLANS, paypalConfigured, revisePayPalSubscription } from '@/lib/billing/paypal';
 import { billingStatus } from '@/lib/billing/server';
 import { appUrl } from '@/lib/app-url';
@@ -18,6 +19,9 @@ const Body = z.object({ plan: z.enum(['plus', 'premium']) });
  * `approveUrl`; the plan flips when the webhook reports the updated plan_id.
  */
 export const POST = withApi('/api/billing/change', async (request: Request) => {
+  // A plan change revises the PayPal price. While charging is off, refuse before PayPal.
+  const closed = newCheckoutClosedResponse();
+  if (closed) return closed;
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!paypalConfigured() || !supabaseAdmin) {
@@ -41,7 +45,8 @@ export const POST = withApi('/api/billing/change', async (request: Request) => {
     // Nothing to revise: the client starts a fresh checkout for the chosen plan.
     return NextResponse.json({ ok: false, needsCheckout: true, plan: target });
   }
-  if (user.plan === target) return NextResponse.json({ ok: true, ...(await billingStatus(session.userId, true)) });
+  if (user.plan === target)
+    return NextResponse.json({ ok: true, ...(await billingStatus(session.userId, true)) });
 
   let approveUrl: string | null = null;
   try {

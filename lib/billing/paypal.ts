@@ -1,9 +1,13 @@
 import 'server-only';
+import { paypalKeysPresent } from './enabled';
 
 /**
  * PayPal Subscriptions (REST v1). Server only.
  * Env: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_ENV (sandbox|live),
  *      NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID, NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID
+ *
+ * New checkouts are additionally gated by BILLING_ENABLED (lib/billing/enabled.ts).
+ * This module stays available for existing subscriptions when that flag is off.
  */
 
 export type Plan = 'free' | 'plus' | 'premium';
@@ -17,8 +21,9 @@ export function paypalBaseUrl() {
   return process.env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 }
 
+/** Server credentials exist. Does not read BILLING_ENABLED. */
 export function paypalConfigured() {
-  return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+  return paypalKeysPresent();
 }
 
 export function planFromPayPalPlanId(planId: string | null | undefined): Plan {
@@ -73,7 +78,10 @@ export type PayPalSubscription = {
   status: 'APPROVAL_PENDING' | 'APPROVED' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED' | 'EXPIRED';
   custom_id?: string;
   subscriber?: { email_address?: string; payer_id?: string };
-  billing_info?: { next_billing_time?: string; last_payment?: { amount?: { value: string; currency_code: string } } };
+  billing_info?: {
+    next_billing_time?: string;
+    last_payment?: { amount?: { value: string; currency_code: string } };
+  };
 };
 
 export function getPayPalSubscription(id: string) {

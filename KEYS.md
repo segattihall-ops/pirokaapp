@@ -88,7 +88,7 @@ Finally remove `NEXT_PUBLIC_AUTH_DEMO` from Production so the demo cookie can't 
 
 ---
 
-## 2. PayPal — **Required** for Plus / Premium
+## 2. PayPal — keys for existing subscriptions; new checkouts need `BILLING_ENABLED=true`
 
 1. https://developer.paypal.com → **Apps & Credentials** → create a REST app (Sandbox first, then Live).
 2. **Products → Subscriptions → Plans**: create *πroka Plus* ($5 / month) and *πroka Premium* ($10 / month). Copy each Plan ID (`P-…`).
@@ -99,6 +99,7 @@ Finally remove `NEXT_PUBLIC_AUTH_DEMO` from Production so the demo cookie can't 
 
 | Variable | Value |
 |---|---|
+| `BILLING_ENABLED` | Leave **unset** at launch. Exactly `true` allows new Plus/Premium checkouts. Any other value stays off. Does not affect webhooks, cancellation, or receipts. |
 | `PAYPAL_ENV` | `sandbox` while testing, `live` for launch |
 | `PAYPAL_CLIENT_ID` | REST app Client ID |
 | `PAYPAL_CLIENT_SECRET` | REST app Secret |

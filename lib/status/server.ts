@@ -1,6 +1,6 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/db/client';
-import { paypalConfigured } from '@/lib/billing/paypal';
+import { billingStatusDetail } from '@/lib/billing/enabled';
 import { pushConfigured } from '@/lib/push/server';
 import { emailConfigured, emailProvider } from '@/lib/email';
 import { analyticsForwardingConfigured } from '@/lib/analytics/server';
@@ -48,13 +48,12 @@ export async function getSystemStatus(): Promise<SystemStatus> {
       ? `Provider: ${emailProvider()}`
       : 'Console only — set RESEND_API_KEY or EMAIL_SERVER',
   });
+  const billing = billingStatusDetail();
   components.push({
     key: 'billing',
     label: 'Billing',
-    state: paypalConfigured() ? 'ok' : 'off',
-    detail: paypalConfigured()
-      ? `PayPal ${process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox'}`
-      : 'PayPal keys missing',
+    state: billing.state,
+    detail: billing.detail,
   });
   components.push({
     key: 'push',

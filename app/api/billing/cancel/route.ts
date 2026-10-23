@@ -27,6 +27,8 @@ const PAUSE_DAYS = 30;
  * PayPal for a month (`paused_until`, auto-resumed by the lifecycle cron); resume re-activates a
  * paused subscription. A cancelled PayPal subscription cannot be revived — resume then answers
  * `needsCheckout` so the client shows the plan picker.
+ *
+ * BILLING_ENABLED does not apply here. An existing subscriber can still cancel, pause, and resume.
  */
 export const POST = withApi('/api/billing/cancel', async (request: Request) => {
   const session = await getSession();
@@ -68,7 +70,11 @@ export const POST = withApi('/api/billing/cancel', async (request: Request) => {
       return NextResponse.json({ ok: true, ...(await billingStatus(session.userId, true)) });
     }
     // Cancelled at PayPal: a new subscription is the only way back.
-    return NextResponse.json({ ok: false, needsCheckout: true, ...(await billingStatus(session.userId, true)) });
+    return NextResponse.json({
+      ok: false,
+      needsCheckout: true,
+      ...(await billingStatus(session.userId, true)),
+    });
   }
 
   if (action === 'pause') {
@@ -85,7 +91,11 @@ export const POST = withApi('/api/billing/cancel', async (request: Request) => {
       .update({ paused_until: until, subscription_status: 'SUSPENDED' })
       .eq('id', session.userId);
     await audit('billing.pause', { until });
-    await track({ userId: session.userId, event: 'subscription_paused', props: { plan: String(user?.plan ?? '') } });
+    await track({
+      userId: session.userId,
+      event: 'subscription_paused',
+      props: { plan: String(user?.plan ?? '') },
+    });
     return NextResponse.json({ ok: true, ...(await billingStatus(session.userId, true)) });
   }
 

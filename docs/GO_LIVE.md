@@ -12,6 +12,27 @@ blocking defects found by the inspection are fixed in that PR.
 **Operations: 4 steps remain that only you can approve/do** (section 3). Two are one-line
 production changes I can run the moment you say go; two are keys/legal.
 
+## Billing at launch
+
+PIROKA does not charge at launch. New Plus/Premium checkouts stay **off** unless
+`BILLING_ENABLED` is exactly `true`. Leave that variable **unset** in Vercel. PayPal keys can stay
+in place.
+
+With it unset:
+
+- `/api/status` reports billing **off**, detail `billing disabled by BILLING_ENABLED`.
+- `POST /api/billing/checkout`, `/api/billing/subscribe`, and `/api/billing/change` return **503**
+  and do not call PayPal.
+- `GET /api/billing/status` reports `configured: false` and `billingEnabled: false`, so Me → Plan &
+  billing shows “Billing not available yet” with no PayPal buttons and no upgrade CTA. The browser
+  does not decide this from `NEXT_PUBLIC_PAYPAL_*` (those are fixed at build time).
+- Webhooks, cancellation (including pause and resume), and receipts keep working for anyone who
+  already has a subscription.
+
+Set `BILLING_ENABLED=true` only when the owner decides to charge. With the flag on, checkout
+behaves as it did when PayPal keys alone opened it. `OPEN_ENDED` launch access in
+`lib/billing/launch.ts` is a separate switch and stays on.
+
 ---
 
 ## 1. What was checked
@@ -22,7 +43,12 @@ production changes I can run the moment you say go; two are keys/legal.
 | Playwright e2e (local, demo mode) | 80 passed · 11 failed — all 11 are stale tests or environment-only (expect `400` where routes now answer `401` first, need a local DB or `E2E_AUTH_TOKEN`, or test the SW in dev mode). No product bug behind any of them. |
 | Production smoke (`e2e/smoke.full.spec.ts` against www) | Homepage ✔; sign-in is blocked for the headless browser by **Cloudflare Turnstile** (correct — bot protection works). Post-gate flows verified locally instead. |
 | Production probes | `/`, `/help/*`, `/e/*`, `/manifest.webmanifest` 200 · `/app`, `/admin` → gate redirect ✔ · HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy present ✔ · apex → www 308 ✔ |
-| `/api/status` (production) | database ok · email ok (Resend) · push ok · age ok (Didit) · cron ok · **billing OFF (PayPal keys missing)** · **ops alerts OFF (neither OPS_ALERT_EMAIL nor OPS_WEBHOOK_URL was set)** |
+| `/api/status` (production, 2026-10-18) | database ok · email ok (Resend) · push ok · age ok (Didit) · cron ok · **billing OFF (PayPal keys were missing that day)** · **ops alerts OFF (neither OPS_ALERT_EMAIL nor OPS_WEBHOOK_URL was set)** |
+
+The 2026-10-18 reading is historical. PayPal keys may be present now. Checkout stays hidden because
+`BILLING_ENABLED` is unset, not because the keys are missing. See **Billing at launch** above.
+Ops alerts stay off until `OPS_ALERT_EMAIL` or `OPS_WEBHOOK_URL` is set (detail `email`, `webhook`,
+or `email + webhook`). See section 3.3.
 | Supabase security advisors | No critical πroka finding. 25 tables “RLS on, no policies” = intended (server uses the service role; anon is denied). `spatial_ref_sys` is PostGIS’s own table. |
 | Security audit (all ~130 API routes, middleware, webhooks, crons) | 3 critical, 5 high → fixed (section 2) |
 | Config / env / schema audit | Production DB was missing the tables of 7 migrations → sync migration written (section 3.1) |
@@ -120,10 +146,12 @@ Confirm present / set:
 - `OPS_WEBHOOK_URL` — optional Slack/Discord webhook of the same one-line alert. Email alone is
   enough: `/api/status` reports Ops alerts **ok** with detail `email`, `webhook`, or
   `email + webhook`. It stays **off** only when both are unset.
-- PayPal (only if billing should be live today): `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
-  `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV=live`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`,
-  `NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID`, `NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID`. Right now checkout is
-  hidden (`billing: off`), which is a safe state.
+- PayPal keys may stay set: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`,
+  `PAYPAL_ENV=live`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `NEXT_PUBLIC_PAYPAL_PLAN_PLUS_ID`,
+  `NEXT_PUBLIC_PAYPAL_PLAN_PREMIUM_ID`. They do **not** open checkout by themselves.
+- `BILLING_ENABLED` — leave **unset** (do not set it to `true`). Unset means new subscriptions are
+  off. Webhooks, cancellation, and receipts still run off the PayPal keys above. Setting exactly
+  `true` turns checkout back on with no other code change. A redeploy picks up the value.
 - Must be **absent**: `NEXT_PUBLIC_AUTH_DEMO`.
 
 ### 3.4 Legal sign-off

@@ -49,6 +49,7 @@ async function mail(
 }
 
 export const POST = withApi('/api/webhooks/paypal', async (request: Request) => {
+  // BILLING_ENABLED does not apply: PayPal must still deliver events for existing subscriptions.
   if (!paypalConfigured() || !supabaseAdmin) {
     return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });
   }
