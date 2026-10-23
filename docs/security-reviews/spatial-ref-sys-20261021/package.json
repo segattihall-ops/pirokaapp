@@ -1,0 +1,11 @@
+{
+  "name": "piroka-spatial-ref-sys-security-review",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node acl-fixture-test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11"
+  }
+}

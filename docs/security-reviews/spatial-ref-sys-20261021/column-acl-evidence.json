@@ -1,0 +1,8 @@
+{
+  "observed_at_utc": "2026-10-21 15:05:29 UTC",
+  "project_id": "clwqmzgoqfqibnfevhyb",
+  "table": "public.spatial_ref_sys",
+  "column_count": 5,
+  "explicit_column_acl_count": 0,
+  "scope": "Read-only catalog metadata; no data rows or production mutations"
+}
