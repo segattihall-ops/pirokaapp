@@ -9,7 +9,10 @@ type AreaMessage = {
   content: string;
   created_at: string;
   distance_m: number;
+  reply_count?: number;
 };
+
+type Reply = { id: number; author_id: string; content: string; created_at: string };
 
 const BASE_POLL_MS = 30_000;
 const MAX_POLL_MS = 5 * 60_000;
@@ -22,6 +25,10 @@ export function AreaBoard({ userId: _userId }: { userId: string }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [paused, setPaused] = useState(false);
+  const [openThread, setOpenThread] = useState<number | null>(null);
+  const [replies, setReplies] = useState<Record<number, Reply[]>>({});
+  const [replyText, setReplyText] = useState('');
+  const [replyBusy, setReplyBusy] = useState(false);
 
   // Polling state lives in refs so a re-render never spawns a second loop (the old effect leaked one
   // interval per render, which flooded the network with "Failed to fetch").
@@ -122,6 +129,50 @@ export function AreaBoard({ userId: _userId }: { userId: string }) {
     }
   };
 
+  const loadReplies = useCallback(async (id: number) => {
+    const r = await fetch(`/api/area/messages?parentId=${id}`, { cache: 'no-store' }).catch(() => null);
+    if (!r?.ok) return;
+    const j = (await r.json().catch(() => ({}))) as { replies?: Reply[] };
+    setReplies((prev) => ({ ...prev, [id]: j.replies ?? [] }));
+  }, []);
+
+  const toggleThread = (id: number) => {
+    setReplyText('');
+    if (openThread === id) {
+      setOpenThread(null);
+      return;
+    }
+    setOpenThread(id);
+    if (!replies[id]) void loadReplies(id);
+  };
+
+  const postReply = async (id: number) => {
+    if (!pos || !replyText.trim()) return;
+    setReplyBusy(true);
+    setErr('');
+    try {
+      const r = await fetch('/api/area/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: pos.lat, lon: pos.lon, content: replyText.trim(), parentId: id }),
+      });
+      if (!r.ok) {
+        setErr((await r.json().catch(() => ({}))).error ?? 'Failed to reply');
+        return;
+      }
+      setReplyText('');
+      await loadReplies(id);
+      // Bump the reply count locally so the thread control stays in sync without a full refetch.
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m)),
+      );
+    } catch {
+      setErr('Failed to reply');
+    } finally {
+      setReplyBusy(false);
+    }
+  };
+
   return (
     <section className="mx-auto flex w-full max-w-[560px] animate-in flex-col gap-4 px-4 py-6 sm:px-6 sm:py-10">
       <div className="flex items-baseline justify-between gap-4">
@@ -160,7 +211,11 @@ export function AreaBoard({ userId: _userId }: { userId: string }) {
         <div className="flex items-center justify-between gap-3">
           <p className="text-[12px] text-danger">{err}</p>
           {paused && (
-            <button type="button" onClick={resume} className="tap-link shrink-0 text-[12px] font-semibold text-green">
+            <button
+              type="button"
+              onClick={resume}
+              className="tap-link shrink-0 text-[12px] font-semibold text-green"
+            >
               Resume
             </button>
           )}
@@ -173,16 +228,73 @@ export function AreaBoard({ userId: _userId }: { userId: string }) {
         <p className="text-[13px] text-fg-3">No messages in this area yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {messages.map((msg) => (
-            <li key={msg.id} className="glass rounded-card border border-line-2 px-4 py-3">
-              <p className="text-[13px] leading-relaxed text-fg">{msg.content}</p>
-              <p className="mt-2 text-[11px] text-fg-4">
-                {msg.distance_m < 1000
-                  ? `${msg.distance_m}m away`
-                  : `${(msg.distance_m / 1000).toFixed(1)}km away`}
-              </p>
-            </li>
-          ))}
+          {messages.map((msg) => {
+            const count = msg.reply_count ?? 0;
+            const open = openThread === msg.id;
+            const thread = replies[msg.id];
+            return (
+              <li key={msg.id} className="glass rounded-card border border-line-2 px-4 py-3">
+                <p className="text-[13px] leading-relaxed text-fg">{msg.content}</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <p className="text-[11px] text-fg-4">
+                    {msg.distance_m < 1000
+                      ? `${msg.distance_m}m away`
+                      : `${(msg.distance_m / 1000).toFixed(1)}km away`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => toggleThread(msg.id)}
+                    aria-expanded={open}
+                    className="tap-link text-[11px] font-semibold text-green"
+                  >
+                    {count > 0 ? `${count} ${count === 1 ? 'reply' : 'replies'}` : 'Reply'}
+                  </button>
+                </div>
+
+                {open && (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-line-1 pt-3">
+                    {thread === undefined ? (
+                      <p className="text-[12px] text-fg-3">Loading…</p>
+                    ) : thread.length === 0 ? (
+                      <p className="text-[12px] text-fg-3">No replies yet. Be the first.</p>
+                    ) : (
+                      thread.map((rep) => (
+                        <p
+                          key={rep.id}
+                          className="rounded-input bg-ink-900 px-3 py-2 text-[13px] leading-relaxed text-fg-2"
+                        >
+                          {rep.content}
+                        </p>
+                      ))
+                    )}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        postReply(msg.id);
+                      }}
+                      className="mt-1 flex items-end gap-2"
+                    >
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Write a reply…"
+                        maxLength={280}
+                        rows={1}
+                        className="input min-h-10 flex-1 resize-none py-2 text-[13px]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={replyBusy || !replyText.trim() || !pos}
+                        className="btn-secondary h-10 shrink-0 text-[13px]"
+                      >
+                        {replyBusy ? '…' : 'Send'}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 

@@ -15,9 +15,10 @@ const Body = z.object({
   lat: z.number().min(-90).max(90),
   lon: z.number().min(-180).max(180),
   content: z.string().trim().min(1).max(280),
+  parentId: z.number().int().positive().optional(),
 });
 
-/** Post a public message to the area. */
+/** Post a public message to the area, or a reply to an existing post (`parentId`). */
 export async function POST(request: Request) {
   const g = await requireUser();
   if (g.error) return g.error;
@@ -25,14 +26,31 @@ export async function POST(request: Request) {
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-  const { lat, lon, content } = parsed.data;
+  const { lat, lon, content, parentId } = parsed.data;
   if (hasDrugTerms(content)) return NextResponse.json({ error: DRUG_TERMS_MESSAGE }, { status: 422 });
   if (await eitherHeld(session.userId)) return NextResponse.json({ error: 'Not available' }, { status: 403 });
+
+  // A reply must hang off a real top-level post — replies are one level deep, never a reply to a reply.
+  if (parentId !== undefined) {
+    const { data: parent } = await supabaseAdmin!
+      .from('area_messages')
+      .select('id, parent_id')
+      .eq('id', parentId)
+      .maybeSingle();
+    if (!parent || parent.parent_id !== null)
+      return NextResponse.json({ error: 'That post is no longer available' }, { status: 400 });
+  }
 
   const { data, error } = await supabaseAdmin!
     .from('area_messages')
     // The board is public to everyone nearby, so only a ~1 km grid cell is kept, never the exact spot.
-    .insert({ author_id: session.userId, lat: coarse(lat), lon: coarse(lon), content })
+    .insert({
+      author_id: session.userId,
+      lat: coarse(lat),
+      lon: coarse(lon),
+      content,
+      parent_id: parentId ?? null,
+    })
     .select('id, author_id, created_at')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -45,6 +63,24 @@ export async function GET(request: Request) {
   if (g.error) return g.error;
 
   const url = new URL(request.url);
+
+  // Thread view: the replies under one top-level post, oldest first. No distance — a reply inherits
+  // its parent's place in the board.
+  const parentIdRaw = url.searchParams.get('parentId');
+  if (parentIdRaw) {
+    const parentId = Number(parentIdRaw);
+    if (!Number.isInteger(parentId) || parentId <= 0)
+      return NextResponse.json({ error: 'parentId invalid' }, { status: 400 });
+    const { data, error } = await supabaseAdmin!
+      .from('area_messages')
+      .select('id, author_id, content, created_at')
+      .eq('parent_id', parentId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ replies: data ?? [] });
+  }
+
   const lat = parseFloat(url.searchParams.get('lat') ?? '0');
   const lon = parseFloat(url.searchParams.get('lon') ?? '0');
 
@@ -53,7 +89,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabaseAdmin!
     .rpc('nearby_area_messages', { p_lat: lat, p_lon: lon, p_radius_m: RADIUS_M })
-    .select('id, author_id, content, created_at, distance_m')
+    .select('id, author_id, content, created_at, distance_m, reply_count')
     .order('created_at', { ascending: false })
     .limit(50);
 
