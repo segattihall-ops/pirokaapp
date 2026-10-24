@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { quickExit } from '@/components/safety/quick-exit';
 import { usePathname } from 'next/navigation';
 import { LogoTile } from '@/components/logo';
 import { NAV_ICON_PATHS } from '@/lib/design/icon-paths';
 
-type Item = { href: string; label: string; icon: React.ReactNode };
+type NavKey = 'map' | 'pulse' | 'chats' | 'places' | 'me';
+type Item = { href: string; key: NavKey; icon: React.ReactNode };
 
 const stroke = {
   fill: 'none',
@@ -17,11 +19,11 @@ const stroke = {
 } as const;
 
 const ITEMS: Item[] = [
-  { href: '/app/map', label: 'MAP', icon: <NavIcon path={NAV_ICON_PATHS.map} /> },
-  { href: '/app/pulse', label: 'PULSE', icon: <NavIcon path={NAV_ICON_PATHS.pulse} /> },
-  { href: '/app/chats', label: 'CHATS', icon: <NavIcon path={NAV_ICON_PATHS.chats} /> },
-  { href: '/app/places', label: 'PLACES', icon: <NavIcon path={NAV_ICON_PATHS.places} /> },
-  { href: '/app/me', label: 'ME', icon: <NavIcon path={NAV_ICON_PATHS.me} /> },
+  { href: '/app/map', key: 'map', icon: <NavIcon path={NAV_ICON_PATHS.map} /> },
+  { href: '/app/pulse', key: 'pulse', icon: <NavIcon path={NAV_ICON_PATHS.pulse} /> },
+  { href: '/app/chats', key: 'chats', icon: <NavIcon path={NAV_ICON_PATHS.chats} /> },
+  { href: '/app/places', key: 'places', icon: <NavIcon path={NAV_ICON_PATHS.places} /> },
+  { href: '/app/me', key: 'me', icon: <NavIcon path={NAV_ICON_PATHS.me} /> },
 ];
 
 function NavIcon({ path }: { path: string }) {
@@ -39,6 +41,7 @@ export function useActive(href: string) {
 
 function NavLink({ item, variant, badge }: { item: Item; variant: 'rail' | 'tab'; badge?: number }) {
   const active = useActive(item.href);
+  const t = useTranslations('nav');
   const base =
     variant === 'rail'
       ? 'relative flex h-[58px] w-[60px] flex-col items-center justify-center gap-1.5 rounded-[14px]'
@@ -65,7 +68,7 @@ function NavLink({ item, variant, badge }: { item: Item; variant: 'rail' | 'tab'
           </span>
         ) : null}
       </span>
-      <span className="text-nav">{item.label}</span>
+      <span className="text-nav">{t(item.key)}</span>
     </Link>
   );
 }

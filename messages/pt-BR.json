@@ -15,10 +15,10 @@
     "selectPositions": "Selecione sua(s) posição(ões)"
   },
   "nav": {
-    "home": "Início",
-    "discover": "Descobrir",
-    "places": "Locais",
-    "messages": "Mensagens",
-    "me": "Perfil"
+    "map": "MAPA",
+    "pulse": "PULSO",
+    "chats": "CHATS",
+    "places": "LUGARES",
+    "me": "EU"
   }
 }

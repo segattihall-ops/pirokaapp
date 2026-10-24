@@ -15,10 +15,10 @@
     "selectPositions": "Select your position(s)"
   },
   "nav": {
-    "home": "Home",
-    "discover": "Discover",
-    "places": "Places",
-    "messages": "Messages",
-    "me": "Me"
+    "map": "MAP",
+    "pulse": "PULSE",
+    "chats": "CHATS",
+    "places": "PLACES",
+    "me": "ME"
   }
 }

@@ -12,13 +12,13 @@
     "versatile": "Versátil",
     "bottom": "Pasivo",
     "selectEthnicity": "Selecciona tu etnia",
-    "selectPositions": "Selecciona tu(s) posición(iones)"
+    "selectPositions": "Selecciona tu(s) posición(es)"
   },
   "nav": {
-    "home": "Inicio",
-    "discover": "Descubrir",
-    "places": "Lugares",
-    "messages": "Mensajes",
-    "me": "Perfil"
+    "map": "MAPA",
+    "pulse": "PULSO",
+    "chats": "CHATS",
+    "places": "LUGARES",
+    "me": "YO"
   }
 }
