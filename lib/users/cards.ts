@@ -19,7 +19,7 @@ export async function userCards(ids: string[]): Promise<Map<string, UserCard>> {
 
   const now = new Date().toISOString();
   const [{ data: users }, { data: photos }, { data: statuses }] = await Promise.all([
-    supabaseAdmin.from('users').select('id, handle, verified_at, deleted_at').in('id', unique),
+    supabaseAdmin.from('users').select('id, handle, age_verified, deleted_at').in('id', unique),
     supabaseAdmin.from('photos').select('user_id, blur_key').in('user_id', unique).eq('slot', 0),
     supabaseAdmin
       .from('statuses')
@@ -38,7 +38,7 @@ export async function userCards(ids: string[]): Promise<Map<string, UserCard>> {
       id: u.id,
       handle: u.handle ?? null,
       photo: blur ? (urlOf.get(blur) ?? null) : null,
-      verified: Boolean(u.verified_at),
+      verified: Boolean(u.age_verified),
       intent: s?.intent ?? null,
       intentEndsAt: s?.ends_at ?? null,
     });

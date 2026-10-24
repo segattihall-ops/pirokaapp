@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/server';
 import { ageProvider, createPersonaInquiry } from '@/lib/age';
-import { createDiditSession, needsIdRecheck } from '@/lib/age/didit';
+import { bindRecheckSession, createDiditSession, needsIdRecheck } from '@/lib/age/didit';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +19,9 @@ export async function POST() {
     const mode = (await needsIdRecheck(session.userId)) ? 'id' : 'standard';
     const result = await createDiditSession(session.userId, mode);
     if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 502 });
+    // While a re-check is open, bind this fresh ID session as the only one that may clear the gate,
+    // so an old approved selfie (or an earlier ID session) cannot be replayed at /api/age/verify.
+    if (mode === 'id') await bindRecheckSession(session.userId, result.sessionId);
     return NextResponse.json({ provider, url: result.url, sessionId: result.sessionId, mode });
   }
   if (provider === 'persona') {
