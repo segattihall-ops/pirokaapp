@@ -8,12 +8,12 @@ import { SignupChat } from './signup-chat';
 import { useGeo } from './use-geo';
 
 const FOOTER = [
+  ['Legal Center', '/legal'],
   ['Terms', '/help/terms'],
   ['Privacy', '/help/privacy'],
-  ['Community Guidelines', '/help/guidelines'],
+  ['Billing', '/help/billing'],
   ['Safety', '/help/safety'],
-  ['Report Content', '/help/report'],
-  ['18 U.S.C. § 2257', '/help/2257'],
+  ['Report / NCII', '/help/report'],
 ] as const;
 
 export function HomeClient({
