@@ -51,10 +51,12 @@ export const IN_APP_REASON_LABELS: Record<InAppReason, string> = {
 /** Public "Report or request removal" labels. Stored reason is PUBLIC_QUEUE_REASON[label]. */
 export const PUBLIC_REPORT_TYPES = [
   'Someone under 18',
+  'Sexual content involving a minor',
   'Shared without consent',
+  'Trafficking or commercial sexual services',
+  'Threats or stalking',
   'Impersonation',
-  'Harassment or threats',
-  'Hate or discrimination',
+  'Harassment or hate',
   'Scam or spam',
   'Illegal content',
   'Other',
@@ -64,10 +66,12 @@ export type PublicReportType = (typeof PUBLIC_REPORT_TYPES)[number];
 
 export const PUBLIC_QUEUE_REASON: Record<PublicReportType, string> = {
   'Someone under 18': 'Underage',
+  'Sexual content involving a minor': 'CSAM',
   'Shared without consent': 'Shared my photos',
+  'Trafficking or commercial sexual services': 'Trafficking',
+  'Threats or stalking': 'Threats or stalking',
   Impersonation: 'Fake or impersonation',
-  'Harassment or threats': 'Harassment',
-  'Hate or discrimination': 'Hate or discrimination',
+  'Harassment or hate': 'Harassment or hate',
   'Scam or spam': 'Scam or spam',
   'Illegal content': 'Illegal content',
   Other: 'Other',
@@ -87,13 +91,17 @@ export const REASON_SEVERITY: Record<string, SeverityRank> = {
   ncii: SEVERITY_RANK.critical,
   // Critical — the same cases as stored by the public form and the older demo queue.
   Underage: SEVERITY_RANK.critical,
+  CSAM: SEVERITY_RANK.critical,
+  Trafficking: SEVERITY_RANK.critical,
   'Threats or violence': SEVERITY_RANK.critical,
+  'Threats or stalking': SEVERITY_RANK.critical,
   'Shared my photos': SEVERITY_RANK.critical,
   'Illegal content': SEVERITY_RANK.critical,
-  // Medium — 24h. A person upgrades these when the text is a threat, stalking, or coercion.
+  // Medium — 24h.
   harassment: SEVERITY_RANK.medium,
   Harassment: SEVERITY_RANK.medium,
   hate: SEVERITY_RANK.medium,
+  'Harassment or hate': SEVERITY_RANK.medium,
   'Hate or discrimination': SEVERITY_RANK.medium,
   unsafe: SEVERITY_RANK.medium,
   // Low — 24h.
