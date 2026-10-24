@@ -1,13 +1,18 @@
 /**
- * Public contact addresses and the canonical site origin.
+ * Public contact addresses, legal identity, and canonical site origin.
  *
- * Mail is hosted on pirokaapp.com (IONOS). Change CONTACT_DOMAIN here; the
- * defaults in .env.example must use the same local parts. These constants are
- * what the app shows and what it falls back to. They do not change a sender
- * already set in the host environment.
+ * Mail is hosted on pirokaapp.com. Change CONTACT_DOMAIN here; the defaults in
+ * .env.example must use the same local parts. These constants are what the app
+ * shows and what it falls back to.
  */
 
 export const CONTACT_DOMAIN = 'pirokaapp.com';
+
+/** Confirmed operator / contracting entity for PIROKA. */
+export const LEGAL_ENTITY_NAME = 'X RankFlow Media Group LLC';
+
+/** Confirmed legal notice address supplied by the operator. */
+export const LEGAL_NOTICE_ADDRESS = '8 The Green, Dover, DE 19904, United States';
 
 /** Canonical public site. The apex host redirects here. */
 export const PUBLIC_SITE_URL = 'https://www.pirokaapp.com';
