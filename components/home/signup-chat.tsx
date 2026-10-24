@@ -111,7 +111,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
         bot(CONSENT_INTRO[s.provider], () => setStep('consent'), 600);
       } else {
         bot(
-          'Last step: a quick face check to estimate your age. It runs on your device and the image is never stored.',
+          'Last step: an age check. Depending on the configured provider, you may be asked for a selfie, liveness check, or ID. PIROKA records the verification result; the provider may process verification material under its own privacy terms.',
           () => setStep('face'),
           600,
         );
@@ -234,7 +234,7 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       setSession(s);
       say(
         "I'm 18+ and I accept the terms",
-        'Thanks. Last step: a quick face check to estimate your age. It runs on your device and the image is never stored.',
+        'Thanks. Last step: an age check. Depending on the configured provider, you may be asked for a selfie, liveness check, or ID. PIROKA records the verification result; the provider may process verification material under its own privacy terms.',
         () => setStep('face'),
       );
     } catch (e) {
@@ -574,7 +574,9 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
                 <div className="ml-[38px] flex animate-[piIn_.45s_ease-out_both] flex-col items-center gap-2.5 rounded-[18px] border border-line-2 bg-white/5 px-4 py-5 text-center">
                   <span className="text-[15px] font-semibold">Verify you are 18+</span>
                   <span className="max-w-[270px] text-[12px] leading-[1.5] text-fg-3">
-                    A quick selfie confirms your age. If it&apos;s unclear, we&apos;ll ask for a photo ID. We keep only the result.
+                    The configured age-assurance provider may use a selfie, liveness check, or ID. PIROKA
+                    records the verification result and is designed not to retain the raw verification image or
+                    identity document when the provider can return only the result.
                   </span>
                   <AgeCheck onVerified={handleAgeVerified} />
                 </div>
