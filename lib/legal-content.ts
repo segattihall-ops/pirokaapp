@@ -498,7 +498,7 @@ export const LEGAL_CONTENT = {
       },
       {
         heading: 'How to appeal',
-        body: `Use Account standing & appeals while signed in. Identify the action and explain why the decision should be changed. One pending appeal is permitted per moderation action unless PIROKA reopens the matter.`,
+        body: `Use Account standing & appeals. If you are signed in, PIROKA can match the action to your account. If a suspension or removal prevents sign-in, submit the moderation action ID and the email associated with that account. Identify the action and explain why the decision should be changed. One pending appeal is permitted per moderation action unless PIROKA reopens the matter.`,
       },
       {
         heading: 'Review',
