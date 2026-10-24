@@ -1,0 +1,81 @@
+{
+  "canonical_task_reference": "OUTCOME-20261012-PIROKA-GATES",
+  "ledger_instruction": "Attach to existing PIROKA access-control/security outcome; do not create a duplicate task.",
+  "component": "PostGIS public.spatial_ref_sys client grant correction",
+  "project_id": "clwqmzgoqfqibnfevhyb",
+  "repository": "segattihall-ops/pirokaapp",
+  "inspected_main": "b43300a753892555417f7e6e0a057da1d4ee66ee",
+  "status": "DOCS-ONLY PROPOSAL APPROVED FOR DRAFT PR — PRODUCTION BLOCKED",
+  "prepared_at": "2026-10-21T15:05:09.545932+00:00",
+  "source_verified_at": "2026-10-21 14:54:49 UTC",
+  "source_acl_entries": 41,
+  "target_entries": 14,
+  "preserved_entries": 27,
+  "source_actor": {
+    "sql_actor": "postgres",
+    "rolsuper": false,
+    "rolcreaterole": true,
+    "has_supabase_admin_usage": false,
+    "can_grant_update": false,
+    "can_grant_truncate": false
+  },
+  "authorized_actions_completed": [
+    "Read CLAUDE.md and source evidence",
+    "Verify primary PostgreSQL documentation",
+    "Prepare guarded documentation-only forward/rollback/read-only preflight",
+    "Execute isolated synthetic ACL fixture; all38 checks passed"
+  ],
+  "production_mutations": false,
+  "role_escalation_attempted_in_production": false,
+  "blocked_reason": "Current postgres SQL actor is a nonsuperuser without owner-role usage or required grant options; separate approval and provider-authorized owner/operator execution are necessary.",
+  "verification": {
+    "checks": 38,
+    "passed": 38,
+    "failed": 0,
+    "environment": "PGlite0.5.11 / PostgreSQL18.6; in-memory synthetic data",
+    "production_or_postgis_acceptance": false,
+    "fixture_adaptation": "Only expected extension-name literal postgis→plpgsql for positive cases; original production guard tested unchanged as a rejecting case. Role switching occurs only inside isolated fixtures.",
+    "limits": "No hosted PostGIS transforms, production API, operator connectivity, lock contention or concurrent DDL was exercised.",
+    "column_acl_metadata": {
+      "column_count": 5,
+      "explicit_column_acl_count": 0,
+      "source": "column-acl-evidence.json"
+    }
+  },
+  "attempts": [
+    {
+      "status": "FAILED",
+      "classification": "Test harness protocol constraint",
+      "evidence": "42601 cannot insert multiple commands into a prepared statement after4 checks; no operator SQL failure."
+    },
+    {
+      "status": "RECOVERED",
+      "action": "Run the two fixture statements sequentially within the same rollback transaction.",
+      "outcome": "All38 checks passed; operator SQL unchanged."
+    }
+  ],
+  "next_executable_action": "Root verifies the published draft PR files/head; production remains blocked on authorized owner/operator execution and subsequent live verification.",
+  "files_sha256": {
+    "spatial_ref_sys.forward.sql": "c17ea91a9ca39d28de28a9bac8892786ce2b024574eb7f7854567066db0e47f0",
+    "acl-fixture-test-results.json": "e3c21077fb71bdf1686c27753fb9e4a7562825ea5c6ea7eff49ddf0c5b6b2ecf",
+    "spatial_ref_sys.rollback.sql": "bc0b9e76b731ee4b8a6c99eae1f6f05fd8b18095f1566719f83018035a7c8f81",
+    "acl-fixture-test.mjs": "afdc14e850d354e7f89e4b1cacb871c54f61a8e51ae18ba69c2889bae132f288",
+    "column-acl-evidence.json": "d862ea1ea43bc3333fdb82d65c4a43bd997401edb01e495ce1ff86e0c56e4e58",
+    "package-lock.json": "823f090818c2fcef02a0aae6da10c21738b579cc1e30dd50f331eff3c1474fa5",
+    "package.json": "b16ac5a37d6bb955c24f76df5881db82021b8388396dcb9d5c7a0aba90146c94",
+    "README.md": "3a4b097d887cecbda505c54693fdbcd066d806c85ac164a943781652c6fe9c92",
+    "observed-catalog.json": "aba235ce62382eaf5bb71fd011d81fd1f8b730cd18bd825250f2180e04d2e0af",
+    "spatial_ref_sys.preflight.sql": "5d04b7b9e17f7ba86eade04b3a20c3d6463e3dd4667be5838da552ab65ece9fc"
+  },
+  "independent_review": {
+    "reviewer": "parent agent /root",
+    "decision": "Approved docs-only draft PR; no migration or production application",
+    "sql_and_fixture_scope": "Exact14 removal/27 preservation, owner/superuser gate, bounded lock, drift rollback, PostGIS guard and disclosed synthetic adaptation"
+  },
+  "github_publication_intent": {
+    "base": "b43300a753892555417f7e6e0a057da1d4ee66ee",
+    "branch": "docs/spatial-ref-sys-client-acl-review-20261021",
+    "draft": true,
+    "directory": "docs/security-reviews/spatial-ref-sys-20261021/"
+  }
+}
