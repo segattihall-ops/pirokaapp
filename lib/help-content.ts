@@ -89,32 +89,68 @@ export const HELP_CONTENT: Record<string, Content> = {
   },
   terms: {
     title: 'Terms of Service',
-    meta: 'Effective September 2026',
+    meta: 'Last updated October 24, 2026',
     draft: false,
     sections: [
       {
         heading: 'Eligibility',
-        body: 'You must be at least 18 and legally able to agree to these terms where you live. You must pass our age check before using πroka.',
+        body: 'πroka is an adults-only service. You must be at least 18 years old and legally able to agree to these terms where you live. Minors are prohibited. Do not create an account, use the map, post, or message if you are under 18, and do not post or request anyone under 18. You must pass our age check before using πroka. If we believe an account belongs to a minor, or that content involves a minor, we remove it, close the account, and report child sexual abuse material to the authorities as the law requires. The Community Guidelines, the Privacy Policy, and the Safety Center are part of these terms.',
       },
       {
         heading: 'Your account',
-        body: 'You’re responsible for your account and what you post. Keep your login and PIN private. You can delete your account at any time.',
+        body: 'You are responsible for your account and for what you post. Keep your login private. You can delete your account at any time from ME → Privacy. One person, one account. Do not share your account or let someone else use it.',
       },
       {
-        heading: 'Content',
-        body: 'You keep ownership of your photos and messages. You give πroka a limited license to host and show them to the people you choose, only to run the service.',
+        heading: 'Your content',
+        body: 'You keep ownership of the photos, text, and other content you submit. You give πroka a limited, non-exclusive license to host, store, transmit, and display that content only as needed to run the service, and only to the people you choose to show it to. The license ends when you delete the content or your account, except for copies we must keep for a limited time for safety, legal process, or backups. You promise that you have the rights to what you post, that you are the person shown or have consent from everyone shown, and that every person in a sexual image was 18 or older when it was made.',
+      },
+      {
+        heading: 'Prohibited conduct',
+        body: 'Do not use πroka to harass, stalk, threaten, or coerce anyone. Do not extort sexual images, money, or anything else (sextortion). Do not share or threaten to share intimate images of someone without their consent (non-consensual intimate imagery, NCII). Do not post, request, or trade child sexual abuse material (CSAM). Do not commit fraud, run a scam, or impersonate someone. Do not use πroka for commercial solicitation or prostitution. We remove this content, close accounts, and report crimes when the law requires it. The Community Guidelines name more rules, including no drugs for sale or arrangement and no hate.',
       },
       {
         heading: 'Paid plans',
-        body: 'Plus and Premium renew monthly until you cancel. You can cancel any time; the plan runs to the end of the paid period. Core features never require payment.',
+        body: 'Plus and Premium renew monthly until you cancel. You can cancel any time; the plan runs to the end of the paid period. Core features never require payment. Fees are charged by the payment provider shown at checkout, under that provider’s terms.',
       },
       {
         heading: 'Moderation',
-        body: 'We may remove content or restrict accounts that break the Community Guidelines. We tell you why, and you can appeal.',
+        body: 'We may remove content or restrict accounts that break these terms, the Community Guidelines, or the law. We tell you why, and you can appeal from Account standing. A different reviewer looks at an appeal.',
       },
       {
-        heading: 'Liability',
-        body: 'πroka connects adults. We are not responsible for what happens when you meet someone, but we give you tools to stay safe and act quickly on reports.',
+        heading: 'Termination',
+        body: 'You may stop using πroka and delete your account at any time. We may suspend or close your account, or remove content, if you break these terms or the law, or to protect someone. Where we can, we tell you the reason. After your account ends, these parts still apply: the license for copies we must keep, the rules on prohibited conduct for what already happened, the disclaimers, the limit on liability, indemnification, and the dispute terms.',
+      },
+      {
+        heading: 'Disclaimer of warranties',
+        body: 'πroka is provided as is and as available. To the extent the law allows, we disclaim warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not guarantee that you will meet anyone, that another person is who they say they are, or that the service will be uninterrupted, secure, or error-free. Some places do not allow these disclaimers. There, they apply only as far as the law allows.',
+      },
+      {
+        heading: 'Limitation of liability',
+        body: 'πroka connects adults. To the extent the law allows, πroka and its operators are not liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, data, or goodwill, including for what happens when you meet someone. Our total liability for a claim about the service is limited to the amount you paid us for πroka in the three months before the claim. If you paid nothing, our total liability is limited to the smallest amount the law allows us to set. Some places do not allow these limits. There, they apply only as far as the law allows. We give you tools to block, report, and get help, and we act on reports.',
+      },
+      {
+        heading: 'Indemnification',
+        body: 'To the extent the law allows, you will defend and indemnify the operator of πroka, [COMPANY LEGAL NAME AND ADDRESS - COUNSEL TO CONFIRM], and the people who work on the service, against claims by someone else that arise from your content, your use of πroka, or your breaking these terms or the law. You will cooperate with that defense. This does not require you to pay for a claim that exists only because we broke the law.',
+      },
+      {
+        heading: 'Copyright and DMCA',
+        body: `We respect copyright. The designated agent for notices is ${CONTACT_EMAIL.dmca}. The agent’s postal address is [COMPANY LEGAL NAME AND ADDRESS - COUNSEL TO CONFIRM]. To ask us to take something down, email a notice that includes: your physical or electronic signature; the copyrighted work you believe was used; the πroka URL or other location of the material, enough for us to find it; your name, address, telephone number, and email; a statement that you believe in good faith that the use is not authorized; and a statement, under penalty of perjury, that the notice is accurate and that you are the owner or are authorized to act for the owner. If the notice is complete enough, we remove or disable access to the material. If we remove your content, we may tell you and you may send a counter-notice to the same address. A counter-notice must include your signature, identification of what was removed and where it appeared, a statement under penalty of perjury that you believe the removal was a mistake or misidentification, your name and contact information, and a statement that you consent to the jurisdiction of the federal court for the judicial district where you live (or, if you live outside the United States, for any judicial district where the operator may be found) and that you will accept service of process from the person who sent the notice. We may restore the material after the time the law allows, unless the person who sent the notice tells us they have filed a court action. We close accounts of repeat infringers in appropriate circumstances.`,
+      },
+      {
+        heading: 'Disputes',
+        body: `Try informal resolution first. Email ${CONTACT_EMAIL.legal} with a short description of the dispute and your account email, and give us 30 days after we receive it before you start a formal claim. If we do not resolve it in that time, you and πroka agree to individual arbitration before a neutral arbitrator, except for the small-claims carve-out in this section. The class-action waiver means there is no class action, class arbitration, or other representative action. Either of us may still bring an individual claim in small-claims court instead of arbitration, if the claim qualifies. You may opt out of arbitration during a 30-day opt-out window after you first accept these terms, by emailing ${CONTACT_EMAIL.legal} with the subject “Arbitration opt-out”, your name, and the email on your account. Opting out does not change any other part of these terms. Nothing here takes away a right the law does not let you waive. This dispute section is draft text pending counsel review. Counsel must confirm the arbitration administrator, the rules, and the opt-out window before it is treated as final.`,
+      },
+      {
+        heading: 'Governing law',
+        body: 'These terms are governed by the laws of [GOVERNING STATE - COUNSEL TO CONFIRM], without regard to conflict-of-law rules, except where the law where you live does not allow that choice. Venue for a dispute that is not in arbitration and is not in small-claims court is the state or federal courts located in [GOVERNING STATE - COUNSEL TO CONFIRM], except where the law gives you the right to sue somewhere else. The placeholder is not a chosen state. Counsel must confirm the governing state and the venue before this section is treated as final.',
+      },
+      {
+        heading: 'Changes to these terms',
+        body: 'We may change these terms. The date under the title is the Last updated date. When we make a material change, we update that date and, when the law or the change requires it, we ask you to accept the new terms before you continue. If you keep using πroka after the new terms apply, you accept them. If you do not agree, stop using πroka and delete your account. A change to the dispute section applies only as the law allows, and not to a dispute we were already on notice of, except where the law says otherwise.',
+      },
+      {
+        heading: 'Contact',
+        body: `The operator of πroka is [COMPANY LEGAL NAME AND ADDRESS - COUNSEL TO CONFIRM]. That name and address are not filled in yet; counsel must confirm them. Terms questions: ${CONTACT_EMAIL.legal}. Copyright notices: ${CONTACT_EMAIL.dmca}. Safety: ${CONTACT_EMAIL.safety}. Privacy: ${CONTACT_EMAIL.privacy}. Support: ${CONTACT_EMAIL.support}.`,
       },
     ],
   },
@@ -192,7 +228,7 @@ export const HELP_CONTENT: Record<string, Content> = {
       },
       {
         heading: 'Custodian of records',
-        body: `πroka, Inc. · Compliance Officer · ${CONTACT_EMAIL.compliance}`,
+        body: `πroka, Inc. · Compliance Officer · [COMPANY LEGAL NAME AND ADDRESS - COUNSEL TO CONFIRM] · ${CONTACT_EMAIL.compliance}`,
       },
     ],
   },
