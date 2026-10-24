@@ -31,7 +31,17 @@ type Report = {
   details: string;
   evidence: boolean;
   reporterIp?: string | null;
-  publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
+  publicForm?: {
+    link: string | null;
+    contactEmail: string | null;
+    label: string | null;
+    tida: {
+      signature: string | null;
+      capacity: 'self' | 'authorized' | null;
+      receivedAt: string | null;
+      deadlineAt: string | null;
+    } | null;
+  } | null;
   priors: string[];
   status: string;
 };
@@ -75,7 +85,17 @@ export default function ReportsPage() {
           status: string;
           createdAt: string;
           reporterIp?: string | null;
-          publicForm?: { link: string | null; contactEmail: string | null; label: string | null } | null;
+          publicForm?: {
+            link: string | null;
+            contactEmail: string | null;
+            label: string | null;
+            tida: {
+              signature: string | null;
+              capacity: 'self' | 'authorized' | null;
+              receivedAt: string | null;
+              deadlineAt: string | null;
+            } | null;
+          } | null;
         }[];
       };
       setConfigured(true);
@@ -230,7 +250,7 @@ export default function ReportsPage() {
                 )}
               </DetailBlock>
               {x.publicForm && (
-                <DetailBlock label="Filed from the public form (no account)">
+                <DetailBlock label="Filed from the public form (no account required)">
                   <span className="text-[13px] leading-[1.5] text-fg-2">
                     Reported: {x.publicForm.link || '— no link given —'}
                   </span>
@@ -239,6 +259,31 @@ export default function ReportsPage() {
                       ? `Reply to: ${x.publicForm.contactEmail}`
                       : 'No contact email left.'}
                   </span>
+                  {x.publicForm.tida && (
+                    <>
+                      <span className="mt-1 text-[12px] font-semibold text-danger">TAKE IT DOWN / NCII request</span>
+                      <span className="text-[12px] leading-[1.5] text-fg-3">
+                        Signed by: {x.publicForm.tida.signature || '—'} · capacity:{' '}
+                        {x.publicForm.tida.capacity || '—'}
+                      </span>
+                      <span className="text-[12px] leading-[1.5] text-fg-3">
+                        Received:{' '}
+                        {x.publicForm.tida.receivedAt
+                          ? new Date(x.publicForm.tida.receivedAt).toLocaleString()
+                          : '—'}
+                      </span>
+                      <span className="text-[12px] font-semibold leading-[1.5] text-danger">
+                        48h deadline:{' '}
+                        {x.publicForm.tida.deadlineAt
+                          ? new Date(x.publicForm.tida.deadlineAt).toLocaleString()
+                          : '—'}
+                      </span>
+                      <span className="text-[11px] leading-[1.45] text-fg-4">
+                        Remove or disable the identified intimate image and make reasonable efforts to identify
+                        and remove known identical copies when the request is valid and covered.
+                      </span>
+                    </>
+                  )}
                 </DetailBlock>
               )}
               {x.reporterIp && (
@@ -299,10 +344,17 @@ export default function ReportsPage() {
                   user page if the report is unfounded. It is not a ban and it does not delete anything.
                 </Warn>
               )}
-              {(x.reason === 'csam' || x.reason === 'Illegal content') && (
+              {(x.reason === 'csam' || x.reason === 'CSAM' || x.reason === 'Illegal content') && (
                 <Warn>
-                  Possible child sexual exploitation. Do not download, copy, or forward the material, and do
-                  not delete the account. A person decides the next step.
+                  Possible child sexual exploitation. Do not download, copy, or forward the material merely
+                  to review it, and do not destroy evidence. Follow the trained CSAM/NCMEC escalation process.
+                </Warn>
+              )}
+              {x.reason === 'Trafficking' && (
+                <Warn>
+                  Possible trafficking or commercial sexual exploitation. Preserve relevant records, avoid
+                  tipping off a suspected exploiter when that could increase risk, and escalate for trained
+                  legal/safety review.
                 </Warn>
               )}
             </>
