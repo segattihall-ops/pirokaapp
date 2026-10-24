@@ -1,12 +1,12 @@
 import { LEGAL_CONTENT } from '@/lib/legal-content';
 
-export type Section = { heading: string; body: string };
-export type Content = {
+export type Section = Readonly<{ heading: string; body: string }>;
+export type Content = Readonly<{
   title: string;
   meta: string;
   draft: boolean;
-  sections: Section[];
-};
+  sections: readonly Section[];
+}>;
 
 export const FAQ: { q: string; a: string }[] = [
   {
