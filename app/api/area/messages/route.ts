@@ -89,12 +89,30 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabaseAdmin!
     .rpc('nearby_area_messages', { p_lat: lat, p_lon: lon, p_radius_m: RADIUS_M })
-    .select('id, author_id, content, created_at, distance_m, reply_count')
+    .select('id, author_id, content, created_at, distance_m')
     .order('created_at', { ascending: false })
     .limit(50);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ messages: data ?? [] });
+  type Row = { id: number; author_id: string; content: string; created_at: string; distance_m: number };
+  const rows = (data ?? []) as Row[];
+
+  // Reply counts in one grouped read (the RPC only returns top-level posts). Keeps the function's
+  // signature unchanged so no destructive DROP is needed to add threading.
+  const counts = new Map<number, number>();
+  if (rows.length) {
+    const { data: reps } = await supabaseAdmin!
+      .from('area_messages')
+      .select('parent_id')
+      .in(
+        'parent_id',
+        rows.map((r) => r.id),
+      );
+    for (const r of reps ?? [])
+      if (r.parent_id != null) counts.set(r.parent_id, (counts.get(r.parent_id) ?? 0) + 1);
+  }
+  const messages = rows.map((r) => ({ ...r, reply_count: counts.get(r.id) ?? 0 }));
+  return NextResponse.json({ messages });
 }
 
 export async function DELETE(request: Request) {
