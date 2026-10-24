@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { LogoTile, Wordmark } from '@/components/logo';
-import { HELP_SECTIONS, HELP_SLUGS, isHelpSlug, type HelpSlug } from '@/lib/help';
+import { HELP_GROUPS, HELP_SECTIONS, HELP_SLUGS, isHelpSlug, type HelpSlug } from '@/lib/help';
 import { HELP_CONTENT } from '@/lib/help-content';
 import { HelpCenter } from '@/components/help/help-center';
 import { SupportChat } from '@/components/help/support-chat';
@@ -26,13 +26,12 @@ const INTERACTIVE: Partial<Record<HelpSlug, () => JSX.Element>> = {
   report: ReportForm,
 };
 
-/** Help, safety & legal — design_handoff → Piroka_Help.dc.html: header, sticky left nav (Help / Policies), tab content. */
+/** Public Help + Legal Center. Interactive intake lives beside policy documents in one navigation. */
 export default function HelpPage({ params }: Props) {
   if (!isHelpSlug(params.slug)) notFound();
   const slug = params.slug;
   const Tab = INTERACTIVE[slug];
   const doc = HELP_CONTENT[slug];
-  const groups = ['Help', 'Policies'] as const;
 
   return (
     <div className="flex min-h-dvh flex-col bg-ink-950 text-fg">
@@ -54,7 +53,7 @@ export default function HelpPage({ params }: Props) {
           aria-label="Help sections"
           className="flex w-full flex-col gap-1 rail:sticky rail:top-5 rail:w-[240px] rail:shrink-0 rail:self-start"
         >
-          {groups.map((g) => (
+          {HELP_GROUPS.map((g) => (
             <div key={g} className="flex flex-col gap-1">
               <span className="px-3 pb-1.5 pt-3.5 text-eyebrow text-fg-4">{g}</span>
               {HELP_SLUGS.filter((s) => HELP_SECTIONS[s].group === g).map((s) => {
