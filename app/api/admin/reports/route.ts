@@ -7,14 +7,35 @@ export const dynamic = 'force-dynamic';
 
 const STATUSES = ['open', 'under_review', 'resolved', 'dismissed'] as const;
 
-type PublicForm = { link: string | null; contactEmail: string | null; label: string | null } | null;
+type PublicForm = {
+  link: string | null;
+  contactEmail: string | null;
+  label: string | null;
+  tida: {
+    signature: string | null;
+    capacity: 'self' | 'authorized' | null;
+    receivedAt: string | null;
+    deadlineAt: string | null;
+  } | null;
+} | null;
+
 function publicForm(evidence: unknown): PublicForm {
   const e = evidence as Record<string, unknown> | null;
   if (!e || e.source !== 'public_form') return null;
+  const raw = e.tida as Record<string, unknown> | null;
+  const capacity = raw?.capacity === 'self' || raw?.capacity === 'authorized' ? raw.capacity : null;
   return {
     link: typeof e.link === 'string' ? e.link : null,
     contactEmail: typeof e.contact_email === 'string' ? e.contact_email : null,
     label: typeof e.public_label === 'string' ? e.public_label : null,
+    tida: raw
+      ? {
+          signature: typeof raw.signature === 'string' ? raw.signature : null,
+          capacity,
+          receivedAt: typeof raw.received_at === 'string' ? raw.received_at : null,
+          deadlineAt: typeof raw.deadline_at === 'string' ? raw.deadline_at : null,
+        }
+      : null,
   };
 }
 
