@@ -68,15 +68,25 @@ or:
 
 ## AI configuration
 
-The endpoint uses `ANTHROPIC_API_KEY` when configured in the PIROKA deployment. The existing deterministic fallback remains available when the key is absent or the model request fails.
+Knotty uses this server-side provider order:
 
-Optional:
+1. Direct Anthropic when `ANTHROPIC_API_KEY` is configured.
+2. Vercel AI Gateway using `AI_GATEWAY_API_KEY`, `VERCEL_AI_GATEWAY_API_KEY`, or the deployment's `VERCEL_OIDC_TOKEN`.
+3. Deterministic fallback if every AI provider is unavailable.
+
+The default AI Gateway model is `anthropic/claude-sonnet-5` and can be changed with:
+
+```text
+KNOTTY_AI_MODEL=anthropic/claude-sonnet-5
+```
+
+Optional direct-provider override:
 
 ```text
 ANTHROPIC_MODEL=claude-3-5-haiku-latest
 ```
 
-Do not place the model key in the browser script.
+No model credential is placed in the browser script.
 
 ## Mac run steps
 
