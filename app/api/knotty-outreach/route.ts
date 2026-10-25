@@ -163,6 +163,99 @@ function extractJsonObject(raw: string) {
   }
 }
 
+async function gatewayReply(
+  message: string,
+  history: ChatTurn[],
+  linkAlreadySent: boolean,
+): Promise<KnottyResult | null> {
+  const token =
+    process.env.AI_GATEWAY_API_KEY ||
+    process.env.VERCEL_AI_GATEWAY_API_KEY ||
+    process.env.VERCEL_OIDC_TOKEN;
+
+  if (!token) return null;
+
+  const system = [
+    "You are Knotty, PIROKA's AI outreach assistant.",
+    "This is a reply assistant for ONE already-open conversation. Never initiate a new conversation or suggest mass messaging.",
+    "The person already received a short opener. Reply only to the person's actual incoming message.",
+    "Style: natural American casual/slang, concise, usually one sentence and never more than two short sentences.",
+    "Do not pretend to be a human. If asked who or what you are, clearly say you are Knotty, PIROKA's AI assistant.",
+    "Never claim PIROKA eliminates scams or guarantees safety. Never invent verification, user counts, features, availability, or policies.",
+    "Do not pressure or repeatedly pitch. If they say no, stop, not interested, leave me alone, or similar, return action=stop and an empty reply.",
+    "If they raise threats, police, lawyers, harassment, minors, or underage topics, return action=stop and an empty reply.",
+    "Do not engage in explicit sexual roleplay or explicit sexual instructions. Keep the conversation focused on the app.",
+    "Mention PIROKA only when relevant to what they said or when they ask what this is.",
+    linkAlreadySent
+      ? "The PIROKA link has already been sent. Do not send it again."
+      : "If there is a natural opening and they show interest, you may send this link once: https://www.pirokaapp.com",
+    "Never disparage Sniffies. You may acknowledge the person's own frustration without making unsupported claims about another service.",
+    "Return STRICT JSON only with this shape: {\"action\":\"reply\"|\"stop\",\"reply\":\"...\",\"linkSent\":true|false}.",
+    `Keep reply under ${MAX_REPLY_CHARS} characters.`,
+  ].join("\n");
+
+  const messages = [
+    { role: "system", content: system },
+    ...history.map((turn) => ({
+      role: turn.role,
+      content: turn.content,
+    })),
+    { role: "user", content: message },
+  ];
+
+  try {
+    const response = await fetch(
+      "https://ai-gateway.vercel.sh/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          model: process.env.KNOTTY_AI_MODEL || "anthropic/claude-sonnet-5",
+          messages,
+          temperature: 0.45,
+          max_tokens: 180,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    if (!response.ok) {
+      console.error("[knotty-outreach] ai gateway error", response.status);
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+
+    const raw = data.choices?.[0]?.message?.content?.trim() || "";
+    const parsed = extractJsonObject(raw);
+    if (!parsed) return null;
+
+    if (parsed.action === "stop") {
+      return { action: "stop", reply: "", mode: "ai" };
+    }
+
+    const reply = cleanText(parsed.reply, MAX_REPLY_CHARS);
+    if (!reply) return null;
+
+    return {
+      action: "reply",
+      reply,
+      linkSent:
+        parsed.linkSent === true ||
+        /https?:\/\/(?:www\.)?pirokaapp\.com/i.test(reply),
+      mode: "ai",
+    };
+  } catch (error) {
+    console.error("[knotty-outreach] ai gateway request failed", error);
+    return null;
+  }
+}
+
 async function anthropicReply(
   message: string,
   history: ChatTurn[],
@@ -299,7 +392,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ai = await anthropicReply(message, history, linkAlreadySent);
+  const ai =
+    (await anthropicReply(message, history, linkAlreadySent)) ??
+    (await gatewayReply(message, history, linkAlreadySent));
   const result = ai ?? deterministicFallback(message, linkAlreadySent);
 
   return NextResponse.json(result, { headers });
