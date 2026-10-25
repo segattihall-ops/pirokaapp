@@ -9,10 +9,13 @@ This tool is intentionally scoped to **one already-open Sniffies conversation**.
 3. The script sends the opener once:
    `What's good? 😈`
 4. A 60-second countdown begins.
-5. Replies received during the countdown are held.
-6. At 60 seconds, Knotty becomes active and replies automatically to new incoming text.
-7. Knotty can introduce PIROKA and send `https://www.pirokaapp.com` once when relevant.
-8. The assistant stops on opt-out/negative language, legal/safety escalation, chat/page navigation, or the STOP button.
+5. If the person replies during the countdown, that reply is held until the 60-second mark.
+6. At 60 seconds, Knotty takes over:
+   - if a reply is already waiting, Knotty answers it;
+   - if there is no reply yet, Knotty sends one follow-up: `Real talk… tired of fake profiles and scammers on here? 👀`.
+7. After that one follow-up, Knotty waits for the person's reply and responds automatically.
+8. Knotty can introduce PIROKA and send `https://www.pirokaapp.com` once when relevant.
+9. The assistant stops on opt-out/negative language, legal/safety escalation, chat/page navigation, or the STOP button.
 
 ## Safety / control behavior
 
