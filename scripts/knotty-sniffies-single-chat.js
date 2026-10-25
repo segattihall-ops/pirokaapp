@@ -17,6 +17,7 @@
   const CONFIG = {
     apiUrl: "https://www.pirokaapp.com/api/knotty-outreach",
     opener: "What's good? 😈",
+    followUp: "Real talk… tired of fake profiles and scammers on here? 👀",
     armDelayMs: 60_000,
     apiTimeoutMs: 12_000,
     postReplyDelayMs: 1_800,
@@ -39,6 +40,7 @@
     lastHandledIncoming: "",
     lastHandledAt: 0,
     linkAlreadySent: false,
+    followUpSent: false,
     history: [],
     sentTexts: new Set(),
     observedTexts: new Set(),
@@ -698,16 +700,44 @@
         state.armed = true;
         clearInterval(state.countdownTimer);
 
-        setStatus(
-          state.paused ? "PAUSED" : "KNOTTY ACTIVE",
-          state.paused
-            ? "60-second wait finished. Press Resume when ready."
-            : "60-second wait finished. Waiting for a reply.",
-        );
-
-        if (state.pendingIncoming && !state.paused) {
-          void processPending();
+        if (state.paused) {
+          setStatus("PAUSED", "60-second wait finished. Press Resume when ready.");
+          return;
         }
+
+        if (state.pendingIncoming) {
+          setStatus("KNOTTY ACTIVE", "60-second wait finished. Replying now.");
+          void processPending();
+          return;
+        }
+
+        if (!state.followUpSent) {
+          state.followUpSent = true;
+          setStatus("KNOTTY ACTIVE", "60-second wait finished. Sending one follow-up…");
+
+          void (async () => {
+            const sent = await sendMessage(CONFIG.followUp);
+            if (!sent || state.stopped) return;
+
+            state.history.push({
+              role: "assistant",
+              content: CONFIG.followUp,
+            });
+            state.history = state.history.slice(-CONFIG.maxHistoryTurns);
+
+            setStatus(
+              "KNOTTY ACTIVE",
+              "Follow-up sent. Waiting for their reply.",
+            );
+
+            if (state.pendingIncoming && !state.paused) {
+              void processPending();
+            }
+          })();
+          return;
+        }
+
+        setStatus("KNOTTY ACTIVE", "Waiting for their reply.");
         return;
       }
 
