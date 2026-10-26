@@ -4,7 +4,8 @@
 Neither badge is the age gate, and neither gates access — both are display-only signals on a member's
 profile:
 
-- **Phone** — the member proved control of a phone number (Twilio Verify OTP).
+- **Email** — the member proved control of an email address (a 6-digit code sent and checked by the
+  app itself, no third-party SMS provider).
 - **Photo** — a live selfie passed a 1:1 face match against the member's own profile photo (Didit).
   This is the anti-catfish signal: it proves the person in the photos is the person holding the phone.
 
@@ -63,26 +64,28 @@ new sessions can start. Existing `photo_verified` rows are left as they are.
 
 ---
 
-## Phone badge (Twilio Verify)
+## Email badge (self-hosted OTP)
 
 ### What you need to do
 
-Create a Twilio Verify service, then set three env vars in Vercel (Production + Preview) and
-redeploy:
+**Nothing new.** Email verification has no provider keys of its own — it sends the 6-digit code
+through the app's existing mailer (`RESEND_API_KEY` for Resend, or `EMAIL_SERVER` for SMTP). If the
+app is already sending email (digests, receipts, magic links), the email badge works. In
+console/demo mode (no mailer configured) the control is hidden and the API answers 503.
 
-```
-TWILIO_ACCOUNT_SID=…            # Twilio console → Account
-TWILIO_AUTH_TOKEN=…
-TWILIO_VERIFY_SERVICE_SID=…     # Twilio console → Verify → Services (starts with VA…)
-```
-
-The OTP send/check flow and the badge UI are already wired; they light up as soon as the three vars
-are present.
+Apply migration `20261026120000_053_email_verification.sql` (adds `users.email_verified` /
+`users.verified_email` and the `email_otps` table). It is additive and idempotent.
 
 ### How to verify after deploy
 
-1. The phone-verify control on the ME screen accepts a number and sends an SMS code.
-2. Entering the correct code marks the member phone-verified and shows the badge.
+1. The email-verify control on the ME screen accepts an email and sends a 6-digit code.
+2. Entering the correct code marks the member email-verified and shows the **Email** badge on their
+   profile. Codes expire in 10 minutes, allow 5 guesses, and are consumed on success.
+
+### Note on the retired phone badge
+
+The Twilio SMS phone badge has been removed (no `TWILIO_*` vars, no `/api/me/phone`). The
+`users.phone` / `users.phone_verified` columns from migration 047 are left in place but unused.
 
 ---
 
