@@ -7,8 +7,20 @@ import { GATE_PATH } from '@/lib/auth/types';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-/** Routes that need a signed-in AND age-verified user. Everything else is public. */
-const GATED = [/^\/app(\/|$)/, /^\/onboarding(\/|$)/, /^\/admin(\/|$)/, /^\/partners(\/|$)/];
+/**
+ * Two-tier access (see docs/trust-safety/ACCESS_TIERS.md):
+ *  - Tier 1 — signed in, no age check needed: the SFW "look around" surface. Anyone signed in
+ *    (including an anonymous visitor) may browse the live map, places, events and profiles with
+ *    photos kept blurred.
+ *  - Tier 2 — signed in AND age-verified: participation. Chatting, posting, becoming visible on the
+ *    map, albums, Meet Mode and converting to a real (Google/email) account all require the 18+
+ *    check. Explicit photos are never served to strangers regardless (privacy blur in the profile
+ *    API), so posting — not browsing — is what the age gate protects.
+ */
+/** Pages that need a signed-in AND age-verified user. */
+const GATED_VERIFIED = [/^\/onboarding(\/|$)/, /^\/admin(\/|$)/, /^\/partners(\/|$)/];
+/** Pages that only need a signed-in user (the SFW app shell). */
+const GATED_SIGNED_IN = [/^\/app(\/|$)/];
 
 /**
  * API routes a signed-in but not-yet-verified member may call: the gate itself, auth, telemetry,
@@ -38,7 +50,30 @@ const API_PREGATE = [
   '/api/me/language',
   '/api/me/marketing',
 ];
-const apiPreGate = (p: string) => API_PREGATE.some((x) => p === x || p.startsWith(`${x}/`));
+/**
+ * SFW browse reads (GET only) that power the un-verified "look around" surface. Writes and
+ * participation actions under these same prefixes (e.g. POST /api/places/[id]/vote, POST
+ * /api/area/messages) are NOT listed, so they fall through to the age gate. Profiles come back
+ * with photos already blurred for strangers, so reading one reveals nothing explicit.
+ */
+const API_SFW_READ = [
+  '/api/nearby',
+  '/api/places',
+  '/api/events',
+  '/api/pulse',
+  '/api/leaderboard',
+  '/api/users',
+  '/api/search',
+  '/api/geocode',
+  '/api/testing-sites',
+  '/api/taste',
+  '/api/area/messages',
+];
+const matchPrefix = (list: string[], p: string) => list.some((x) => p === x || p.startsWith(`${x}/`));
+const apiPreGate = (p: string) => matchPrefix(API_PREGATE, p);
+const apiSfwRead = (p: string, method: string) => method === 'GET' && matchPrefix(API_SFW_READ, p);
+/** True when a signed-in but un-verified member is allowed to call this API route. */
+const apiAllowedUnverified = (p: string, method: string) => apiPreGate(p) || apiSfwRead(p, method);
 
 export async function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
@@ -55,7 +90,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const gated = GATED.some((r) => r.test(pathname));
+  const needVerified = GATED_VERIFIED.some((r) => r.test(pathname));
+  const needSignedIn = GATED_SIGNED_IN.some((r) => r.test(pathname));
   let res = NextResponse.next({ request: req });
 
   let ageVerified = false;
@@ -84,11 +120,19 @@ export async function middleware(req: NextRequest) {
     ageVerified = Boolean(s?.ageVerified);
   }
 
-  if (pathname.startsWith('/api/') && signedIn && !ageVerified && !apiPreGate(pathname)) {
+  if (
+    pathname.startsWith('/api/') &&
+    signedIn &&
+    !ageVerified &&
+    !apiAllowedUnverified(pathname, req.method)
+  ) {
     return NextResponse.json({ error: 'Age verification required', gate: GATE_PATH }, { status: 403 });
   }
 
-  if (gated && !(signedIn && ageVerified)) {
+  // Tier 2 pages need the age check; the SFW app shell only needs a signed-in user (an anonymous
+  // visitor counts). Either way, a visitor who isn't signed in at all is sent to the gate.
+  const blocked = needVerified ? !(signedIn && ageVerified) : needSignedIn && !signedIn;
+  if (blocked) {
     const url = req.nextUrl.clone();
     const [path, query] = GATE_PATH.split('?');
     url.pathname = path;

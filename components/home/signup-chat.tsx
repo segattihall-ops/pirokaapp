@@ -182,8 +182,9 @@ export function SignupChat({ gated, authError = null }: { gated: boolean; authEr
       } else {
         setStep('wait');
         await signInAnonymously();
-        setSession(await fetchSession());
-        toConsent('anonymous');
+        // Two-tier gate: an anonymous visitor browses the SFW app right away. Consent and the 18+
+        // check come later, at the gate, only when they try to participate (chat, post, go visible…).
+        router.push(APP_PATH);
       }
     } catch (e) {
       fail(e);
