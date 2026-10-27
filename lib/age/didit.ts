@@ -186,23 +186,69 @@ export async function verifyDidit(sessionId: string, userId: string): Promise<Ag
   return evaluateDecision(await fetchDiditDecision(sessionId), userId);
 }
 
+/**
+ * Mirror the age gate onto the users table. The gate of record is the user's auth app_metadata,
+ * but search and the "verified" badge read columns on `public.users` (nearby_users, user cards,
+ * the smart filter, admin stats). Writing only app_metadata left those columns stale, so a
+ * verified member dropped out of nearby search and the verified filter. Grant and clear paths call
+ * this so the one boolean (`age_verified`) stays true to the gate; `verified_at` tracks it for audit.
+ */
+export async function syncUserAgeVerified(userId: string, verified: boolean): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { error } = await admin
+    .from('users')
+    .update(
+      verified
+        ? { age_verified: true, verified_at: new Date().toISOString() }
+        : { age_verified: false, verified_at: null },
+    )
+    .eq('id', userId);
+  if (error) console.error('syncUserAgeVerified', error.message);
+}
+
 /** Writes the gate facts for a user who is not the current requester (webhook path). */
 export async function markAgeVerified(userId: string, method: AgeMethod): Promise<boolean> {
   const admin = createAdminClient();
   if (!admin) return false;
   const { error } = await admin.auth.admin.updateUserById(userId, {
-    app_metadata: { age_verified: true, age_method: method, age_recheck: false },
+    app_metadata: { age_verified: true, age_method: method, age_recheck: false, age_recheck_session: null },
   });
   if (error) console.error('markAgeVerified', error.message);
+  if (!error) await syncUserAgeVerified(userId, true);
   return !error;
 }
 
 /** Whether an admin has demanded an ID-only re-check for this user. */
 export async function needsIdRecheck(userId: string): Promise<boolean> {
+  return (await recheckState(userId)).recheck;
+}
+
+/**
+ * The re-check state for a user: whether an ID-only re-check is demanded, and the one Didit session
+ * that `/api/age/start` created for it. While a re-check is open, only that freshly-created ID
+ * session may clear the gate — never a session the member already had — so a previously-approved
+ * selfie (or an old ID session from before the re-check) cannot be replayed to lift the hold.
+ */
+export async function recheckState(userId: string): Promise<{ recheck: boolean; session: string | null }> {
   const admin = createAdminClient();
-  if (!admin) return false;
+  if (!admin) return { recheck: false, session: null };
   const { data } = await admin.auth.admin.getUserById(userId);
-  return data.user?.app_metadata?.age_recheck === true;
+  const meta = data.user?.app_metadata ?? {};
+  return {
+    recheck: meta.age_recheck === true,
+    session: typeof meta.age_recheck_session === 'string' ? meta.age_recheck_session : null,
+  };
+}
+
+/** Bind the freshly-created ID re-check session so only it can clear the gate (see recheckState). */
+export async function bindRecheckSession(userId: string, sessionId: string): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { age_recheck_session: sessionId },
+  });
+  if (error) console.error('bindRecheckSession', error.message);
 }
 
 // ---------- webhook signature ----------

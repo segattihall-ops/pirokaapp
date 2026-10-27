@@ -6,6 +6,7 @@ import { authMode } from './mode';
 import { DEMO_COOKIE, demoCookieOptions, signSession, verifySession } from './demo-token';
 import type { AuthProvider, Session } from './types';
 import { sessionFromUser } from './session-from-user';
+import { syncUserAgeVerified } from '@/lib/age/didit';
 
 /** Current session, or null. Safe to call from Server Components and route handlers. */
 export async function getSession(): Promise<Session | null> {
@@ -35,11 +36,14 @@ export async function updateGate(
     app_metadata: {
       ...(patch.consentAt !== undefined ? { consent_at: patch.consentAt } : {}),
       ...(patch.ageVerified !== undefined ? { age_verified: patch.ageVerified } : {}),
-      ...(patch.ageVerified === true ? { age_recheck: false } : {}),
+      // Granting 18+ also closes any open re-check and releases its bound session.
+      ...(patch.ageVerified === true ? { age_recheck: false, age_recheck_session: null } : {}),
       ...(patch.ageMethod !== undefined ? { age_method: patch.ageMethod } : {}),
     },
   });
   if (error) throw error;
+  // Keep the users-table verified columns in step with the gate so search and the badge stay correct.
+  if (patch.ageVerified !== undefined) await syncUserAgeVerified(session.userId, patch.ageVerified);
   return next;
 }
 
