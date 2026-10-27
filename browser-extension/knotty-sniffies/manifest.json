@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "PIROKA Knotty",
+  "version": "1.0.0",
+  "description": "Knotty assistant for the single Sniffies conversation currently open in the browser.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://sniffies.com/*",
+    "https://*.sniffies.com/*",
+    "https://www.pirokaapp.com/*"
+  ],
+  "action": {
+    "default_title": "PIROKA Knotty",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sniffies.com/*",
+        "https://*.sniffies.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
