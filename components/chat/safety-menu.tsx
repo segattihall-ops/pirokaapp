@@ -1,9 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { IN_APP_REASONS, IN_APP_REASON_LABELS, type InAppReason } from '@/lib/safety/reasons';
+import { IN_APP_REASONS, type InAppReason } from '@/lib/safety/reasons';
 
 /**
  * The "⋯" safety menu shown on a profile and in a chat. Opens a bottom sheet with the same shape
@@ -152,7 +153,8 @@ export function SafetyMenu({
   const [err, setErr] = useState('');
   const [shareMsg, setShareMsg] = useState('');
   const [copied, setCopied] = useState(false);
-  const name = peerHandle ? `@${peerHandle}` : 'this person';
+  const t = useTranslations('safety');
+  const name = peerHandle ? `@${peerHandle}` : t('thisPerson');
 
   // Lock the page behind the sheet and allow Escape to dismiss, like the other modals.
   useEffect(() => {
@@ -189,14 +191,10 @@ export function SafetyMenu({
     if (!r.ok) {
       const j = await r.json().catch(() => ({}));
       return setErr(
-        r.status === 403
-          ? 'Verify your health card in Me before sharing it.'
-          : typeof j.error === 'string'
-            ? j.error
-            : 'Could not share your health card.',
+        r.status === 403 ? t('shareForbidden') : typeof j.error === 'string' ? j.error : t('shareFail'),
       );
     }
-    setShareMsg(`Your health card is now visible to ${name}.`);
+    setShareMsg(t('shareOk', { name }));
   };
 
   const copyLink = async () => {
@@ -207,7 +205,7 @@ export function SafetyMenu({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setErr('Could not copy the link.');
+      setErr(t('copyFail'));
     }
   };
 
@@ -226,17 +224,12 @@ export function SafetyMenu({
       }),
     });
     setBusy(false);
-    if (!r.ok) return setErr((await r.json().catch(() => ({}))).error ?? 'Could not send report');
+    if (!r.ok) return setErr((await r.json().catch(() => ({}))).error ?? t('reportFail'));
     setMode('done');
   };
 
   const block = async () => {
-    if (
-      !confirm(
-        `Block ${name}? They won't be able to message you and this chat will disappear from your inbox.`,
-      )
-    )
-      return;
+    if (!confirm(t('blockConfirm', { name }))) return;
     setBusy(true);
     const r = await fetch('/api/safety/block', {
       method: 'POST',
@@ -244,7 +237,7 @@ export function SafetyMenu({
       body: JSON.stringify({ targetId: peerUserId }),
     });
     setBusy(false);
-    if (!r.ok) return setErr('Could not block');
+    if (!r.ok) return setErr(t('blockFail'));
     close();
     if (onBlocked) onBlocked();
     else router.replace('/app/chats');
@@ -302,7 +295,7 @@ export function SafetyMenu({
     <>
       <button
         type="button"
-        aria-label="Safety options"
+        aria-label={t('options')}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
@@ -319,12 +312,12 @@ export function SafetyMenu({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`Safety options for ${name}`}
+          aria-label={t('options')}
           className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center"
         >
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t('close')}
             onClick={close}
             className="absolute inset-0 bg-ink-950/70 backdrop-blur-sm"
           />
@@ -338,7 +331,7 @@ export function SafetyMenu({
               {mode !== 'menu' && mode !== 'done' && (
                 <button
                   type="button"
-                  aria-label="Back"
+                  aria-label={t('back')}
                   onClick={() => setMode(mode === 'details' ? 'report' : 'menu')}
                   className="tap -ml-1 flex h-8 w-8 items-center justify-center rounded-input text-fg-3 hover:bg-white/5 hover:text-fg"
                 >
@@ -357,13 +350,13 @@ export function SafetyMenu({
               )}
               <p className="flex-1 text-[15px] font-semibold text-fg">
                 {mode === 'menu' && name}
-                {mode === 'report' && 'Report — why?'}
-                {mode === 'details' && 'Add detail'}
-                {mode === 'done' && 'Thank you'}
+                {mode === 'report' && t('reportWhy')}
+                {mode === 'details' && t('addDetail')}
+                {mode === 'done' && t('thankYou')}
               </p>
               <button
                 type="button"
-                aria-label="Close"
+                aria-label={t('close')}
                 onClick={close}
                 className="tap flex h-8 w-8 items-center justify-center rounded-input text-fg-3 hover:bg-white/5 hover:text-fg"
               >
@@ -405,7 +398,7 @@ export function SafetyMenu({
                       </svg>
                     }
                   >
-                    Share my health card
+                    {t('shareHealth')}
                   </Row>
                   <Row
                     onClick={() => {
@@ -428,7 +421,7 @@ export function SafetyMenu({
                       </svg>
                     }
                   >
-                    Report {name}
+                    {t('report', { name })}
                   </Row>
                   <Row
                     onClick={copyLink}
@@ -449,7 +442,7 @@ export function SafetyMenu({
                       </svg>
                     }
                   >
-                    {copied ? 'Link copied' : 'Copy link to profile'}
+                    {copied ? t('copied') : t('copyLink')}
                   </Row>
                   <Row
                     tone="danger"
@@ -472,7 +465,7 @@ export function SafetyMenu({
                       </svg>
                     }
                   >
-                    Block {name}
+                    {t('block', { name })}
                   </Row>
                 </div>
               )}
@@ -490,7 +483,7 @@ export function SafetyMenu({
                         setMode('details');
                       }}
                     >
-                      {IN_APP_REASON_LABELS[value]}
+                      {t(`reasons.${value}`)}
                     </Row>
                   ))}
                 </div>
@@ -510,22 +503,22 @@ export function SafetyMenu({
                     >
                       <ReasonIcon reason={reason} />
                     </span>
-                    <span className="text-[15px] font-medium text-fg">{IN_APP_REASON_LABELS[reason]}</span>
+                    <span className="text-[15px] font-medium text-fg">{t(`reasons.${reason}`)}</span>
                   </div>
                   <textarea
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
                     rows={4}
                     maxLength={2000}
-                    placeholder="Add anything that helps a moderator (optional)"
+                    placeholder={t('detailPlaceholder')}
                     className="input resize-none text-[14px]"
                   />
                   <p className="text-[12px] leading-[1.5] text-fg-4">
-                    Messages stay encrypted; only what you write here is shared with moderators.
-                    {CRITICAL.has(reason) && ' Reports about minors or violence are reviewed first.'}
+                    {t('encrypted')}
+                    {CRITICAL.has(reason) && ` ${t('criticalNote')}`}
                   </p>
                   <button type="submit" disabled={busy} className="btn-primary h-11 text-[14px]">
-                    {busy ? 'Sending…' : 'Send report'}
+                    {busy ? t('sending') : t('sendReport')}
                   </button>
                 </form>
               )}
@@ -547,10 +540,9 @@ export function SafetyMenu({
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
                   </span>
-                  <p className="text-[17px] font-semibold text-fg">Thank you for your feedback</p>
+                  <p className="text-[17px] font-semibold text-fg">{t('thankYouHeading')}</p>
                   <p className="max-w-[320px] text-[13px] leading-[1.55] text-fg-3">
-                    A moderator will review your report. We don’t share the outcome, but we act on every
-                    report. You can block {name} so they can’t reach you.
+                    {t('thankYouBody', { name })}
                   </p>
                   <button
                     type="button"
@@ -558,22 +550,22 @@ export function SafetyMenu({
                     disabled={busy}
                     className="btn-primary mt-1 h-11 w-full text-[14px]"
                   >
-                    Block {name}
+                    {t('block', { name })}
                   </button>
                   <button type="button" onClick={close} className="btn-secondary h-11 w-full text-[14px]">
-                    Done
+                    {t('done')}
                   </button>
                   <p className="pt-1 text-[12px] leading-[1.6] text-fg-4">
                     <a className="underline hover:text-fg-2" href="/help/guidelines">
-                      Community Guidelines
+                      {t('linkGuidelines')}
                     </a>{' '}
                     ·{' '}
                     <a className="underline hover:text-fg-2" href="/help/safety">
-                      Safety
+                      {t('linkSafety')}
                     </a>{' '}
                     ·{' '}
                     <a className="underline hover:text-fg-2" href="/help/terms">
-                      Terms
+                      {t('linkTerms')}
                     </a>
                   </p>
                 </div>
