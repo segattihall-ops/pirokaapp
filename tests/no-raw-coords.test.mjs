@@ -123,7 +123,7 @@ test('nearby, area, and trips never read a member true position', () => {
   assert.match(area, /\.select\('id, author_id, created_at'\)/);
   assert.match(area, /\.select\('id, author_id, content, created_at, distance_m'\)/);
   assert.match(area, /NextResponse\.json\(\{ id: data\.id, created_at: data\.created_at \}\)/);
-  assert.match(area, /NextResponse\.json\(\{ messages: data \?\? \[\] \}\)/);
+  assert.match(area, /NextResponse\.json\(\{ messages \}\)/);
 
   const trips = readFileSync(join(ROOT, 'app/api/trips/route.ts'), 'utf8');
   const selects = trips.match(/\.select\('[^']+'\)/g) ?? [];
