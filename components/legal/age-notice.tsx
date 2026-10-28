@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LiveMap } from '@/components/home/live-map';
+import { useGeo } from '@/components/home/use-geo';
 
 /**
- * Declaratory 18+ entry screen. A visible age barrier shown before any content on a visitor's first
- * arrival — the door everyone (including an anonymous entry) passes through. The visitor selects a
- * date of birth and may only enter when it computes to 18+. This is a self-attestation, NOT the real
- * age gate: participation (chat, posting, becoming visible, a real account) still requires full Didit
- * age/ID verification. We store only an acknowledgement flag in `piroka_age_ack` for a year — never
- * the date of birth. The server reads that cookie in the root layout and passes
- * `initiallyAcknowledged`, so there is no flash of content behind it and none of the screen for
- * returning visitors. Clearing site data re-shows it.
+ * Declaratory 18+ entry screen, styled like the homepage: the live map behind the same ink gradients
+ * and green glow, with a glass sheet carrying a date-of-birth selector. The visitor may only enter
+ * when the date computes to 18+. This is a self-attestation, NOT the real age gate — participation
+ * (chat, posting, becoming visible, a real account) still requires full Didit age/ID verification.
+ * We store only an acknowledgement flag in `piroka_age_ack` for a year, never the date of birth. The
+ * server reads that cookie in the root layout and passes `initiallyAcknowledged`, so there is no
+ * flash of content behind it and none of the screen for returning visitors.
  */
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -18,9 +19,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 function ageFrom(y: number, m: number, d: number): number {
   const now = new Date();
   let age = now.getFullYear() - y;
-  const beforeBirthday =
-    now.getMonth() < m - 1 || (now.getMonth() === m - 1 && now.getDate() < d);
-  if (beforeBirthday) age -= 1;
+  if (now.getMonth() < m - 1 || (now.getMonth() === m - 1 && now.getDate() < d)) age -= 1;
   return age;
 }
 
@@ -30,12 +29,10 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
   const [day, setDay] = useState('');
   const [year, setYear] = useState('');
   const firstRef = useRef<HTMLSelectElement>(null);
+  const { geo } = useGeo();
 
   const thisYear = new Date().getFullYear();
-  const years = useMemo(
-    () => Array.from({ length: 100 }, (_, i) => thisYear - 18 + 2 - i).filter((y) => y <= thisYear),
-    [thisYear],
-  );
+  const years = useMemo(() => Array.from({ length: 100 }, (_, i) => thisYear - 16 - i), [thisYear]);
 
   useEffect(() => {
     if (acknowledged) return;
@@ -56,7 +53,6 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
 
   const enter = () => {
     if (!adult) return;
-    // One year, site-wide. Lax so it survives normal navigation; cleared site data re-shows it.
     document.cookie = `piroka_age_ack=1; path=/; max-age=31536000; SameSite=Lax`;
     setAcknowledged(true);
   };
@@ -69,63 +65,63 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
       role="dialog"
       aria-modal="true"
       aria-labelledby="age-notice-title"
-      className="fixed inset-0 z-[100] overflow-hidden bg-ink-950"
+      className="fixed inset-0 z-[100] overflow-hidden text-fg"
+      style={{ background: 'radial-gradient(ellipse 80% 70% at 72% 50%, #111111 0%, #0a0a0a 45%, #070707 100%)' }}
     >
-      {/* Brand ambience: a soft green glow and a faint map-grid motif behind the card. */}
+      {/* Homepage background: the live map behind the same ink fade and green glow. */}
+      <LiveMap geo={geo} />
       <div
-        aria-hidden="true"
+        aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(90% 60% at 50% 8%, rgba(52,211,153,0.16), transparent 60%), radial-gradient(70% 50% at 85% 100%, rgba(255,255,255,0.05), transparent 55%)',
+            'linear-gradient(0deg, rgba(7,7,7,0.94) 2%, rgba(7,7,7,0.55) 34%, rgba(7,7,7,0.25) 100%)',
         }}
       />
-      <svg
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full text-fg"
-        style={{ opacity: 0.04 }}
-      >
-        <defs>
-          <pattern id="agegrid" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0H0V44" fill="none" stroke="currentColor" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#agegrid)" />
-      </svg>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-[25vh] -left-[12vw] h-[75vh] w-[62vw]"
+        style={{ background: 'radial-gradient(closest-side, rgba(52,211,153,0.12), rgba(52,211,153,0) 72%)' }}
+      />
 
-      <div className="relative flex min-h-full items-end justify-center px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-8 sm:items-center">
-        <div className="w-full max-w-[440px] rounded-hero bg-glass bg-ink-900/80 p-7 shadow-float ring-1 ring-line-2 backdrop-blur-xl">
-          <div className="flex flex-col items-center text-center">
-            <span
-              aria-hidden="true"
-              className="flex h-14 w-14 items-center justify-center rounded-hero bg-logo text-[26px] font-bold text-fg shadow-glow ring-1 ring-line-3"
+      <div className="relative z-[1] flex h-full flex-col">
+        <header className="flex items-center justify-between gap-3 px-5 pt-[calc(16px+var(--safe-top,0px))]">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="relative flex h-[34px] w-[34px] items-center justify-center rounded-[11px] border border-[rgba(255,255,255,0.14)] text-[19px] font-bold leading-none text-fg"
+              style={{
+                background: 'linear-gradient(160deg, #1a1a1a 0%, #070707 60%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 18px rgba(0,0,0,0.5)',
+              }}
             >
               π
-            </span>
-            <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.18em] text-fg-3">πroka</p>
+              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-green shadow-[0_0_8px_#34d399]" />
+            </div>
+            <span className="text-[18px] font-bold tracking-[-0.03em]">πroka</span>
+          </div>
+          <span className="flex items-center gap-1.5 rounded-chip border border-line-2 bg-white/[0.04] px-3 py-1.5 text-[12px] text-fg-3">
+            <span className="font-semibold text-fg">18+</span>
+            <span>Adults only</span>
+          </span>
+        </header>
+
+        <div className="flex min-h-0 flex-1 items-end justify-center px-4 pb-[max(20px,var(--safe-bottom,16px))] pt-6 sm:items-center">
+          <div className="w-full max-w-[440px] rounded-hero bg-glass bg-ink-900/70 p-7 shadow-float ring-1 ring-line-2 backdrop-blur-xl">
             <h1
               id="age-notice-title"
-              className="mt-3 text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg"
+              className="text-[27px] font-semibold leading-[1.12] tracking-[-0.03em] text-fg"
             >
-              Are you 18 or older?
+              Know who’s ready.
             </h1>
             <p className="mt-2 text-[14px] leading-[1.55] text-fg-2">
-              πroka is an adults-only community for queer adults. Enter your date of birth to continue.
+              πroka is an adults-only community for queer adults. Confirm your date of birth to enter.
             </p>
-          </div>
 
-          <div className="mt-6">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-3">
+            <p className="mb-2 mt-6 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-3">
               Date of birth
             </p>
             <div className="grid grid-cols-[1.2fr_0.8fr_1fr] gap-2">
-              <select
-                ref={firstRef}
-                aria-label="Birth month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className={selectClass}
-              >
+              <select ref={firstRef} aria-label="Birth month" value={month} onChange={(e) => setMonth(e.target.value)} className={selectClass}>
                 <option value="">Month</option>
                 {MONTHS.map((label, i) => (
                   <option key={label} value={String(i + 1)}>
@@ -133,12 +129,7 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
                   </option>
                 ))}
               </select>
-              <select
-                aria-label="Birth day"
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-                className={selectClass}
-              >
+              <select aria-label="Birth day" value={day} onChange={(e) => setDay(e.target.value)} className={selectClass}>
                 <option value="">Day</option>
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                   <option key={d} value={String(d)}>
@@ -146,12 +137,7 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
                   </option>
                 ))}
               </select>
-              <select
-                aria-label="Birth year"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                className={selectClass}
-              >
+              <select aria-label="Birth year" value={year} onChange={(e) => setYear(e.target.value)} className={selectClass}>
                 <option value="">Year</option>
                 {years.map((y) => (
                   <option key={y} value={String(y)}>
@@ -166,34 +152,34 @@ export function AgeNotice({ initiallyAcknowledged }: { initiallyAcknowledged: bo
                 You must be 18 or older to use πroka.
               </p>
             )}
-          </div>
 
-          <button
-            type="button"
-            onClick={enter}
-            disabled={!adult}
-            className="mt-6 h-12 w-full rounded-btn bg-green text-[15px] font-semibold text-ink-950 transition-colors hover:bg-green-hover disabled:cursor-not-allowed disabled:bg-ink-750 disabled:text-fg-4"
-          >
-            Enter πroka
-          </button>
-          <a
-            href="https://www.google.com"
-            className="mt-2 flex h-11 w-full items-center justify-center rounded-btn text-[14px] font-medium text-fg-3 hover:text-fg-2"
-          >
-            Leave
-          </a>
-
-          <p className="mt-5 text-center text-[12px] leading-[1.5] text-fg-4">
-            By entering you agree to our{' '}
-            <a className="underline hover:text-fg-3" href="/help/terms">
-              Terms
-            </a>{' '}
-            and{' '}
-            <a className="underline hover:text-fg-3" href="/help/privacy">
-              Privacy Policy
+            <button
+              type="button"
+              onClick={enter}
+              disabled={!adult}
+              className="mt-6 h-12 w-full rounded-btn bg-green text-[15px] font-semibold text-ink-950 transition-colors hover:bg-green-hover disabled:cursor-not-allowed disabled:bg-ink-750 disabled:text-fg-4"
+            >
+              Enter πroka
+            </button>
+            <a
+              href="https://www.google.com"
+              className="mt-2 flex h-11 w-full items-center justify-center rounded-btn text-[14px] font-medium text-fg-3 hover:text-fg-2"
+            >
+              Leave
             </a>
-            .
-          </p>
+
+            <p className="mt-5 text-center text-[12px] leading-[1.5] text-fg-4">
+              By entering you agree to our{' '}
+              <a className="underline hover:text-fg-3" href="/help/terms">
+                Terms
+              </a>{' '}
+              and{' '}
+              <a className="underline hover:text-fg-3" href="/help/privacy">
+                Privacy Policy
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </div>
     </div>
