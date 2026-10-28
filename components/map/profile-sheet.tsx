@@ -17,7 +17,7 @@ type Profile = {
   communities: string[];
   bio: string | null;
   verified: boolean;
-  phoneVerified?: boolean;
+  emailVerified?: boolean;
   photoVerified?: boolean;
   plan: string;
   originCode?: string | null;
@@ -161,12 +161,12 @@ export function ProfileSheet({
                   {p.handle ? `@${p.handle}` : 'Anonymous'}
                 </h2>
                 {p.verified && <span className="text-[12px] font-bold text-green">✓</span>}
-                {p.phoneVerified && (
+                {p.emailVerified && (
                   <span
-                    title="Phone verified"
+                    title="Email verified"
                     className="rounded-chip bg-sel-fill px-1.5 py-0.5 text-[10px] font-semibold text-green"
                   >
-                    Phone
+                    Email
                   </span>
                 )}
                 {p.photoVerified && (
