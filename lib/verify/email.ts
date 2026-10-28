@@ -23,38 +23,35 @@ function hashCode(email: string, code: string): string {
 
 type Result = { ok: true } | { ok: false; reason: string };
 
-/** Send a fresh 6-digit code to `email` for this member. Throttled and capped per pending row. */
+/**
+ * Send a fresh 6-digit code to `email` for this member. The throttle (30s) and per-cycle cap are
+ * enforced atomically in the database (email_otp_begin_send, migration 054) so parallel requests
+ * can't both pass the check and flood a recipient. An expired cycle resets the cap.
+ */
 export async function sendEmailCode(userId: string, email: string): Promise<Result> {
   if (!supabaseAdmin) return { ok: false, reason: 'Email verification is not configured' };
   if (!emailConfigured()) return { ok: false, reason: 'Email verification is not configured' };
 
-  const now = Date.now();
-  const { data: existing } = await supabaseAdmin
-    .from('email_otps')
-    .select('sent_count, updated_at')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (existing) {
-    if ((existing.sent_count ?? 0) >= MAX_SENDS)
-      return { ok: false, reason: 'Too many codes requested. Try again later.' };
-    if (now - Date.parse(existing.updated_at) < RESEND_MIN_MS)
-      return { ok: false, reason: 'Please wait a moment before requesting another code.' };
-  }
-
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  const { error } = await supabaseAdmin.from('email_otps').upsert(
-    {
-      user_id: userId,
-      email,
-      code_hash: hashCode(email, code),
-      expires_at: new Date(now + CODE_TTL_MS).toISOString(),
-      attempts: 0,
-      sent_count: (existing?.sent_count ?? 0) + 1,
-      updated_at: new Date(now).toISOString(),
-    },
-    { onConflict: 'user_id' },
-  );
+  const { data, error } = await supabaseAdmin.rpc('email_otp_begin_send', {
+    p_user_id: userId,
+    p_email: email,
+    p_code_hash: hashCode(email, code),
+    p_ttl_seconds: Math.round(CODE_TTL_MS / 1000),
+    p_max_sends: MAX_SENDS,
+    p_resend_min_seconds: Math.round(RESEND_MIN_MS / 1000),
+  });
   if (error) return { ok: false, reason: 'Could not start verification' };
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.allowed) {
+    return {
+      ok: false,
+      reason:
+        row?.reason === 'cap'
+          ? 'Too many codes requested. Try again in a few minutes.'
+          : 'Please wait a moment before requesting another code.',
+    };
+  }
 
   const res = await sendEmail({
     to: email,
@@ -73,32 +70,30 @@ export async function sendEmailCode(userId: string, email: string): Promise<Resu
   return { ok: true };
 }
 
-/** Check the code the member entered. `ok: true` only on an exact, unexpired, under-limit match. */
+/**
+ * Check the code the member entered. The attempt is consumed atomically in the database
+ * (email_otp_claim_attempt, migration 054) before the hash is compared, so parallel requests can't
+ * exceed the 5-guess cap and brute-force the code. `ok: true` only on an exact, unexpired match.
+ */
 export async function checkEmailCode(userId: string, email: string, code: string): Promise<Result> {
   if (!supabaseAdmin) return { ok: false, reason: 'Email verification is not configured' };
 
-  const { data: row } = await supabaseAdmin
-    .from('email_otps')
-    .select('email, code_hash, expires_at, attempts')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (!row || row.email.toLowerCase() !== email.toLowerCase())
+  const { data, error } = await supabaseAdmin.rpc('email_otp_claim_attempt', {
+    p_user_id: userId,
+    p_max_attempts: MAX_ATTEMPTS,
+  });
+  if (error) return { ok: false, reason: 'Could not verify that code.' };
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row || row.status === 'none' || (row.email ?? '').toLowerCase() !== email.toLowerCase())
     return { ok: false, reason: 'Request a code first.' };
-  if (Date.parse(row.expires_at) < Date.now())
-    return { ok: false, reason: 'That code expired. Request a new one.' };
-  if ((row.attempts ?? 0) >= MAX_ATTEMPTS)
-    return { ok: false, reason: 'Too many attempts. Request a new code.' };
+  if (row.status === 'expired') return { ok: false, reason: 'That code expired. Request a new one.' };
+  if (row.status === 'over') return { ok: false, reason: 'Too many attempts. Request a new code.' };
 
   const expected = Buffer.from(row.code_hash, 'hex');
   const given = Buffer.from(hashCode(email, code), 'hex');
   const match = expected.length === given.length && timingSafeEqual(expected, given);
-  if (!match) {
-    await supabaseAdmin
-      .from('email_otps')
-      .update({ attempts: (row.attempts ?? 0) + 1 })
-      .eq('user_id', userId);
-    return { ok: false, reason: 'That code is wrong or expired.' };
-  }
+  if (!match) return { ok: false, reason: 'That code is wrong or expired.' };
 
   // One-time: consume the code so it can't be replayed.
   await supabaseAdmin.from('email_otps').delete().eq('user_id', userId);
