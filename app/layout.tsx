@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { AgeNotice } from '@/components/legal/age-notice';
 import { appUrl } from '@/lib/app-url';
 
 export const metadata: Metadata = {
@@ -38,6 +40,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const ageAcknowledged = cookies().get('piroka_age_ack')?.value === '1';
   return (
     <html lang={locale} className="dark">
       <head>
@@ -54,6 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>{children}</Providers>
+          <AgeNotice initiallyAcknowledged={ageAcknowledged} />
         </NextIntlClientProvider>
       </body>
     </html>
